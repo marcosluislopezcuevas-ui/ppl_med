@@ -1155,7 +1155,6 @@ function renderMapeoTable() {
     if (saved) {
       const parsed = JSON.parse(saved);
       Object.assign(LLAVES_DATA, parsed);
-      console.log('Llaves cargadas desde localStorage:', Object.keys(parsed).length, 'llaves');
     }
   } catch(e) { console.warn('No se pudo cargar llaves:', e); }
 })();
@@ -1182,10 +1181,14 @@ function getMesKey() {
 function calcDistribucion() {
   const tb  = window._tbData;
   const pl  = window._pl;
-  if (!tb || !pl) return null;
+  if (!tb || !pl) { console.warn('calcDist: no tb or pl', !!tb, !!pl); return null; }
   const mk  = getMesKey();
-  console.log('calcDistribucion: mk=', mk, 'LLAVES_DATA keys=', Object.keys(LLAVES_DATA));
-  console.log('TB accounts with value:', Object.keys(tb).filter(k=>tb[k]!==0).length);
+  const llavesConData = Object.keys(LLAVES_DATA).filter(l => {
+    return Object.keys(LLAVES_DATA[l]).some(mk2 => Object.keys(LLAVES_DATA[l][mk2]).length > 0);
+  });
+  console.log('calcDist: mk='+mk, 'llaves con data='+llavesConData.length, llavesConData);
+  if (llavesConData.length === 0) { console.warn('calcDist: LLAVES_DATA vacio'); return null; }
+
 
   const result = {};
   function initClient(c) {
@@ -1202,9 +1205,10 @@ function calcDistribucion() {
       return;
     }
 
-    const llaveData = LLAVES_DATA[llave]; if (!llaveData) return;
+    const llaveData = LLAVES_DATA[llave];
+    if (!llaveData) { return; }
     const clPcts = llaveData[mk] || llaveData[Object.keys(llaveData)[0]];
-    if (!clPcts) return;
+    if (!clPcts) { console.warn('No clPcts for llave='+llave+' mk='+mk+' available='+JSON.stringify(Object.keys(llaveData))); return; }
 
     Object.entries(clPcts).forEach(([cliente, pct]) => {
       initClient(cliente);
@@ -1216,6 +1220,7 @@ function calcDistribucion() {
   Object.keys(result).forEach(c => {
     if (PL_COLS.reduce((s,col) => s + Math.abs(result[c][col.key]||0), 0) < 1) delete result[c];
   });
+  console.log('calcDist result: '+Object.keys(result).length+' clients', Object.keys(result).slice(0,5));
   return result;
 }
 
@@ -1229,15 +1234,7 @@ function initClientPLSelector() {
     if (subEl)   subEl.textContent   = 'Ve a la pestana P&L, sube el CV_014 y el archivo de Ingresos, luego regresa aqui.';
     return;
   }
-  // Debug: log what's in LLAVES_DATA
-  const llavesKeys = Object.keys(LLAVES_DATA);
-  console.log('LLAVES_DATA keys:', llavesKeys);
-  llavesKeys.forEach(l => {
-    const mesKeys = Object.keys(LLAVES_DATA[l]);
-    const nClients = mesKeys.reduce((s,mk) => s + Object.keys(LLAVES_DATA[l][mk]).length, 0);
-    console.log(' ', l, '-> mes keys:', mesKeys, '-> clients:', nClients);
-  });
-  const llavesCargadas = llavesKeys.filter(l => Object.keys(LLAVES_DATA[l]).length > 0).length;
+  const llavesCargadas = Object.keys(LLAVES_DATA).filter(l => Object.keys(LLAVES_DATA[l]).length > 0).length;
   if (llavesCargadas === 0) {
     if (titleEl) titleEl.textContent = 'Carga las llaves de reparto primero';
     if (subEl)   subEl.textContent   = 'Ve a la pestana "Llaves de Reparto", pega los % de cada llave y guarda.';
