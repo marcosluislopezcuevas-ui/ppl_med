@@ -1574,6 +1574,16 @@ function renderMatrices() {
   console.log('dist CF total:', totalDistCF, 'vs PL CF:', window._pl?.costos_fijos);
   console.log('dist GG total:', totalDistGG, 'vs PL GG:', window._pl?.gtos_grales);
   console.log('dist clientes count:', Object.keys(dist).length);
+  // Show clients with ingData but NOT in dist, and vice versa
+  const ingClients  = Object.keys(ingData).filter(c => ingData[c] > 0);
+  const distClients = Object.keys(dist);
+  const inIngNotDist = ingClients.filter(c => !distClients.includes(c));
+  const inDistNoIng  = distClients.filter(c => !ingData[c] || ingData[c]===0);
+  console.log('In ingData but not in dist:', inIngNotDist);
+  console.log('In dist but no ingresos:', inDistNoIng.slice(0,10));
+  // Show top ingData clients
+  const topIng = ingClients.sort((a,b)=>ingData[b]-ingData[a]).slice(0,10);
+  topIng.forEach(c => console.log('  ing:', c, '->', (ingData[c]/1000).toFixed(1)+'K'));
 
   const clients = Object.keys(dist).filter(c => mxSelectedClients.size === 0 || mxSelectedClients.has(c));
 
