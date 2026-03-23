@@ -880,18 +880,26 @@ function showTab(tab) {
 }
 
 // -- INIT LLAVES --
-function initLlaves() {
+async function initLlaves() {
   const sel = document.getElementById('llave-sel');
   if (sel && sel.options.length === 0) {
     LLAVES_NOMBRES.forEach(l => {
       const opt = document.createElement('option');
       opt.value = l;
-      // Friendly name: remove "1225_" prefix, replace _ with space
       opt.textContent = l.replace('1225_','').replace(/_/g,' ');
       sel.appendChild(opt);
     });
   }
   renderLlaveTable();
+  updateLlavesStatus();
+  const statusEl = document.getElementById('llaves-saved-status');
+  if (statusEl) statusEl.innerHTML = '<span style="color:var(--gray-m);">Cargando de SharePoint...</span>';
+  const mesKey = llaveMesKey();
+  const n = await loadLlavesFromSharePoint(mesKey);
+  renderLlaveTable();
+  updateLlavesStatus();
+  if (n > 0) toast('Llaves cargadas de SharePoint ('+n+' registros)', 'ok');
+  else if (Object.keys(LLAVES_DATA).length > 0) toast('Llaves cargadas de cache local', '');
 }
 
 function clearAllLlaves() {
@@ -1114,8 +1122,23 @@ function saveLlave() {
   if (!data || !Object.keys(data).length) {
     toast('No hay datos para guardar', ''); return;
   }
-  // TODO: replace with PA_WRITE call when Power Automate is ready
-  toast('? Guardado localmente  -  ' + llave.replace('1225_','').replace(/_/g,' ') + '  -  ' + mesKey.replace('_',' / '), 'ok');
+  // Build records
+  const registros = [];
+  Object.entries(data).forEach(([cliente, pct]) => {
+    if (pct > 0) registros.push({Llave: llave, MesKey: mesKey, Cliente: cliente, Pct: pct});
+  });
+  if (!registros.length) { toast('No hay datos para guardar', ''); return; }
+  // Save to localStorage cache
+  try { localStorage.setItem('medistik_llaves_v1', JSON.stringify(LLAVES_DATA)); } catch(e) {}
+  toast('Guardando en SharePoint...', '');
+  fetch(PA_LLAVES_WRITE, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({MesKey: mesKey, registros})
+  })
+  .then(r => { if(!r.ok) throw new Error('HTTP '+r.status); })
+  .then(() => { toast('Guardado en SharePoint - '+llave.replace('1225_','').replace(/_/g,' '), 'ok'); updateLlavesStatus(); })
+  .catch(e  => { toast('Guardado local (SP no disponible)', ''); updateLlavesStatus(); });
 }
 
 // -- MAPEO TABLE --
@@ -1168,16 +1191,37 @@ function renderMapeoTable() {
 
 
 // DISTRIBUTION ENGINE
-// Load persisted llaves from localStorage
+const PA_LLAVES_WRITE = 'https://default2a21bd09a37a4ec48d88bb8f1dea12.d5.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/0e9e0be181df44908099f5ee48ef3367/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=aOXkXHP7CiVGTCrcDWWzgJ0iZfV2035GqVJlbgwCyiU';
+const PA_LLAVES_READ  = 'https://default2a21bd09a37a4ec48d88bb8f1dea12.d5.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/fb6be8ebd32149a1bd406696a6d5a9d3/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=xjIvWuzY4E0GWumy_VEG7WnbcbwQHfjlc34CPkv3Bf4';
+// Load persisted llaves from localStorage (cache)
 (function() {
   try {
     const saved = localStorage.getItem('medistik_llaves_v1');
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      Object.assign(LLAVES_DATA, parsed);
-    }
-  } catch(e) { console.warn('No se pudo cargar llaves:', e); }
+    if (saved) { Object.assign(LLAVES_DATA, JSON.parse(saved)); }
+  } catch(e) {}
 })();
+
+async function loadLlavesFromSharePoint(mesKey) {
+  try {
+    const res = await fetch(PA_LLAVES_READ, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({MesKey: mesKey})
+    });
+    if (!res.ok) return 0;
+    const items = await res.json();
+    if (!Array.isArray(items) || !items.length) return 0;
+    items.forEach(item => {
+      const {Llave, MesKey: mk, Cliente, Pct} = item;
+      if (!Llave || !mk || !Cliente) return;
+      if (!LLAVES_DATA[Llave])     LLAVES_DATA[Llave] = {};
+      if (!LLAVES_DATA[Llave][mk]) LLAVES_DATA[Llave][mk] = {};
+      LLAVES_DATA[Llave][mk][Cliente] = parseFloat(Pct) || 0;
+    });
+    try { localStorage.setItem('medistik_llaves_v1', JSON.stringify(LLAVES_DATA)); } catch(e) {}
+    return items.length;
+  } catch(e) { return 0; }
+}
 const PL_COLS = [
   {key:'salarios',      label:'Salarios y Prest.'},
   {key:'fletes',        label:'Fletes'},
