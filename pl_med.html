@@ -681,22 +681,29 @@ function parseIngresosCliente(rows) {
   CLIENTES_BASE.forEach(c => { clienteLookup[c.toLowerCase()] = c; });
   // Also add known aliases from the ingresos file
   const ALIASES = {
-    'gda': 'GDA', 'tpt': 'TPT', 'bio products bpl': 'Bio Products BPL',
-    'neilmed': 'NeilMed', 'p&g': 'P&G', 'ulsa tech': 'Ulsa Tech',
-    'ever pharma': 'EVER Pharma', 'ge sistemas medicos': 'GE Sistemas Medicos',
-    'farmapiel': 'Farmapiel', 'galenicum': 'Galenicum', 'patia': 'Patia',
-    // 'cargo farma' is a real client - no alias needed
+    'gda': 'GDA',
+    'tpt': 'TPT',
+    'bio products bpl': 'Bio Products BPL',
+    'neilmed': 'NeilMed',
+    'p&g': 'P&G',
+    'ulsa tech': 'Ulsa Tech',
+    'ever pharma': 'EVER Pharma',
+    'ge sistemas medicos': 'GE Sistemas Medicos',
+    'farmapiel': 'Farmapiel',
+    'galenicum': 'Galenicum',
+    'patia': 'Patia',
+    'cargo farma': 'Cargo Farma',
+    'irasema gallardo (imprenta londres)': 'Irasema Gallardo',
+    'irasema gallardo': 'Irasema Gallardo',
+    'kabla comercial': 'Kabla Comercial',
+    'varios': 'Varios',
   };
 
   function normalizeCliente(raw) {
     const lower = raw.toLowerCase().trim();
     if (ALIASES[lower]) return ALIASES[lower];
     if (clienteLookup[lower]) return clienteLookup[lower];
-    // Partial match
-    for (const [k,v] of Object.entries(clienteLookup)) {
-      if (lower.includes(k) || k.includes(lower)) return v;
-    }
-    return raw; // keep original if no match
+    return raw;
   }
 
   rows.slice(hdrIdx+1).forEach(r=>{
