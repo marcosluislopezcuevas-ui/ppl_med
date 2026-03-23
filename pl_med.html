@@ -1559,6 +1559,21 @@ function renderMatrices() {
 
   // Ingresos por cliente
   const ingData = window._ingByCliente?.[mesNombre] || {};
+  
+  // Debug totals
+  const totalIngData = Object.values(ingData).reduce((s,v)=>s+v,0);
+  const totalDistCV  = Object.keys(dist).reduce((s,cl)=>s+CV_KEYS.reduce((ss,k)=>ss+(dist[cl][k]||0),0),0);
+  const totalDistCF  = Object.keys(dist).reduce((s,cl)=>s+(dist[cl]['costos_fijos']||0),0);
+  const totalDistGG  = Object.keys(dist).reduce((s,cl)=>s+(dist[cl]['gtos_grales']||0),0);
+  console.log('=== MATRIZ TOTALS DEBUG ===');
+  console.log('mesNombre:', mesNombre, 'mk:', mk);
+  console.log('_ingByCliente keys:', Object.keys(window._ingByCliente||{}));
+  console.log('ingData clientes:', Object.keys(ingData).length, 'total:', totalIngData);
+  console.log('PL ing_total:', window._pl?.ing_total);
+  console.log('dist CV total:', totalDistCV, 'vs PL CV:', window._pl?.cv_total);
+  console.log('dist CF total:', totalDistCF, 'vs PL CF:', window._pl?.costos_fijos);
+  console.log('dist GG total:', totalDistGG, 'vs PL GG:', window._pl?.gtos_grales);
+  console.log('dist clientes count:', Object.keys(dist).length);
 
   const clients = Object.keys(dist).filter(c => mxSelectedClients.size === 0 || mxSelectedClients.has(c));
 
