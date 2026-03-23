@@ -1,0 +1,1445 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>P&L Medistik — Traxion</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@300;400;500;600;700;800&family=Barlow+Condensed:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --lime:#D0DF00; --lime-dark:#B5BD00; --lime-deep:#8F8F00;
+  --lime-pale:#F4F9B0; --lime-bg:#F9FBD4;
+  --gray:#63666A; --gray-m:#97999B; --gray-d:#ABABAA;
+  --surface:#FAFAFA; --surface2:#F4F4F4;
+  --border:#E0E0DE; --border-m:#D0D0CE;
+  --white:#FFFFFF;
+  --pos:#2A8A1A; --pos-bg:#EEF8EB;
+  --neg:#B53B2A; --neg-bg:#FDF0EE;
+  --blue:#185A82; --blue-bg:#EBF5FA;
+  --fh:'Barlow Condensed',sans-serif;
+  --fb:'Barlow',sans-serif;
+  --r:8px; --rl:14px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--white);color:var(--gray);font-family:var(--fb);font-size:16px;}
+
+/* NAV */
+.nav{position:sticky;top:0;z-index:100;background:var(--white);border-bottom:3px solid var(--lime);
+  height:52px;display:flex;align-items:center;padding:0 24px;gap:12px;}
+.nav-brand{font-family:var(--fh);font-weight:800;font-size:20px;color:var(--gray);}
+.nav-sep{width:1px;height:22px;background:var(--border);}
+.nav-sub{font-size:12px;color:var(--gray-m);}
+.nav-spacer{flex:1;}
+.periodo-badge{font-family:var(--fh);font-weight:700;font-size:12px;color:var(--lime-deep);
+  background:var(--lime-pale);padding:3px 10px;border-radius:4px;display:none;}
+.fmt-wrap{display:none;align-items:center;gap:1px;background:var(--surface2);
+  border:1.5px solid var(--border-m);border-radius:6px;overflow:hidden;padding:1px;}
+.fmt-btn{font-family:var(--fh);font-weight:700;font-size:11px;padding:3px 10px;
+  cursor:pointer;border:none;background:transparent;color:var(--gray-m);border-radius:4px;transition:all .12s;}
+.fmt-btn:hover{background:var(--white);color:var(--gray);}
+.fmt-btn.on{background:var(--lime);color:var(--gray);}
+.btn-primary{background:var(--lime);color:var(--gray);border:none;border-radius:var(--r);
+  font-family:var(--fh);font-weight:700;font-size:13px;letter-spacing:.06em;text-transform:uppercase;
+  padding:7px 16px;cursor:pointer;transition:background .15s;}
+.btn-primary:hover{background:var(--lime-dark);}
+
+/* PAGES */
+.page{display:none;}.page.active{display:block;}
+
+/* ── UPLOAD PAGE ── */
+.upload-page{min-height:calc(100vh - 52px);display:flex;align-items:center;
+  justify-content:center;background:linear-gradient(135deg,var(--white),var(--lime-bg));padding:32px;}
+.upload-card{background:var(--white);border:1.5px solid var(--border);border-radius:var(--rl);
+  padding:40px 48px;max-width:600px;width:100%;box-shadow:0 4px 24px rgba(0,0,0,.06);}
+.upload-logo{font-family:var(--fh);font-weight:800;font-size:52px;color:var(--lime);line-height:1;margin-bottom:6px;}
+.upload-title{font-family:var(--fh);font-weight:800;font-size:22px;color:var(--gray);margin-bottom:6px;}
+.upload-sub{font-size:13px;color:var(--gray-m);margin-bottom:28px;line-height:1.7;}
+.upload-steps{display:flex;flex-direction:column;gap:12px;margin-bottom:24px;}
+.step{display:flex;align-items:flex-start;gap:14px;}
+.step-num{width:28px;height:28px;border-radius:50%;background:var(--lime);color:var(--gray);
+  font-family:var(--fh);font-weight:800;font-size:14px;display:flex;align-items:center;
+  justify-content:center;flex-shrink:0;margin-top:2px;}
+.step-num.done{background:var(--pos);color:var(--white);}
+.step-body{flex:1;}
+.step-label{font-family:var(--fh);font-weight:700;font-size:11px;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--gray-d);margin-bottom:4px;}
+.drop-zone{border:2px dashed var(--border-m);border-radius:var(--r);padding:14px 16px;
+  display:flex;align-items:center;gap:10px;cursor:pointer;transition:all .15s;background:var(--surface);}
+.drop-zone:hover,.drop-zone.over{border-color:var(--lime-dark);background:var(--lime-bg);}
+.drop-zone.loaded{border-color:var(--pos);background:var(--pos-bg);border-style:solid;}
+.drop-zone input{display:none;}
+.drop-icon{font-size:20px;flex-shrink:0;}
+.drop-txt{font-size:12px;color:var(--gray-m);}
+.drop-txt strong{color:var(--gray);}
+.prog-wrap{display:none;margin-top:16px;}
+.prog-bar{height:5px;background:var(--border);border-radius:3px;overflow:hidden;}
+.prog-fill{height:100%;background:linear-gradient(90deg,var(--lime-dark),var(--lime));
+  border-radius:3px;transition:width .3s;}
+.prog-lbl{font-size:11px;color:var(--gray-m);margin-top:5px;font-family:var(--fh);font-weight:600;}
+.upload-actions{display:flex;gap:10px;align-items:center;margin-top:20px;flex-wrap:wrap;}
+
+/* ── PL PAGE ── */
+.pl-page{padding:24px 28px 60px;max-width:1000px;margin:0 auto;}
+.pl-header{background:var(--white);border:1.5px solid var(--lime);border-top:4px solid var(--lime-dark);
+  border-radius:var(--rl);padding:20px 24px;margin-bottom:16px;}
+.pl-header-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px;}
+.pl-header-title{font-family:var(--fh);font-weight:800;font-size:26px;color:var(--gray);letter-spacing:-.01em;}
+.pl-header-sub{font-size:13px;color:var(--gray-m);margin-top:2px;}
+.pl-header-actions{display:flex;gap:8px;align-items:center;}
+.btn-upload-new{font-family:var(--fh);font-weight:700;font-size:12px;letter-spacing:.05em;
+  text-transform:uppercase;padding:5px 12px;border-radius:var(--r);cursor:pointer;
+  background:transparent;border:1.5px solid var(--border-m);color:var(--gray-m);transition:all .15s;}
+.btn-upload-new:hover{border-color:var(--lime-dark);color:var(--lime-deep);background:var(--lime-bg);}
+
+/* Period chips */
+.pl-period-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;}
+.period-year-lbl{font-family:var(--fh);font-weight:700;font-size:11px;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--gray-d);align-self:center;margin-right:2px;}
+.p-chip{font-family:var(--fh);font-weight:700;font-size:13px;letter-spacing:.03em;
+  padding:4px 12px;border-radius:5px;cursor:pointer;border:1.5px solid var(--border-m);
+  background:var(--white);color:var(--gray-m);transition:all .13s;}
+.p-chip:hover{border-color:var(--lime-dark);color:var(--gray);background:var(--lime-pale);}
+.p-chip.active{background:var(--lime);border-color:var(--lime-dark);color:var(--gray);}
+.p-chip.loaded{border-color:var(--pos);color:var(--pos);}
+.p-chip.active.loaded{background:var(--lime);border-color:var(--lime-dark);color:var(--gray);}
+
+.pl-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;}
+.pl-kpi{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:12px 16px;}
+.pl-kpi-lbl{font-family:var(--fh);font-weight:700;font-size:11px;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--gray-d);margin-bottom:4px;}
+.pl-kpi-val{font-family:var(--fb);font-weight:700;font-size:22px;line-height:1.1;}
+.pl-kpi-val.lime{color:var(--lime-deep);}
+.pl-kpi-val.pos{color:var(--pos);}
+.pl-kpi-val.neg{color:var(--neg);}
+
+/* TABLE */
+.tbl-wrap{background:var(--white);border:1px solid var(--border);border-radius:var(--rl);overflow:hidden;}
+.pl-tbl{width:100%;border-collapse:collapse;font-size:13px;}
+.pl-tbl th{font-family:var(--fh);font-weight:700;font-size:11px;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--gray-m);background:var(--surface2);border-bottom:2px solid var(--border);
+  padding:8px 14px;text-align:right;white-space:nowrap;}
+.pl-tbl th:first-child{text-align:left;min-width:220px;}
+.pl-tbl th.h-ppto{color:var(--blue);background:#EDF4F9;}
+.pl-tbl td{padding:7px 14px;border-bottom:1px solid var(--border);text-align:right;white-space:nowrap;}
+.pl-tbl td:first-child{text-align:left;}
+
+/* Row types */
+.r-sec td{background:var(--surface);padding:4px 14px;border-top:1px solid var(--border);}
+.r-sec td:first-child{font-family:var(--fh);font-weight:700;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--gray-d);}
+.r-child td:first-child{padding-left:24px;}
+.r-child2 td:first-child{padding-left:40px;color:var(--gray-m);font-size:12px;}
+.r-div td{background:var(--blue-bg);}
+.r-div td:first-child{font-family:var(--fh);font-weight:800;font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--blue);padding-left:24px;}
+.r-divtot td{background:var(--blue-bg);border-top:1px solid #B8D8EC;border-bottom:2px solid #A0C8E0;}
+.r-divtot td:first-child{font-family:var(--fh);font-weight:800;font-size:13px;color:var(--blue);padding-left:24px;}
+.r-sub td{background:var(--surface2);border-top:2px solid var(--border-m);border-bottom:2px solid var(--border-m);font-weight:700;}
+.r-sub td:first-child{font-family:var(--fh);font-weight:800;font-size:13px;text-transform:uppercase;letter-spacing:.04em;}
+.r-cm td{background:var(--lime-pale);border-top:2px solid var(--lime-dark);border-bottom:2px solid var(--lime-dark);font-weight:700;}
+.r-cm td:first-child{font-family:var(--fh);font-weight:800;font-size:16px;color:var(--lime-deep);}
+.r-ul td{background:var(--lime-pale);border-top:2px solid var(--lime-dark);border-bottom:2px solid var(--lime-dark);font-weight:700;}
+.r-ul td:first-child{font-family:var(--fh);font-weight:800;font-size:16px;color:var(--lime-deep);}
+.r-eb td{background:#1A3550;color:var(--white);font-weight:700;}
+.r-eb td:first-child{font-family:var(--fh);font-weight:800;font-size:16px;color:var(--lime);}
+
+/* Value colors */
+.vp{color:var(--pos);} .vn{color:var(--neg);} .vl{color:var(--lime-deep);font-weight:700;}
+.vb{color:var(--blue);} .vz{color:var(--gray-d);} .vw{color:var(--white);} .vll{color:var(--lime);}
+
+/* TOAST */
+.toast{position:fixed;bottom:20px;right:20px;z-index:999;background:var(--gray);color:var(--white);
+  font-size:13px;font-weight:500;padding:9px 16px;border-radius:var(--r);
+  opacity:0;transform:translateY(6px);pointer-events:none;transition:all .22s;}
+.toast.show{opacity:1;transform:translateY(0);}
+.toast.ok{background:var(--pos);}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.anim{animation:fadeUp .2s ease;}
+::-webkit-scrollbar{width:5px;height:5px;}::-webkit-scrollbar-thumb{background:var(--border-m);border-radius:3px;}
+
+/* NAV TABS */
+.nav-tabs{display:flex;gap:2px;}
+.nav-tab{font-family:var(--fh);font-weight:700;font-size:13px;letter-spacing:.05em;text-transform:uppercase;
+  padding:5px 14px;border-radius:6px;cursor:pointer;border:1.5px solid transparent;
+  background:transparent;color:var(--gray-m);transition:all .15s;}
+.nav-tab:hover{color:var(--gray);background:var(--surface2);}
+.nav-tab.active{background:var(--lime);color:var(--gray);border-color:var(--lime-dark);}
+
+/* LLAVES PAGE */
+.llaves-page{padding:24px 28px 60px;}
+.llaves-header{display:flex;align-items:center;gap:14px;margin-bottom:20px;flex-wrap:wrap;}
+.llaves-title{font-family:var(--fh);font-weight:800;font-size:22px;color:var(--gray);}
+.llave-sel{font-family:var(--fh);font-weight:700;font-size:13px;padding:6px 12px;
+  border:1.5px solid var(--border-m);border-radius:var(--r);background:var(--white);
+  color:var(--gray);outline:none;cursor:pointer;min-width:260px;}
+.llave-sel:focus{border-color:var(--lime-dark);}
+.mes-sel{font-family:var(--fh);font-weight:700;font-size:13px;padding:6px 10px;
+  border:1.5px solid var(--border-m);border-radius:var(--r);background:var(--white);color:var(--gray);outline:none;cursor:pointer;}
+.mes-sel:focus{border-color:var(--lime-dark);}
+
+.paste-area-wrap{background:var(--lime-bg);border:1.5px solid var(--lime);border-radius:var(--rl);
+  padding:16px 20px;margin-bottom:20px;}
+.paste-area-title{font-family:var(--fh);font-weight:700;font-size:11px;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--lime-deep);margin-bottom:8px;}
+.paste-area-hint{font-size:12px;color:var(--gray-m);margin-bottom:8px;line-height:1.6;}
+.paste-ta{width:100%;height:120px;font-family:var(--fb);font-size:12px;color:var(--gray);
+  border:1.5px solid var(--lime-dark);border-radius:var(--r);padding:10px 12px;
+  resize:vertical;outline:none;background:var(--white);line-height:1.7;}
+.paste-ta:focus{border-color:var(--lime-deep);box-shadow:0 0 0 3px var(--lime-pale);}
+.paste-actions{display:flex;gap:8px;align-items:center;margin-top:10px;}
+.btn-parse{background:var(--lime);color:var(--gray);border:none;border-radius:var(--r);
+  font-family:var(--fh);font-weight:700;font-size:13px;letter-spacing:.05em;text-transform:uppercase;
+  padding:8px 18px;cursor:pointer;transition:background .15s;}
+.btn-parse:hover{background:var(--lime-dark);}
+.btn-clear{background:transparent;color:var(--gray-m);border:1.5px solid var(--border-m);
+  border-radius:var(--r);font-family:var(--fh);font-weight:600;font-size:12px;
+  padding:7px 14px;cursor:pointer;transition:all .15s;}
+.btn-clear:hover{border-color:var(--neg);color:var(--neg);}
+.paste-status{font-size:12px;font-family:var(--fh);font-weight:700;margin-left:4px;}
+.paste-status.ok{color:var(--pos);}
+.paste-status.err{color:var(--neg);}
+
+/* LLAVE TABLE */
+.llave-tbl-wrap{background:var(--white);border:1px solid var(--border);border-radius:var(--rl);overflow:hidden;margin-bottom:16px;}
+.llave-tbl-hdr{padding:12px 18px;display:flex;align-items:center;justify-content:space-between;
+  background:var(--surface);border-bottom:2px solid var(--lime);}
+.llave-tbl-name{font-family:var(--fh);font-weight:800;font-size:14px;color:var(--gray);letter-spacing:.03em;}
+.llave-total-badge{font-family:var(--fh);font-weight:700;font-size:13px;padding:3px 12px;
+  border-radius:4px;background:var(--surface2);color:var(--gray-m);}
+.llave-total-badge.ok{background:var(--pos-bg);color:var(--pos);}
+.llave-total-badge.warn{background:var(--neg-bg);color:var(--neg);}
+.llave-tbl{width:100%;border-collapse:collapse;font-size:13px;}
+.llave-tbl th{font-family:var(--fh);font-weight:700;font-size:11px;letter-spacing:.08em;
+  text-transform:uppercase;color:var(--gray-m);background:var(--surface2);
+  border-bottom:2px solid var(--border);padding:8px 14px;}
+.llave-tbl th:last-child{text-align:right;}
+.llave-tbl td{padding:6px 14px;border-bottom:1px solid var(--border);}
+.llave-tbl tr:hover td{background:var(--lime-bg);}
+.llave-tbl tr.total-row td{background:var(--lime-pale);font-weight:700;border-top:2px solid var(--lime-dark);}
+.pct-input{width:100%;border:none;background:transparent;font-family:var(--fb);font-size:13px;
+  font-weight:600;color:var(--gray);text-align:right;outline:none;padding:3px 6px;
+  border-radius:4px;transition:background .12s;}
+.pct-input:focus{background:var(--lime-pale);}
+
+.btn-save-llave{background:var(--lime);color:var(--gray);border:none;border-radius:var(--r);
+  font-family:var(--fh);font-weight:700;font-size:13px;letter-spacing:.05em;text-transform:uppercase;
+  padding:9px 22px;cursor:pointer;transition:background .15s;}
+.btn-save-llave:hover{background:var(--lime-dark);}
+
+/* DISTRIBUCION TABS */
+.dist-page{padding:24px 28px 60px;}
+.dist-title{font-family:var(--fh);font-weight:800;font-size:22px;color:var(--gray);margin-bottom:4px;}
+.dist-sub{font-size:13px;color:var(--gray-m);margin-bottom:16px;}
+.dist-filters{display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap;}
+.dist-sel{font-family:var(--fh);font-weight:700;font-size:13px;padding:6px 12px;
+  border:1.5px solid var(--border-m);border-radius:var(--r);background:var(--white);
+  color:var(--gray);outline:none;cursor:pointer;}
+.dist-sel:focus{border-color:var(--lime-dark);}
+
+/* P&L por Cliente */
+.cl-empty{padding:60px;text-align:center;color:var(--gray-m);}
+.cl-empty-icon{font-size:48px;margin-bottom:12px;}
+.cl-empty-txt{font-family:var(--fh);font-weight:700;font-size:16px;color:var(--gray);}
+
+/* Matrices */
+.matrix-wrap{background:var(--white);border:1px solid var(--border);border-radius:var(--rl);overflow:hidden;}
+.matrix-hdr{padding:12px 18px;display:flex;align-items:center;justify-content:space-between;
+  background:var(--surface);border-bottom:2px solid var(--lime);}
+.matrix-title{font-family:var(--fh);font-weight:800;font-size:14px;color:var(--gray);}
+.mtbl{width:100%;border-collapse:collapse;font-size:12px;}
+.mtbl th{font-family:var(--fh);font-weight:700;font-size:10px;letter-spacing:.07em;text-transform:uppercase;
+  color:var(--gray-m);background:var(--surface2);border-bottom:2px solid var(--border);
+  padding:7px 10px;text-align:right;white-space:nowrap;}
+.mtbl th:first-child{text-align:left;min-width:160px;position:sticky;left:0;background:var(--surface2);}
+.mtbl th.total-col{background:var(--lime-bg);color:var(--lime-deep);border-left:2px solid var(--lime-dark);}
+.mtbl td{padding:6px 10px;border-bottom:1px solid var(--border);text-align:right;white-space:nowrap;}
+.mtbl td:first-child{text-align:left;font-weight:500;position:sticky;left:0;background:var(--white);}
+.mtbl tr:hover td{background:var(--lime-bg);}
+.mtbl tr:hover td:first-child{background:var(--lime-bg);}
+.mtbl tr.total-row td{background:var(--lime-pale);font-weight:700;border-top:2px solid var(--lime-dark);}
+.mtbl tr.total-row td:first-child{font-family:var(--fh);font-weight:800;font-size:12px;background:var(--lime-pale);}
+.mtbl td.total-col{background:var(--lime-bg) !important;font-weight:700;border-left:2px solid var(--lime-dark);}
+.pct-bar{display:flex;align-items:center;gap:4px;}
+.pct-bar-inner{flex:1;height:4px;background:var(--border);border-radius:2px;overflow:hidden;min-width:30px;}
+.pct-bar-fill{height:100%;border-radius:2px;background:var(--lime-dark);}
+
+/* MAPEO PAGE */
+/* MAPEO PAGE */
+.mapeo-page{padding:24px 28px 60px;}
+.mapeo-header{margin-bottom:20px;}
+.mapeo-title{font-family:var(--fh);font-weight:800;font-size:22px;color:var(--gray);margin-bottom:4px;}
+.mapeo-sub{font-size:13px;color:var(--gray-m);}
+.mapeo-filters{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;}
+.mapeo-filter-btn{font-family:var(--fh);font-weight:700;font-size:12px;letter-spacing:.04em;
+  padding:4px 12px;border-radius:5px;cursor:pointer;border:1.5px solid var(--border-m);
+  background:var(--white);color:var(--gray-m);transition:all .13s;}
+.mapeo-filter-btn:hover{border-color:var(--lime-dark);color:var(--gray);}
+.mapeo-filter-btn.active{background:var(--lime);border-color:var(--lime-dark);color:var(--gray);}
+.mapeo-tbl{width:100%;border-collapse:collapse;font-size:13px;}
+.mapeo-tbl th{font-family:var(--fh);font-weight:700;font-size:11px;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--gray-m);background:var(--surface2);border-bottom:2px solid var(--border);padding:8px 14px;}
+.mapeo-tbl td{padding:6px 14px;border-bottom:1px solid var(--border);}
+.mapeo-tbl tr:hover td{background:var(--lime-bg);}
+.llave-tag{font-family:var(--fh);font-weight:700;font-size:10px;letter-spacing:.04em;
+  padding:2px 7px;border-radius:3px;background:var(--lime-pale);color:var(--lime-deep);}
+</style>
+</head>
+<body>
+<nav class="nav">
+  <div class="nav-brand">Traxion</div>
+  <div class="nav-sep"></div>
+  <span class="nav-sub">Medistik &middot; P&amp;L Operativo</span>
+  <div class="nav-sep"></div>
+  <div class="nav-tabs" id="nav-tabs" style="display:none;">
+    <button class="nav-tab active" id="tab-pl"      onclick="showTab('pl')">P&amp;L</button>
+    <button class="nav-tab"        id="tab-llaves"  onclick="showTab('llaves')">Llaves de Reparto</button>
+    <button class="nav-tab"        id="tab-clpnl"   onclick="showTab('clpnl')">P&amp;L por Cliente</button>
+    <button class="nav-tab"        id="tab-mmontos" onclick="showTab('mmontos')">Matriz Montos</button>
+    <button class="nav-tab"        id="tab-mpcts"   onclick="showTab('mpcts')">Matriz %</button>
+    <button class="nav-tab"        id="tab-mapeo"   onclick="showTab('mapeo')">Mapeo de Cuentas</button>
+  </div>
+  <div class="nav-spacer"></div>
+  <span class="periodo-badge" id="periodo-badge"></span>
+  <div class="fmt-wrap" id="fmt-wrap">
+    <button class="fmt-btn" id="fmt-m" onclick="setFmt('M')">$M</button>
+    <button class="fmt-btn on" id="fmt-k" onclick="setFmt('K')">$K</button>
+    <button class="fmt-btn" id="fmt-e" onclick="setFmt('E')">Exacto</button>
+  </div>
+</nav>
+
+<!-- UPLOAD -->
+<div class="page active" id="page-upload">
+<div class="upload-page"><div class="upload-card">
+  <div class="upload-logo">P&amp;L</div>
+  <div class="upload-title">P&amp;L Operativo &mdash; Medistik</div>
+  <div class="upload-sub">Sube los 2 archivos del mes para generar el P&amp;L completo.</div>
+
+  <div class="upload-steps">
+    <!-- STEP 1 -->
+    <div class="step">
+      <div class="step-num" id="step1-num">1</div>
+      <div class="step-body">
+        <div class="step-label">Ingresos Real (XLSX)</div>
+        <div class="drop-zone" id="drop-ing" onclick="document.getElementById('f-ing').click()">
+          <div class="drop-icon">&#128176;</div>
+          <div class="drop-txt"><strong>Ingresos_Real_2026.xlsx</strong>Arrastra o haz clic</div>
+          <input type="file" id="f-ing" accept=".xlsx,.xls">
+        </div>
+      </div>
+    </div>
+    <!-- STEP 2 -->
+    <div class="step">
+      <div class="step-num" id="step2-num">2</div>
+      <div class="step-body">
+        <div class="step-label">Estado de Resultados (XLSX)</div>
+        <div class="drop-zone" id="drop-cv" onclick="document.getElementById('f-cv').click()">
+          <div class="drop-icon">&#128202;</div>
+          <div class="drop-txt"><strong>CV_014_Operativo_Dinamico_[mes].xlsx</strong>Arrastra o haz clic</div>
+          <input type="file" id="f-cv" accept=".xlsx,.xls">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="prog-wrap" id="prog-wrap">
+    <div class="prog-bar"><div class="prog-fill" id="prog-fill" style="width:0%"></div></div>
+    <div class="prog-lbl" id="prog-lbl">Procesando...</div>
+  </div>
+  <div class="upload-actions">
+    <button class="btn-primary" onclick="processAll()" style="font-size:14px;padding:10px 24px;">
+      &#9889; Generar P&amp;L
+    </button>
+  </div>
+</div></div>
+</div>
+
+<!-- PL PAGE -->
+<div class="page" id="page-pl">
+<div class="pl-page anim">
+  <div class="pl-header">
+    <div class="pl-header-top">
+      <div>
+        <div class="pl-header-title" id="pl-title">P&amp;L Operativo &mdash; Medistik</div>
+        <div class="pl-header-sub" id="pl-sub"></div>
+      </div>
+      <div class="pl-header-actions">
+        <button class="btn-upload-new" onclick="resetToUpload()">&#8635; Nuevo archivo</button>
+      </div>
+    </div>
+    <div class="pl-period-row" id="pl-period-row"></div>
+    <div class="pl-kpis" id="pl-kpis"></div>
+  </div>
+  <div class="tbl-wrap"><div style="overflow-x:auto;">
+    <table class="pl-tbl" id="pl-tbl"></table>
+  </div></div>
+</div>
+</div>
+
+<!-- LLAVES PAGE -->
+<div class="page" id="page-llaves">
+<div class="llaves-page">
+  <div class="llaves-header">
+    <span class="llaves-title">Llaves de Reparto</span>
+    <select class="llave-sel" id="llave-sel" onchange="renderLlaveTable()"></select>
+    <select class="mes-sel" id="llave-mes">
+      <option value="1">Enero</option><option value="2">Febrero</option>
+      <option value="3">Marzo</option><option value="4">Abril</option>
+      <option value="5">Mayo</option><option value="6">Junio</option>
+      <option value="7">Julio</option><option value="8">Agosto</option>
+      <option value="9">Septiembre</option><option value="10">Octubre</option>
+      <option value="11">Noviembre</option><option value="12">Diciembre</option>
+    </select>
+    <select class="mes-sel" id="llave-anio">
+      <option value="2026">2026</option><option value="2027">2027</option>
+    </select>
+  </div>
+
+  <div class="paste-area-wrap">
+    <div class="paste-area-title">&#128203; Carga r&aacute;pida desde Excel</div>
+    <div class="paste-area-hint">
+      Copia 2 columnas de Excel: <strong>Cliente</strong> y <strong>% de Distribuci&oacute;n</strong> &mdash; luego pega aqu&iacute; y haz clic en Cargar.
+      Los % pueden venir como <em>14.895215%</em> o como <em>0.14895215</em>.
+    </div>
+    <textarea class="paste-ta" id="paste-ta" placeholder="Pega aqui los datos de Excel&#10;Roche&#9;14.895215%&#10;Terumo&#9;9.756199%&#10;..."></textarea>
+    <div class="paste-actions">
+      <button class="btn-parse" onclick="parsePaste()">&#8595; Cargar datos</button>
+      <button class="btn-clear" onclick="clearPaste()">Limpiar</button>
+      <span class="paste-status" id="paste-status"></span>
+    </div>
+  </div>
+
+  <div class="llave-tbl-wrap">
+    <div class="llave-tbl-hdr">
+      <span class="llave-tbl-name" id="llave-tbl-name">Selecciona una llave</span>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span class="llave-total-badge" id="llave-total-badge">Total: 0.000%</span>
+        <div id="llave-faltante-badge" style="display:none;align-items:center;gap:8px;
+          background:var(--blue-bg);border:1.5px solid var(--blue);border-radius:var(--r);
+          padding:4px 12px;">
+        </div>
+      </div>
+    </div>
+    <div style="overflow-x:auto;"><table class="llave-tbl" id="llave-tbl"></table></div>
+  </div>
+  <div style="display:flex;gap:10px;align-items:center;">
+    <button class="btn-save-llave" onclick="saveLlave()">&#128190; Guardar llave</button>
+    <button class="btn-clear" onclick="clearAllLlaves()" style="margin-left:8px;">&#128465; Limpiar todo</button>
+    <span style="font-size:12px;color:var(--gray-m);" id="llaves-saved-status"></span>
+  </div>
+</div>
+</div>
+
+<!-- MAPEO PAGE -->
+<div class="page" id="page-mapeo">
+<div class="mapeo-page">
+  <div class="mapeo-header">
+    <div class="mapeo-title">Mapeo de Cuentas</div>
+    <div class="mapeo-sub">Asignaci&oacute;n de cada cuenta contable a su llave de reparto &mdash; hardcodeado del archivo oficial</div>
+  </div>
+  <div class="mapeo-filters" id="mapeo-filters"></div>
+  <div style="background:var(--white);border:1px solid var(--border);border-radius:var(--rl);overflow:hidden;">
+    <div style="overflow-x:auto;max-height:calc(100vh - 280px);overflow-y:auto;">
+      <table class="mapeo-tbl" id="mapeo-tbl"></table>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- P&L POR CLIENTE -->
+<div class="page" id="page-clpnl">
+<div class="dist-page">
+  <div class="dist-title">P&amp;L por Grupo Cliente</div>
+  <div class="dist-sub">P&amp;L individual calculado con las llaves de reparto cargadas.</div>
+  <div class="dist-filters">
+    <select class="dist-sel" id="cl-sel" onchange="renderClientPL()">
+      <option value="">-- Selecciona un grupo cliente --</option>
+    </select>
+  </div>
+  <div id="cl-pl-content">
+    <div class="cl-empty" id="cl-empty-state">
+      <div class="cl-empty-icon">&#128101;</div>
+      <div class="cl-empty-txt" id="cl-empty-title">Carga los archivos primero</div>
+      <div style="font-size:13px;color:var(--gray-m);margin-top:6px;" id="cl-empty-sub">Ve a la pestana P&amp;L, sube el CV_014 y el archivo de Ingresos, luego regresa aqui.</div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- MATRIZ MONTOS -->
+<div class="page" id="page-mmontos">
+<div class="dist-page">
+  <div class="dist-title">Matriz de Costos por Cliente</div>
+  <div class="dist-sub">Distribucion de costos en pesos por grupo cliente y rubro.</div>
+  <div class="matrix-wrap">
+    <div class="matrix-hdr">
+      <span class="matrix-title">Montos distribuidos (MXN)</span>
+      <span style="font-size:11px;color:var(--gray-m);" id="mmontos-meta"></span>
+    </div>
+    <div style="overflow-x:auto;max-height:calc(100vh - 260px);overflow-y:auto;">
+      <table class="mtbl" id="mtbl-montos"></table>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- MATRIZ % -->
+<div class="page" id="page-mpcts">
+<div class="dist-page">
+  <div class="dist-title">Matriz de % de Distribucion</div>
+  <div class="dist-sub">Que porcentaje del costo total de cada rubro absorbe cada cliente.</div>
+  <div class="matrix-wrap">
+    <div class="matrix-hdr">
+      <span class="matrix-title">% del total de cada rubro</span>
+      <span style="font-size:11px;color:var(--gray-m);" id="mpcts-meta"></span>
+    </div>
+    <div style="overflow-x:auto;max-height:calc(100vh - 260px);overflow-y:auto;">
+      <table class="mtbl" id="mtbl-pcts"></table>
+    </div>
+  </div>
+</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const PPTO_COSTOS = {"Enero":{"ing_total":61984928,"salarios":6560872,"fletes":0,"mat_empaque":3194170,"cargo_farma":14641778,"costo_insumos":0,"otros_cv":1700205,"cv_total":26097026,"cm":35887902,"costos_fijos":12036719,"total_costos":38133746,"gtos_grales":11296643,"util_log":12554539,"otros_gtos":0,"ebitda":12554539},"Febrero":{"ing_total":65231982,"salarios":7497589,"fletes":0,"mat_empaque":3454728,"cargo_farma":14455882,"costo_insumos":0,"otros_cv":1751573,"cv_total":27159773,"cm":38072209,"costos_fijos":13088527,"total_costos":40248299,"gtos_grales":9708283,"util_log":15275399,"otros_gtos":-1252474,"ebitda":14022925},"Marzo":{"ing_total":68175762,"salarios":7845909,"fletes":0,"mat_empaque":3610633,"cargo_farma":14455882,"costo_insumos":0,"otros_cv":1798210,"cv_total":27710634,"cm":40465128,"costos_fijos":13562455,"total_costos":41273088,"gtos_grales":9558008,"util_log":17344666,"otros_gtos":-1252474,"ebitda":16092192},"Abril":{"ing_total":71700305,"salarios":7940345,"fletes":0,"mat_empaque":3797295,"cargo_farma":16459580,"costo_insumos":0,"otros_cv":1843261,"cv_total":30040481,"cm":41659824,"costos_fijos":13449233,"total_costos":43489713,"gtos_grales":9432329,"util_log":18778262,"otros_gtos":-1431399,"ebitda":17346863},"Mayo":{"ing_total":78138296,"salarios":8331680,"fletes":0,"mat_empaque":4138255,"cargo_farma":16459580,"costo_insumos":0,"otros_cv":1925649,"cv_total":30855164,"cm":47283132,"costos_fijos":13388269,"total_costos":44243433,"gtos_grales":9750041,"util_log":24144822,"otros_gtos":-1431399,"ebitda":22713423},"Junio":{"ing_total":78858396,"salarios":9069531,"fletes":0,"mat_empaque":4176392,"cargo_farma":16459580,"costo_insumos":0,"otros_cv":1940070,"cv_total":31645573,"cm":47212823,"costos_fijos":13354049,"total_costos":44999622,"gtos_grales":9215922,"util_log":24642852,"otros_gtos":-1431399,"ebitda":23211454},"Julio":{"ing_total":83397460,"salarios":8866026,"fletes":0,"mat_empaque":4416784,"cargo_farma":18463277,"costo_insumos":0,"otros_cv":2004714,"cv_total":33750801,"cm":49646658,"costos_fijos":13198928,"total_costos":46949729,"gtos_grales":9430688,"util_log":27017042,"otros_gtos":-1610324,"ebitda":25406719},"Agosto":{"ing_total":79246412,"salarios":7777090,"fletes":0,"mat_empaque":4196942,"cargo_farma":18463277,"costo_insumos":0,"otros_cv":1942418,"cv_total":32379727,"cm":46866686,"costos_fijos":13263341,"total_costos":45643068,"gtos_grales":9323430,"util_log":24279915,"otros_gtos":-1610324,"ebitda":22669592},"Septiembre":{"ing_total":88875737,"salarios":8285242,"fletes":0,"mat_empaque":4706917,"cargo_farma":20466975,"costo_insumos":0,"otros_cv":2075535,"cv_total":35534669,"cm":53341068,"costos_fijos":13191022,"total_costos":48725691,"gtos_grales":9297242,"util_log":30852804,"otros_gtos":-1789248,"ebitda":29063555},"Octubre":{"ing_total":87902349,"salarios":8439898,"fletes":0,"mat_empaque":4655366,"cargo_farma":18463277,"costo_insumos":0,"otros_cv":2062119,"cv_total":33620660,"cm":54281689,"costos_fijos":13113437,"total_costos":46734098,"gtos_grales":9278500,"util_log":31889751,"otros_gtos":-1610324,"ebitda":30279427},"Noviembre":{"ing_total":89836552,"salarios":8359710,"fletes":0,"mat_empaque":4757803,"cargo_farma":20466975,"costo_insumos":0,"otros_cv":2093433,"cv_total":35677920,"cm":54158631,"costos_fijos":12959587,"total_costos":48637508,"gtos_grales":9261567,"util_log":31937477,"otros_gtos":-1789248,"ebitda":30148229},"Diciembre":{"ing_total":76474986,"salarios":8420428,"fletes":0,"mat_empaque":4050165,"cargo_farma":16459580,"costo_insumos":0,"otros_cv":1922906,"cv_total":30853079,"cm":45621908,"costos_fijos":13097504,"total_costos":43950582,"gtos_grales":9572595,"util_log":22951809,"otros_gtos":-1431399,"ebitda":21520410}};
+const PPTO_ING    = {"Enero":{"Almacen":{"Negocios Existentes":40098087,"Carry Over":1251182,"Nuevos Negocios":923953,"Moderna":0,"Otros":515906,"total":42789127},"Transporte":{"Negocios Existentes":17817015,"Carry Over":537896,"Nuevos Negocios":840890,"Moderna":0,"Otros":0,"total":19195801}},"Febrero":{"Almacen":{"Negocios Existentes":41790069,"Carry Over":1299513,"Nuevos Negocios":1458840,"Moderna":0,"Otros":270407,"total":44818829},"Transporte":{"Negocios Existentes":18370212,"Carry Over":558674,"Nuevos Negocios":1484267,"Moderna":0,"Otros":0,"total":20413152}},"Marzo":{"Almacen":{"Negocios Existentes":43049207,"Carry Over":1337754,"Nuevos Negocios":2006885,"Moderna":0,"Otros":208310,"total":46602155},"Transporte":{"Negocios Existentes":18864169,"Carry Over":575114,"Nuevos Negocios":2134323,"Moderna":0,"Otros":0,"total":21573607}},"Abril":{"Almacen":{"Negocios Existentes":44352052,"Carry Over":1384503,"Nuevos Negocios":2587694,"Moderna":0,"Otros":317541,"total":48641789},"Transporte":{"Negocios Existentes":19662290,"Carry Over":595212,"Nuevos Negocios":2801013,"Moderna":0,"Otros":0,"total":23058515}},"Mayo":{"Almacen":{"Negocios Existentes":44014377,"Carry Over":1373901,"Nuevos Negocios":5724716,"Moderna":0,"Otros":288739,"total":51401733},"Transporte":{"Negocios Existentes":19521340,"Carry Over":590654,"Nuevos Negocios":6624569,"Moderna":0,"Otros":0,"total":26736563}},"Junio":{"Almacen":{"Negocios Existentes":44675624,"Carry Over":1391337,"Nuevos Negocios":5664153,"Moderna":0,"Otros":166855,"total":51897971},"Transporte":{"Negocios Existentes":19768452,"Carry Over":598150,"Nuevos Negocios":6593824,"Moderna":0,"Otros":0,"total":26960425}},"Julio":{"Almacen":{"Negocios Existentes":47651348,"Carry Over":1483422,"Nuevos Negocios":5686416,"Moderna":0,"Otros":267336,"total":55088522},"Transporte":{"Negocios Existentes":21066074,"Carry Over":637738,"Nuevos Negocios":6605126,"Moderna":0,"Otros":0,"total":28308938}},"Agosto":{"Almacen":{"Negocios Existentes":44976465,"Carry Over":1399778,"Nuevos Negocios":5698587,"Moderna":0,"Otros":148784,"total":52223613},"Transporte":{"Negocios Existentes":19809716,"Carry Over":601779,"Nuevos Negocios":6611304,"Moderna":0,"Otros":0,"total":27022799}},"Septiembre":{"Almacen":{"Negocios Existentes":47463231,"Carry Over":1477765,"Nuevos Negocios":8271155,"Moderna":0,"Otros":202640,"total":57414790},"Transporte":{"Negocios Existentes":21049166,"Carry Over":635306,"Nuevos Negocios":9776473,"Moderna":0,"Otros":0,"total":31460946}},"Octubre":{"Almacen":{"Negocios Existentes":46846647,"Carry Over":1458320,"Nuevos Negocios":8291861,"Moderna":0,"Otros":167162,"total":56763989},"Transporte":{"Negocios Existentes":20724428,"Carry Over":626947,"Nuevos Negocios":9786985,"Moderna":0,"Otros":0,"total":31138360}},"Noviembre":{"Almacen":{"Negocios Existentes":48037476,"Carry Over":1497072,"Nuevos Negocios":8285093,"Moderna":0,"Otros":233085,"total":58052726},"Transporte":{"Negocios Existentes":21356670,"Carry Over":643607,"Nuevos Negocios":9783550,"Moderna":0,"Otros":0,"total":31783826}},"Diciembre":{"Almacen":{"Negocios Existentes":46772094,"Carry Over":1461954,"Nuevos Negocios":3144017,"Moderna":0,"Otros":196343,"total":51574408},"Transporte":{"Negocios Existentes":20816797,"Carry Over":628509,"Nuevos Negocios":3455272,"Moderna":0,"Otros":0,"total":24900578}}};
+
+let FMT='K';
+let fileCv=null, fileIng=null;
+// Multi-period storage: key = "Enero 2026"
+const PERIODOS = {};   // key -> PL data
+let activePeriodo = null;
+const TIPOS=['Negocios Existentes','Carry Over','Nuevos Negocios','Moderna','Otros'];
+const DIVS =['Almacen','Transporte'];
+const MESES_MAP={'1/1':'Enero','2/1':'Febrero','3/1':'Marzo','4/1':'Abril','5/1':'Mayo','6/1':'Junio','7/1':'Julio','8/1':'Agosto','9/1':'Septiembre','10/1':'Octubre','11/1':'Noviembre','12/1':'Diciembre'};
+
+function setupDrop(inputId,dropId,key,step){
+  const inp=document.getElementById(inputId),drop=document.getElementById(dropId);
+  inp.addEventListener('change',()=>{if(inp.files[0])readMem(inp.files[0],key,dropId,step);});
+  drop.addEventListener('dragover',e=>{e.preventDefault();drop.classList.add('over');});
+  drop.addEventListener('dragleave',()=>drop.classList.remove('over'));
+  drop.addEventListener('drop',e=>{e.preventDefault();drop.classList.remove('over');if(e.dataTransfer.files[0])readMem(e.dataTransfer.files[0],key,dropId,step);});
+}
+function readMem(file,key,dropId,step){
+  const drop=document.getElementById(dropId);
+  drop.querySelector('.drop-txt').innerHTML='<span style="color:var(--gray-m)">Leyendo...</span>';
+  const fr=new FileReader();
+  fr.onerror=()=>toast('Error: '+file.name,'');
+  fr.onload=e=>{
+    if(key==='ing')fileIng=e.target.result; else fileCv=e.target.result;
+    drop.classList.add('loaded');
+    drop.querySelector('.drop-txt').innerHTML='<strong>\u2713 '+file.name+'</strong>';
+    document.getElementById('step'+step+'-num').classList.add('done');
+    toast('\u2713 '+file.name,'ok');
+  };
+  fr.readAsArrayBuffer(file);
+}
+document.addEventListener('DOMContentLoaded', () => {
+  setupDrop('f-ing','drop-ing','ing',1);
+  setupDrop('f-cv', 'drop-cv', 'cv', 2);
+});
+
+function loadXLSX(){return window.XLSX?Promise.resolve():new Promise((r,j)=>{const s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';s.onload=r;s.onerror=j;document.head.appendChild(s);});}
+function xlsxRows(buf){const wb=XLSX.read(buf,{type:'array'});const ws=wb.Sheets[wb.SheetNames[0]];return XLSX.utils.sheet_to_json(ws,{header:1,defval:null});}
+
+async function processAll(){
+  if(!fileIng||!fileCv){toast('\u26a0 Carga los 2 archivos','');return;}
+  const prog=document.getElementById('prog-wrap'),fill=document.getElementById('prog-fill'),lbl=document.getElementById('prog-lbl');
+  prog.style.display='block';
+  const sp=(p,m)=>{fill.style.width=p+'%';lbl.textContent=m;};
+  try{
+    sp(10,'Cargando librer\u00eda...');await loadXLSX();
+    sp(35,'Leyendo ingresos...');const ingRows=xlsxRows(fileIng);parseIngresosCliente(ingRows);
+    sp(65,'Leyendo resultados...');const cvRows=xlsxRows(fileCv);
+    sp(85,'Calculando...');const pl=buildPL(ingRows,cvRows);
+    sp(99,'Listo');
+    setTimeout(()=>{renderPL(pl);toast('\u2713 P&L \u00b7 '+pl.mesLabel,'ok');},150);
+  }catch(e){toast('Error: '+e.message,'');console.error(e);prog.style.display='none';}
+}
+
+function parseIngresos(rows){
+  const MESES=['Enero','Febrero','Marzo','Abril','Mayo','Junio',
+               'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
+  // Find header row dynamically - look for the row that has 'Grupo Cliente'
+  let hdrIdx = -1;
+  for (let i=0; i<rows.length; i++) {
+    if (rows[i] && rows[i].some(v => String(v||'').trim()==='Grupo Cliente')) {
+      hdrIdx = i; break;
+    }
+  }
+  if (hdrIdx < 0) return {};
+
+  // Find column positions from header row
+  const hdr = rows[hdrIdx];
+  const colGrupo=hdr.findIndex(v=>String(v||'').trim()==='Grupo Cliente');
+  const colTipo =hdr.findIndex(v=>String(v||'').trim()==='Tipo Ingreso');
+  const colEsc  =hdr.findIndex(v=>String(v||'').trim()==='Escenario');
+  const colDiv  =hdr.findIndex(v=>String(v||'').trim()==='Division');
+  // Month columns: first 12 columns after Division
+  const colDivIdx = colDiv;
+  // Find the first date/month column (after Division)
+  let colMesStart = -1;
+  for (let i=colDivIdx+1; i<hdr.length; i++) {
+    if (hdr[i] !== null && hdr[i] !== undefined) { colMesStart=i; break; }
+  }
+  if (colMesStart<0) return {};
+
+  const res={};
+  MESES.forEach(mes=>{
+    res[mes]={ing_total:0};
+    DIVS.forEach(div=>{res[mes][div]={total:0};TIPOS.forEach(t=>{res[mes][div][t]=0;});});
+  });
+
+  rows.slice(hdrIdx+1).forEach(r=>{
+    if(!r) return;
+    const div =String(r[colDiv] ||'').trim();
+    const tipo=String(r[colTipo]||'').trim();
+    const esc =String(r[colEsc] ||'').trim().toLowerCase();
+    if(esc!=='real'||!DIVS.includes(div)) return;
+    const tk=TIPOS.includes(tipo)?tipo:'Otros';
+    MESES.forEach((mes,mi)=>{
+      const v=parseFloat(r[colMesStart+mi])||0;
+      if(!v) return;
+      res[mes][div][tk]+=v;
+      res[mes][div].total+=v;
+      res[mes].ing_total+=v;
+    });
+  });
+  window._ingReal = res;
+  return res;
+}
+
+function parseIngresosCliente(rows) {
+  let hdrIdx=-1;
+  for(let i=0;i<rows.length;i++){if(rows[i]&&rows[i].some(v=>String(v||'').trim()==='Grupo Cliente')){hdrIdx=i;break;}}
+  if(hdrIdx<0) return;
+  const hdr=rows[hdrIdx];
+  const colGrupo=hdr.findIndex(v=>String(v||'').trim()==='Grupo Cliente');
+  const colDiv  =hdr.findIndex(v=>String(v||'').trim()==='Division');
+  const colTipo =hdr.findIndex(v=>String(v||'').trim()==='Tipo Ingreso');
+  const colEsc  =hdr.findIndex(v=>String(v||'').trim()==='Escenario');
+  let colMesStart=-1;
+  for(let i=colDiv+1;i<hdr.length;i++){if(hdr[i]!==null&&hdr[i]!==undefined){colMesStart=i;break;}}
+  if(colMesStart<0) return;
+  const MESES=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  const byG={},byGD={};
+  MESES.forEach(mes=>{byG[mes]={};byGD[mes]={};});
+  rows.slice(hdrIdx+1).forEach(r=>{
+    if(!r)return;
+    const grupo=String(r[colGrupo]||'').trim();
+    const div  =String(r[colDiv]  ||'').trim();
+    const esc  =String(r[colEsc]  ||'').trim().toLowerCase();
+    const tipo =String(r[colTipo] ||'').trim();
+    if(esc!=='real'||!DIVS.includes(div)||!grupo)return;
+    const tk=TIPOS.includes(tipo)?tipo:'Otros';
+    MESES.forEach((mes,mi)=>{
+      const v=parseFloat(r[colMesStart+mi])||0; if(!v)return;
+      if(!byG[mes][grupo])byG[mes][grupo]=0;
+      byG[mes][grupo]+=v;
+      if(!byGD[mes][grupo])byGD[mes][grupo]={};
+      if(!byGD[mes][grupo][div])byGD[mes][grupo][div]={total:0};
+      byGD[mes][grupo][div].total+=v;
+      if(!byGD[mes][grupo][div][tk])byGD[mes][grupo][div][tk]=0;
+      byGD[mes][grupo][div][tk]+=v;
+    });
+  });
+  window._ingByCliente=byG;
+  window._ingByClienteDiv=byGD;
+}
+
+function parseCostos(rows){
+  const byNode={},byCuenta={},byLabel={};
+  let mesLabel='',periodo='';
+  rows.forEach(r=>{
+    if(!r)return;
+    const c2=String(r[2]||'').trim(); if(c2.includes('Al ')&&!periodo)periodo=c2.replace('Al ','').split(',')[0].trim();
+    const c1=String(r[1]||'').trim(); if(c1.match(/\w+ \d{4}/)&&!mesLabel)mesLabel=c1.trim();
+    const label=String(r[0]||'').trim(); const val=parseFloat(r[1])||0;
+    const mn=label.match(/^(NA_(?:ERO|IFRS)_[\w.]+)/); if(mn)byNode[mn[1]]=val;
+    const cn=label.match(/^(\d{8,10})\s*-/); if(cn)byCuenta[cn[1]]=(byCuenta[cn[1]]||0)+val;
+    const sn=label.match(/^(\d+[A-Z]+)\s*-/); if(sn&&!label.startsWith('NA_'))byLabel[sn[1]]=val;
+  });
+  const n=k=>byNode[k]||0,c=k=>byCuenta[k]||0;
+  const cv=n('NA_ERO_5.AA.00.00.00'),sal=n('NA_ERO_5.AA.AB.00.00');
+  const flet=(c('5108030101')||0)+(c('5108030107')||0);
+  const mat=c('5107011400')||0,farma=byLabel['519999999M']||0,insum=c('5107022001')||0;
+  return{mesLabel,periodo,salarios:sal,fletes:flet,mat_empaque:mat,cargo_farma:farma,
+    costo_insumos:insum,otros_cv:cv-sal-flet-mat-farma-insum,cv_total:cv,
+    costos_fijos:n('NA_ERO_5.AB.00.00.00'),total_costos:n('NA_ERO_5.00.00.00.00'),
+    gtos_grales:n('NA_ERO_6.00.00.00.00'),otros_gtos:n('NA_ERO_7.AA.00.00.00'),
+    ebitda:n('NA_ERO_C.00.00.00.00')};
+}
+
+function buildPL(ingRows,cvRows){
+  const ing=parseIngresos(ingRows),cos=parseCostos(cvRows);
+  const mes=cos.mesLabel.split(' ')[0],md=ing[mes]||{};
+  const ing_total=md.ing_total||0,cm=ing_total-cos.cv_total;
+  const util_log=ing_total-cos.total_costos-cos.gtos_grales;
+  return{mesLabel:cos.mesLabel,periodo:cos.periodo,mes,ing:md,ing_total,
+    salarios:cos.salarios,fletes:cos.fletes,mat_empaque:cos.mat_empaque,
+    cargo_farma:cos.cargo_farma,costo_insumos:cos.costo_insumos,otros_cv:cos.otros_cv,
+    cv_total:cos.cv_total,cm,costos_fijos:cos.costos_fijos,total_costos:cos.total_costos,
+    gtos_grales:cos.gtos_grales,util_log,otros_gtos:cos.otros_gtos,ebitda:cos.ebitda};
+}
+
+function setFmt(m){FMT=m;['m','k','e'].forEach(x=>document.getElementById('fmt-'+x).classList.toggle('on',x===m.toLowerCase()));if(window._pl)renderPL(window._pl);}
+function fmt(n){
+  if(!n&&n!==0)return'\u2014';
+  const a=Math.abs(n),s=n<0?'-':'';
+  if(FMT==='M')return s+'$'+(a/1e6).toFixed(2)+'M';
+  if(FMT==='K')return s+'$'+(a/1e3).toLocaleString('es-MX',{minimumFractionDigits:0,maximumFractionDigits:0})+'K';
+  return s+'$'+a.toLocaleString('es-MX',{minimumFractionDigits:0,maximumFractionDigits:0});
+}
+const pS=(n,b)=>b?(n/b*100).toFixed(1)+' %':'\u2014';
+
+function renderPL(d){
+  window._pl=d;
+  // Store period
+  PERIODOS[d.mesLabel] = d;
+  activePeriodo = d.mesLabel;
+  document.getElementById('page-upload').style.display='none';
+  document.getElementById('page-pl').style.display='block';
+  document.getElementById('nav-tabs').style.display='flex';
+  // Make sure pl tab is active
+  ['pl','llaves','clpnl','mmontos','mpcts','mapeo'].forEach(t=>document.getElementById('tab-'+t)?.classList.toggle('active',t==='pl'));
+  const np=document.getElementById('periodo-badge'); np.style.display=''; np.textContent=d.mesLabel;
+  document.getElementById('fmt-wrap').style.display='flex';
+  renderPeriodChips();
+  const b=d.ing_total||1,pc=PPTO_COSTOS[d.mes]||null,pi=PPTO_ING[d.mes]||null,pb=(pc?pc.ing_total:1)||1;
+  const cmP=(d.cm/b*100).toFixed(1),ebP=(d.ebitda/b*100).toFixed(1);
+  document.getElementById('pl-title').textContent='P&L Operativo \u2014 Medistik';
+  document.getElementById('pl-sub').textContent=d.periodo+'  \u00b7  cifras en pesos';
+  document.getElementById('pl-kpis').innerHTML=[
+    {l:'Ingresos',v:fmt(d.ing_total),c:'lime'},
+    {l:'CM',v:fmt(d.cm)+' ('+cmP+'%)',c:d.cm>=0?'pos':'neg'},
+    {l:'Util. Log.',v:fmt(d.util_log),c:d.util_log>=0?'pos':'neg'},
+    {l:'EBITDA',v:fmt(d.ebitda)+' ('+ebP+'%)',c:d.ebitda>=0?'pos':'neg'},
+  ].map(k=>`<div class="pl-kpi"><div class="pl-kpi-lbl">${k.l}</div><div class="pl-kpi-val ${k.c}">${k.v}</div></div>`).join('');
+
+  const sec=l=>`<tr class="r-sec"><td>${l}</td>${'<td></td>'.repeat(6)}</tr>`;
+  const row=(cls,lbl,rv,pv,isNeg,ind)=>{
+    const isEB=cls==='r-eb',isCM=cls==='r-cm'||cls==='r-ul';
+    const rc=isEB?'vw':isCM?'vl':(!rv&&rv!==0)?'vz':isNeg?(rv>0?'vn':'vp'):(rv>0?'vp':'vn');
+    const varD=(rv!=null&&pv!=null)?rv-pv:null;
+    const varP=(varD!=null&&pv)?varD/Math.abs(pv)*100:null;
+    const vc=varD===null?'vz':varD>=0?(isNeg?'vn':'vp'):(isNeg?'vp':'vn');
+    const ist=ind?` style="padding-left:${ind}px;"`:' ';
+    return `<tr class="${cls}">
+      <td${ist}>${lbl}</td>
+      <td class="${rc}">${rv!=null?fmt(rv):''}</td>
+      <td class="${isEB?'vll':'vz'}">${rv!=null?pS(rv,b):''}</td>
+      <td class="${isEB?'vw':'vz'}">${pv!=null?fmt(pv):''}</td>
+      <td class="${isEB?'vll':'vz'}">${pv!=null?pS(pv,pb):''}</td>
+      <td class="${isEB?'vll':vc}">${varD!=null?fmt(varD):''}</td>
+      <td class="${isEB?'vll':vc}" style="font-style:italic">${varP!=null?(varP>=0?'+':'')+varP.toFixed(1)+'%':''}</td>
+    </tr>`;
+  };
+
+  let t='';
+  // INGRESOS
+  t+=sec('INGRESOS');
+  DIVS.forEach(div=>{
+    const rd=d.ing[div]||{},pd=pi?pi[div]||{}:{};
+    const rTot=rd.total||0,pTot=pd.total||0;
+    const divLbl=div==='Almacen'?'Almacenaje':'Transporte';
+    t+=`<tr class="r-div"><td style="padding-left:24px;">${divLbl}</td>${'<td></td>'.repeat(6)}</tr>`;
+    TIPOS.forEach(tipo=>{
+      const rv=rd[tipo]||0,pv=pd[tipo]||0; if(!rv&&!pv)return;
+      const varD=rv-pv,varP=pv?varD/Math.abs(pv)*100:null,vc=varD>=0?'vp':'vn';
+      t+=`<tr class="r-child2">
+        <td style="padding-left:40px;font-size:11px;">${tipo}</td>
+        <td class="vb">${rv?fmt(rv):'\u2014'}</td><td class="vz">${rv?pS(rv,b):'\u2014'}</td>
+        <td class="vz">${pv?fmt(pv):'\u2014'}</td><td class="vz">${pv?pS(pv,pb):'\u2014'}</td>
+        <td class="${rv&&pv?vc:'vz'}">${rv&&pv?fmt(varD):'\u2014'}</td>
+        <td class="${rv&&pv?vc:'vz'}" style="font-style:italic">${rv&&pv&&varP!=null?(varP>=0?'+':'')+varP.toFixed(1)+'%':'\u2014'}</td>
+      </tr>`;
+    });
+    const vD=rTot-pTot,vP=pTot?vD/Math.abs(pTot)*100:null,vc=vD>=0?'vp':'vn';
+    t+=`<tr class="r-divtot">
+      <td style="padding-left:24px;">${divLbl} total</td>
+      <td class="vb" style="font-weight:700">${fmt(rTot)}</td><td class="vz">${pS(rTot,b)}</td>
+      <td class="vz" style="font-weight:700">${pTot?fmt(pTot):'\u2014'}</td><td class="vz">${pTot?pS(pTot,pb):'\u2014'}</td>
+      <td class="${pTot?vc:'vz'}" style="font-weight:700">${pTot?fmt(vD):'\u2014'}</td>
+      <td class="${pTot?vc:'vz'}" style="font-style:italic">${vP!=null?(vP>=0?'+':'')+vP.toFixed(1)+'%':'\u2014'}</td>
+    </tr>`;
+  });
+  t+=row('r-sub','Ingresos de operaci\u00f3n',d.ing_total,pc?pc.ing_total:null,false);
+
+  // COSTOS VARIABLES
+  t+=sec('COSTOS VARIABLES');
+  [['Salarios y prestaciones',d.salarios,pc?pc.salarios:null,true,24],
+   ['Fletes (inc. servicios log\u00edsticos)',d.fletes,pc?pc.fletes:null,true,24],
+   ['Material de empaque',d.mat_empaque,pc?pc.mat_empaque:null,true,24],
+   ['Cargo Farma',d.cargo_farma,pc?pc.cargo_farma:null,true,24],
+   ['Costo vta de insumos medicamentos',d.costo_insumos,pc?pc.costo_insumos:null,true,24],
+   ['Otros costos variables',d.otros_cv,pc?pc.otros_cv:null,true,24],
+  ].forEach(a=>t+=row('r-child',...a));
+  t+=row('r-sub','Costos variables',d.cv_total,pc?pc.cv_total:null,true);
+  t+=row('r-cm','Contribuci\u00f3n Marginal',d.cm,pc?pc.cm:null,false);
+
+  // COSTOS FIJOS
+  t+=sec('COSTOS FIJOS');
+  t+=row('r-child','Costos fijos',d.costos_fijos,pc?pc.costos_fijos:null,true,24);
+  t+=row('r-sub','Total de costos',d.total_costos,pc?pc.total_costos:null,true);
+
+  // GASTOS GENERALES
+  t+=sec('GASTOS GENERALES');
+  t+=row('r-child','Gastos generales',d.gtos_grales,pc?pc.gtos_grales:null,true,24);
+  t+=row('r-ul','Utilidad en viajes / log\u00edstica',d.util_log,pc?pc.util_log:null,false);
+
+  // OTROS / EBITDA
+  t+=sec('OTROS');
+  t+=row('r-child','Otros (ingresos) gastos, neto',d.otros_gtos,pc?pc.otros_gtos:null,true,24);
+  t+=row('r-eb','EBITDA operativo',d.ebitda,pc?pc.ebitda:null,false);
+
+  const thead=`<thead><tr>
+    <th style="min-width:220px;text-align:left;">Concepto</th>
+    <th>Real</th><th>% s/Vtas</th>
+    <th class="h-ppto">Presupuesto</th><th class="h-ppto">% s/Vtas</th>
+    <th class="h-ppto">Var. $</th><th class="h-ppto">Var. %</th>
+  </tr></thead>`;
+  document.getElementById('pl-tbl').innerHTML=thead+'<tbody>'+t+'</tbody>';
+}
+
+function resetToUpload(){
+  document.getElementById('page-upload').style.display='block';
+  document.getElementById('page-pl').style.display='none';
+}
+
+function renderPeriodChips(){
+  const el = document.getElementById('pl-period-row');
+  if (!el) return;
+  const keys = Object.keys(PERIODOS);
+  if (!keys.length) { el.innerHTML=''; return; }
+  // Group by year
+  const byYear = {};
+  keys.forEach(k => {
+    const yr = k.split(' ')[1] || '2026';
+    if (!byYear[yr]) byYear[yr] = [];
+    byYear[yr].push(k);
+  });
+  const MORDER = ['Enero','Febrero','Marzo','Abril','Mayo','Junio',
+                  'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  let html = '';
+  Object.keys(byYear).sort().forEach(yr => {
+    html += `<span class="period-year-lbl">${yr}</span>`;
+    byYear[yr]
+      .sort((a,b) => MORDER.indexOf(a.split(' ')[0]) - MORDER.indexOf(b.split(' ')[0]))
+      .forEach(k => {
+        const isActive = k === activePeriodo;
+        html += `<button class="p-chip loaded${isActive?' active':''}" onclick="switchPeriodo('${k}')">${k.split(' ')[0]}</button>`;
+      });
+  });
+  el.innerHTML = html;
+}
+
+function switchPeriodo(key){
+  activePeriodo = key;
+  renderPL(PERIODOS[key]);
+}
+
+// -- HARDCODED DATA --
+const MAPEO_CUENTAS = {"5107010700":{"desc":"Gastos Aduanales","clasif":"Costos variables","llave":"1225_Almacen_Aduana","pl_line":"otros_cv"},"5106070700":{"desc":"Ajuste inventarios f\u00edsicos","clasif":"Costos variables","llave":"1225_Almacen_Ajuste_inventarios","pl_line":"otros_cv"},"5106071100":{"desc":"Salud ocupacional","clasif":"Costos variables","llave":"1225_Almacen_Gastos_ponderado","pl_line":"otros_cv"},"5107011500":{"desc":"Renta de otros equipos","clasif":"Costos variables","llave":"1225_Almacen_Gastos_ponderado","pl_line":"otros_cv"},"5107018500":{"desc":"Papeler\u00eda y art\u00edculos de oficina (Serv adic)","clasif":"Costos variables","llave":"1225_Almacen_Gastos_ponderado","pl_line":"otros_cv"},"5108030116":{"desc":"Insumos extraordinarios interco","clasif":"Costos variables","llave":"1225_Almacen_Gastos_ponderado","pl_line":"otros_cv"},"5107011100":{"desc":"Gastos de comedor y alimentos internos","clasif":"Costos variables","llave":"1225_Almacen_Gastos_ponderado","pl_line":"otros_cv"},"5107015400":{"desc":"Infracciones Multas","clasif":"Costos variables","llave":"1225_Almacen_Gastos_ponderado","pl_line":"otros_cv"},"5107015600":{"desc":"Pasajes y estacionamiento","clasif":"Costos variables","llave":"1225_Almacen_Gastos_ponderado","pl_line":"otros_cv"},"5107016600":{"desc":"Servicios Generales","clasif":"Costos variables","llave":"1225_Almacen_Gastos_ponderado","pl_line":"otros_cv"},"5203010600":{"desc":"Protecci\u00f3n civil","clasif":"Costo Fijos","llave":"1225_Almacen_Gastos_ponderado","pl_line":"costos_fijos"},"5203011000":{"desc":"Eq Protec Personal, Seg y Uniformes","clasif":"Costo Fijos","llave":"1225_Almacen_Gastos_ponderado","pl_line":"costos_fijos"},"5203011800":{"desc":"Servicios externos","clasif":"Costo Fijos","llave":"1225_Almacen_Gastos_ponderado","pl_line":"costos_fijos"},"5203011900":{"desc":"Taxis","clasif":"Costo Fijos","llave":"1225_Almacen_Gastos_ponderado","pl_line":"costos_fijos"},"5203012000":{"desc":"Tel\u00e9fono y Radios","clasif":"Costo Fijos","llave":"1225_Almacen_Gastos_ponderado","pl_line":"costos_fijos"},"5203012700":{"desc":"Papeler\u00eda","clasif":"Costo Fijos","llave":"1225_Almacen_Gastos_ponderado","pl_line":"costos_fijos"},"5203012900":{"desc":"Cuotas y suscripciones","clasif":"Costo Fijos","llave":"1225_Almacen_Gastos_ponderado","pl_line":"costos_fijos"},"5203013200":{"desc":"Servicios de agua potable","clasif":"Costo Fijos","llave":"1225_Almacen_Gastos_ponderado","pl_line":"costos_fijos"},"5203013500":{"desc":"Gasolina utilitarios","clasif":"Costo Fijos","llave":"1225_Almacen_Gastos_ponderado","pl_line":"costos_fijos"},"5203013600":{"desc":"Impuestos y Derechos","clasif":"Costo Fijos","llave":"1225_Almacen_Gastos_ponderado","pl_line":"costos_fijos"},"5203013900":{"desc":"Transporte a\u00e9reo","clasif":"Costo Fijos","llave":"1225_Almacen_Gastos_ponderado","pl_line":"costos_fijos"},"5203014000":{"desc":"Transporte terrestre","clasif":"Costo Fijos","llave":"1225_Almacen_Gastos_ponderado","pl_line":"costos_fijos"},"5203014100":{"desc":"Hospedaje","clasif":"Costo Fijos","llave":"1225_Almacen_Gastos_ponderado","pl_line":"costos_fijos"},"5203014200":{"desc":"Comidas viajes - deducibles","clasif":"Costo Fijos","llave":"1225_Almacen_Gastos_ponderado","pl_line":"costos_fijos"},"5203014300":{"desc":"Comidas de negocios deducibles","clasif":"Costo Fijos","llave":"1225_Almacen_Gastos_ponderado","pl_line":"costos_fijos"},"5203014500":{"desc":"Otros gastos viaje","clasif":"Costo Fijos","llave":"1225_Almacen_Gastos_ponderado","pl_line":"costos_fijos"},"5203014510":{"desc":"Viatico no deducible","clasif":"Costo Fijos","llave":"1225_Almacen_Gastos_ponderado","pl_line":"costos_fijos"},"5203014900":{"desc":"Art\u00edculos de oficina varios","clasif":"Costo Fijos","llave":"1225_Almacen_Gastos_ponderado","pl_line":"costos_fijos"},"5203015400":{"desc":"Renta de equipo de computo","clasif":"Costo Fijos","llave":"1225_Almacen_Gastos_ponderado","pl_line":"costos_fijos"},"5203016300":{"desc":"Pago a sindicatos","clasif":"Costo Fijos","llave":"1225_Almacen_Gastos_ponderado","pl_line":"costos_fijos"},"5203016610":{"desc":"Seguro de vida","clasif":"Costo Fijos","llave":"1225_Almacen_Gastos_ponderado","pl_line":"costos_fijos"},"5203016700":{"desc":"Honorarios a PM residentes nacionales","clasif":"Costo Fijos","llave":"1225_Almacen_Gastos_ponderado","pl_line":"costos_fijos"},"5203016800":{"desc":"Honorarios a PF residentes nacionales","clasif":"Costo Fijos","llave":"1225_Almacen_Gastos_ponderado","pl_line":"costos_fijos"},"5203017100":{"desc":"Publicidad y propaganda","clasif":"Costo Fijos","llave":"1225_Almacen_Gastos_ponderado","pl_line":"costos_fijos"},"5203017800":{"desc":"Gastos de cafeter\u00eda","clasif":"Costo Fijos","llave":"1225_Almacen_Gastos_ponderado","pl_line":"costos_fijos"},"5203017900":{"desc":"Estudios al personal","clasif":"Costo Fijos","llave":"1225_Almacen_Gastos_ponderado","pl_line":"costos_fijos"},"5203018500":{"desc":"Servicios de impresi\u00f3n","clasif":"Costo Fijos","llave":"1225_Almacen_Gastos_ponderado","pl_line":"costos_fijos"},"6104010000":{"desc":"Honorarios a PF residentes nacionales","clasif":"Gastos Generales","llave":"1225_Almacen_Gastos_ponderado","pl_line":"gtos_grales"},"6104040000":{"desc":"Honorarios a PM residentes nacionales","clasif":"Gastos Generales","llave":"1225_Almacen_Gastos_ponderado","pl_line":"gtos_grales"},"6104050000":{"desc":"Honorarios a PM residentes del extranjero","clasif":"Gastos Generales","llave":"1225_Almacen_Gastos_ponderado","pl_line":"gtos_grales"},"6124012300":{"desc":"Manto equipo oficina","clasif":"Gastos Generales","llave":"1225_Almacen_Gastos_ponderado","pl_line":"gtos_grales"},"6201100000":{"desc":"Transporte de Personal intercompa\u00f1\u00edas","clasif":"Gastos Generales","llave":"1225_Almacen_Gastos_ponderado","pl_line":"gtos_grales"},"6119010000":{"desc":"Pasajes","clasif":"Gastos Generales","llave":"1225_Almacen_Gastos_ponderado","pl_line":"gtos_grales"},"6119020000":{"desc":"Taxis","clasif":"Gastos Generales","llave":"1225_Almacen_Gastos_ponderado","pl_line":"gtos_grales"},"6119030000":{"desc":"Estacionamientos","clasif":"Gastos Generales","llave":"1225_Almacen_Gastos_ponderado","pl_line":"gtos_grales"},"6108010000":{"desc":"Gastos no deducibles","clasif":"Gastos Generales","llave":"1225_Almacen_Gastos_ponderado","pl_line":"gtos_grales"},"6108010100":{"desc":"Actualizaci\u00f3n impuestos","clasif":"Gastos Generales","llave":"1225_Almacen_Gastos_ponderado","pl_line":"gtos_grales"},"6109010000":{"desc":"Transporte a\u00e9reo","clasif":"Gastos Generales","llave":"1225_Almacen_Gastos_ponderado","pl_line":"gtos_grales"},"6109010100":{"desc":"Transporte terrestre","clasif":"Gastos Generales","llave":"1225_Almacen_Gastos_ponderado","pl_line":"gtos_grales"},"6109010200":{"desc":"Hospedaje","clasif":"Gastos Generales","llave":"1225_Almacen_Gastos_ponderado","pl_line":"gtos_grales"},"6109010300":{"desc":"Comidas viajes - deducibles","clasif":"Gastos Generales","llave":"1225_Almacen_Gastos_ponderado","pl_line":"gtos_grales"},"6109010400":{"desc":"Comidas de negocios deducibles","clasif":"Gastos Generales","llave":"1225_Almacen_Gastos_ponderado","pl_line":"gtos_grales"},"6109010600":{"desc":"Otros gastos viaje","clasif":"Gastos Generales","llave":"1225_Almacen_Gastos_ponderado","pl_line":"gtos_grales"},"6109020000":{"desc":"Viatico no deducible","clasif":"Gastos Generales","llave":"1225_Almacen_Gastos_ponderado","pl_line":"gtos_grales"},"6102000830":{"desc":"Seguro Autom\u00f3viles","clasif":"Gastos Generales","llave":"1225_Almacen_Gastos_ponderado","pl_line":"gtos_grales"},"6102000840":{"desc":"Seguro empresarial","clasif":"Gastos Generales","llave":"1225_Almacen_Gastos_ponderado","pl_line":"gtos_grales"},"6115010000":{"desc":"Salud Ocupacional","clasif":"Gastos Generales","llave":"1225_Almacen_Gastos_ponderado","pl_line":"gtos_grales"},"6121010000":{"desc":"Papeler\u00eda","clasif":"Gastos Generales","llave":"1225_Almacen_Gastos_ponderado","pl_line":"gtos_grales"},"6121020000":{"desc":"Art\u00edculos de oficina varios","clasif":"Gastos Generales","llave":"1225_Almacen_Gastos_ponderado","pl_line":"gtos_grales"},"6122020000":{"desc":"Tenencia","clasif":"Gastos Generales","llave":"1225_Almacen_Gastos_ponderado","pl_line":"gtos_grales"},"6122030000":{"desc":"Verificaci\u00f3n","clasif":"Gastos Generales","llave":"1225_Almacen_Gastos_ponderado","pl_line":"gtos_grales"},"6124012200":{"desc":"Mantenimiento de autom\u00f3viles","clasif":"Gastos Generales","llave":"1225_Almacen_Gastos_ponderado","pl_line":"gtos_grales"},"6124008000":{"desc":"Capacitaci\u00f3n Externa","clasif":"Gastos Generales","llave":"1225_Almacen_Gastos_ponderado","pl_line":"gtos_grales"},"6124007000":{"desc":"Eq Protec Pers , Seg y uniformes","clasif":"Gastos Generales","llave":"1225_Almacen_Gastos_ponderado","pl_line":"gtos_grales"},"6124015100":{"desc":"Estudios al personal","clasif":"Gastos Generales","llave":"1225_Almacen_Gastos_ponderado","pl_line":"gtos_grales"},"6123010000":{"desc":"Otros impuestos y derechos","clasif":"Gastos Generales","llave":"1225_Almacen_Gastos_ponderado","pl_line":"gtos_grales"},"6123020000":{"desc":"Multas","clasif":"Gastos Generales","llave":"1225_Almacen_Gastos_ponderado","pl_line":"gtos_grales"},"6123030000":{"desc":"Recargos","clasif":"Gastos Generales","llave":"1225_Almacen_Gastos_ponderado","pl_line":"gtos_grales"},"6124010000":{"desc":"Participaci\u00f3n de los Trabajadores PTU Corriente","clasif":"Gastos Generales","llave":"1225_Almacen_Gastos_ponderado","pl_line":"gtos_grales"},"6124011000":{"desc":"Participaci\u00f3n de los Trabajadores PTU diferida","clasif":"Gastos Generales","llave":"1225_Almacen_Gastos_ponderado","pl_line":"gtos_grales"},"6201080000":{"desc":"Insumos extraordinarios intercompa\u00f1\u00edas","clasif":"Gastos Generales","llave":"1225_Almacen_Gastos_ponderado","pl_line":"gtos_grales"},"6124012100":{"desc":"Mantenimiento y accesorios equipo computo","clasif":"Gastos Generales","llave":"1225_Almacen_Gastos_ponderado","pl_line":"gtos_grales"},"6124014000":{"desc":"Comisiones bancarias","clasif":"Gastos Generales","llave":"1225_Almacen_Gastos_ponderado","pl_line":"gtos_grales"},"6124019000":{"desc":"Tel\u00e9fono y Radios","clasif":"Gastos Generales","llave":"1225_Almacen_Gastos_ponderado","pl_line":"gtos_grales"},"6124021000":{"desc":"Gastos por certificaciones","clasif":"Gastos Generales","llave":"1225_Almacen_Gastos_ponderado","pl_line":"gtos_grales"},"6124035000":{"desc":"Pr\u00e1cticas profesionales","clasif":"Gastos Generales","llave":"1225_Almacen_Gastos_ponderado","pl_line":"gtos_grales"},"6124037000":{"desc":"Costo tarjetas y comisiones","clasif":"Gastos Generales","llave":"1225_Almacen_Gastos_ponderado","pl_line":"gtos_grales"},"6124038000":{"desc":"Gastos de cafeter\u00eda","clasif":"Gastos Generales","llave":"1225_Almacen_Gastos_ponderado","pl_line":"gtos_grales"},"6114010000":{"desc":"Cuotas y suscripciones","clasif":"Gastos Generales","llave":"1225_Almacen_Gastos_ponderado","pl_line":"gtos_grales"},"6124009000":{"desc":"Gastos de Comedor y Alimentos Internos","clasif":"Gastos Generales","llave":"1225_Almacen_Gastos_ponderado","pl_line":"gtos_grales"},"6117010000":{"desc":"Reserva cuentas incobrables","clasif":"Gastos Generales","llave":"1225_Almacen_Gastos_ponderado","pl_line":"gtos_grales"},"6201130000":{"desc":"Mudanza intercompa\u00f1\u00edas","clasif":"Gastos Generales","llave":"1225_Almacen_Gastos_ponderado","pl_line":"gtos_grales"},"5107010300":{"desc":"Materiales","clasif":"Costos variables","llave":"1225_Almacen_Gastos_ponderado","pl_line":"otros_cv"},"5107011400":{"desc":"Material de empaque","clasif":"Costos variables","llave":"1225_Almacen_Material_empaque","pl_line":"mat_empaque"},"5103010100":{"desc":"Salarios","clasif":"Costos variables","llave":"1225_Almacen_Nomina","pl_line":"salarios"},"5103010200":{"desc":"Tiempo extra doble","clasif":"Costos variables","llave":"1225_Almacen_Nomina","pl_line":"salarios"},"5103010300":{"desc":"Tiempo extra triple","clasif":"Costos variables","llave":"1225_Almacen_Nomina","pl_line":"salarios"},"5103010600":{"desc":"Prima vacacional","clasif":"Costos variables","llave":"1225_Almacen_Nomina","pl_line":"salarios"},"5103011610":{"desc":"Reserva de prima vacacional","clasif":"Costos variables","llave":"1225_Almacen_Nomina","pl_line":"salarios"},"5103010800":{"desc":"Aguinaldo","clasif":"Costos variables","llave":"1225_Almacen_Nomina","pl_line":"salarios"},"5103011620":{"desc":"Reserva de aguinaldo","clasif":"Costos variables","llave":"1225_Almacen_Nomina","pl_line":"salarios"},"5103011100":{"desc":"Indemnizaci\u00f3n legal","clasif":"Costos variables","llave":"1225_Almacen_Nomina","pl_line":"salarios"},"5103011600":{"desc":"Reserva de finiquitos e indemnizaciones","clasif":"Costos variables","llave":"1225_Almacen_Nomina","pl_line":"salarios"},"5103010400":{"desc":"D\u00edas Festivos e inh\u00e1biles","clasif":"Costos variables","llave":"1225_Almacen_Nomina","pl_line":"salarios"},"5103010500":{"desc":"Vacaciones","clasif":"Costos variables","llave":"1225_Almacen_Nomina","pl_line":"salarios"},"5103010700":{"desc":"Prima dominical","clasif":"Costos variables","llave":"1225_Almacen_Nomina","pl_line":"salarios"},"5103010900":{"desc":"Gratificaci\u00f3n por terminaci\u00f3n","clasif":"Costos variables","llave":"1225_Almacen_Nomina","pl_line":"salarios"},"5103011400":{"desc":"20 D\u00edas por A\u00f1o","clasif":"Costos variables","llave":"1225_Almacen_Nomina","pl_line":"salarios"},"5103011200":{"desc":"Prima de antig\u00fcedad","clasif":"Costos variables","llave":"1225_Almacen_Nomina","pl_line":"salarios"},"5103020200":{"desc":"Fondo de ahorro","clasif":"Costos variables","llave":"1225_Almacen_Nomina","pl_line":"salarios"},"5103020400":{"desc":"Vales de despensa","clasif":"Costos variables","llave":"1225_Almacen_Nomina","pl_line":"salarios"},"5103020410":{"desc":"Vales de restaurante","clasif":"Costos variables","llave":"1225_Almacen_Nomina","pl_line":"salarios"},"5103020500":{"desc":"Bono por productividad","clasif":"Costos variables","llave":"1225_Almacen_Nomina","pl_line":"salarios"},"5103030100":{"desc":"IMSS \u2013 Cuotas Patronales","clasif":"Costos variables","llave":"1225_Almacen_Nomina","pl_line":"salarios"},"5103030200":{"desc":"IMSS - Retiro 2%","clasif":"Costos variables","llave":"1225_Almacen_Nomina","pl_line":"salarios"},"5103030300":{"desc":"INFONAVIT 5%","clasif":"Costos variables","llave":"1225_Almacen_Nomina","pl_line":"salarios"},"5103030400":{"desc":"IMSS - Cesant\u00eda en Edad Avanzada y Vejez 3.15%","clasif":"Costos variables","llave":"1225_Almacen_Nomina","pl_line":"salarios"},"5103030600":{"desc":"Impuesto sobre n\u00f3minas","clasif":"Costos variables","llave":"1225_Almacen_Nomina","pl_line":"salarios"},"5201010100":{"desc":"Sueldos","clasif":"Costo Fijos","llave":"1225_Almacen_Nomina","pl_line":"costos_fijos"},"5201010200":{"desc":"Tiempo extra doble","clasif":"Costo Fijos","llave":"1225_Almacen_Nomina","pl_line":"costos_fijos"},"5201010300":{"desc":"Tiempo extra triple","clasif":"Costo Fijos","llave":"1225_Almacen_Nomina","pl_line":"costos_fijos"},"5201010600":{"desc":"Prima vacacional","clasif":"Costo Fijos","llave":"1225_Almacen_Nomina","pl_line":"costos_fijos"},"5201011620":{"desc":"Reserva de prima vacacional","clasif":"Costo Fijos","llave":"1225_Almacen_Nomina","pl_line":"costos_fijos"},"5201010700":{"desc":"Aguinaldo","clasif":"Costo Fijos","llave":"1225_Almacen_Nomina","pl_line":"costos_fijos"},"5201011630":{"desc":"Reserva de aguinaldo","clasif":"Costo Fijos","llave":"1225_Almacen_Nomina","pl_line":"costos_fijos"},"5201011100":{"desc":"indemnizaci\u00f3n Legal","clasif":"Costo Fijos","llave":"1225_Almacen_Nomina","pl_line":"costos_fijos"},"5201011600":{"desc":"Reserva de finiquitos e indemnizaciones","clasif":"Costo Fijos","llave":"1225_Almacen_Nomina","pl_line":"costos_fijos"},"5201011610":{"desc":"Provisi\u00f3n bono de desempe\u00f1o","clasif":"Costo Fijos","llave":"1225_Almacen_Nomina","pl_line":"costos_fijos"},"5201020100":{"desc":"Bono por desempe\u00f1o","clasif":"Costo Fijos","llave":"1225_Almacen_Nomina","pl_line":"costos_fijos"},"5201010400":{"desc":"D\u00edas Festivos e inh\u00e1biles","clasif":"Costo Fijos","llave":"1225_Almacen_Nomina","pl_line":"costos_fijos"},"5201010500":{"desc":"Vacaciones","clasif":"Costo Fijos","llave":"1225_Almacen_Nomina","pl_line":"costos_fijos"},"5201010800":{"desc":"Prima dominical","clasif":"Costo Fijos","llave":"1225_Almacen_Nomina","pl_line":"costos_fijos"},"5201010900":{"desc":"Gratificaci\u00f3n por terminaci\u00f3n","clasif":"Costo Fijos","llave":"1225_Almacen_Nomina","pl_line":"costos_fijos"},"5201011200":{"desc":"Prima de antig\u00fcedad","clasif":"Costo Fijos","llave":"1225_Almacen_Nomina","pl_line":"costos_fijos"},"5201011400":{"desc":"20 D\u00edas por A\u00f1o","clasif":"Costo Fijos","llave":"1225_Almacen_Nomina","pl_line":"costos_fijos"},"5201020200":{"desc":"Fondo de ahorro","clasif":"Costo Fijos","llave":"1225_Almacen_Nomina","pl_line":"costos_fijos"},"5201020400":{"desc":"Vales de despensa","clasif":"Costo Fijos","llave":"1225_Almacen_Nomina","pl_line":"costos_fijos"},"5201020410":{"desc":"Vales de restaurante","clasif":"Costo Fijos","llave":"1225_Almacen_Nomina","pl_line":"costos_fijos"},"5201020500":{"desc":"Bono por productividad","clasif":"Costo Fijos","llave":"1225_Almacen_Nomina","pl_line":"costos_fijos"},"5201030100":{"desc":"IMSS \u2013 Cuotas Patronales","clasif":"Costo Fijos","llave":"1225_Almacen_Nomina","pl_line":"costos_fijos"},"5201030200":{"desc":"IMSS - Retiro 2%","clasif":"Costo Fijos","llave":"1225_Almacen_Nomina","pl_line":"costos_fijos"},"5201030300":{"desc":"INFONAVIT 5%","clasif":"Costo Fijos","llave":"1225_Almacen_Nomina","pl_line":"costos_fijos"},"5201030400":{"desc":"IMSS - Cesant\u00eda en Edad Avanzada y Vejez 3.15%","clasif":"Costo Fijos","llave":"1225_Almacen_Nomina","pl_line":"costos_fijos"},"5201030600":{"desc":"Impuesto sobre n\u00f3minas","clasif":"Costo Fijos","llave":"1225_Almacen_Nomina","pl_line":"costos_fijos"},"6101010000":{"desc":"Sueldos","clasif":"Gastos Generales","llave":"1225_Almacen_Nomina","pl_line":"gtos_grales"},"6101020000":{"desc":"Tiempo extra doble","clasif":"Gastos Generales","llave":"1225_Almacen_Nomina","pl_line":"gtos_grales"},"6101030000":{"desc":"Tiempo extra triple","clasif":"Gastos Generales","llave":"1225_Almacen_Nomina","pl_line":"gtos_grales"},"6101060000":{"desc":"Prima vacacional","clasif":"Gastos Generales","llave":"1225_Almacen_Nomina","pl_line":"gtos_grales"},"6101110110":{"desc":"Reserva de prima vacacional","clasif":"Gastos Generales","llave":"1225_Almacen_Nomina","pl_line":"gtos_grales"},"6101070000":{"desc":"Aguinaldo","clasif":"Gastos Generales","llave":"1225_Almacen_Nomina","pl_line":"gtos_grales"},"6101110120":{"desc":"Reserva de aguinaldo","clasif":"Gastos Generales","llave":"1225_Almacen_Nomina","pl_line":"gtos_grales"},"6101100000":{"desc":"Indemnizaci\u00f3n Legal","clasif":"Gastos Generales","llave":"1225_Almacen_Nomina","pl_line":"gtos_grales"},"6101130000":{"desc":"Reserva de finiquitos e indemnizaciones","clasif":"Gastos Generales","llave":"1225_Almacen_Nomina","pl_line":"gtos_grales"},"6102000300":{"desc":"Bono por desempe\u00f1o","clasif":"Gastos Generales","llave":"1225_Almacen_Nomina","pl_line":"gtos_grales"},"6101110100":{"desc":"Provisi\u00f3n bono de desempe\u00f1o","clasif":"Gastos Generales","llave":"1225_Almacen_Nomina","pl_line":"gtos_grales"},"6101040000":{"desc":"D\u00edas Festivos e inh\u00e1biles","clasif":"Gastos Generales","llave":"1225_Almacen_Nomina","pl_line":"gtos_grales"},"6101050000":{"desc":"Vacaciones","clasif":"Gastos Generales","llave":"1225_Almacen_Nomina","pl_line":"gtos_grales"},"6101080000":{"desc":"Gratificaci\u00f3n por terminaci\u00f3n","clasif":"Gastos Generales","llave":"1225_Almacen_Nomina","pl_line":"gtos_grales"},"6101110200":{"desc":"Prima dominical","clasif":"Gastos Generales","llave":"1225_Almacen_Nomina","pl_line":"gtos_grales"},"6102000100":{"desc":"Fondo de ahorro","clasif":"Gastos Generales","llave":"1225_Almacen_Nomina","pl_line":"gtos_grales"},"6102000200":{"desc":"Vales de despensa","clasif":"Gastos Generales","llave":"1225_Almacen_Nomina","pl_line":"gtos_grales"},"6102000210":{"desc":"Vales de restaurante","clasif":"Gastos Generales","llave":"1225_Almacen_Nomina","pl_line":"gtos_grales"},"6102000520":{"desc":"20 d\u00edas por a\u00f1o","clasif":"Gastos Generales","llave":"1225_Almacen_Nomina","pl_line":"gtos_grales"},"6102000500":{"desc":"Prima de antig\u00fcedad","clasif":"Gastos Generales","llave":"1225_Almacen_Nomina","pl_line":"gtos_grales"},"6102000800":{"desc":"Seguro de gastos m\u00e9dicos mayores","clasif":"Gastos Generales","llave":"1225_Almacen_Nomina","pl_line":"gtos_grales"},"6103010000":{"desc":"IMSS \u2013 Cuotas Patronales","clasif":"Gastos Generales","llave":"1225_Almacen_Nomina","pl_line":"gtos_grales"},"6103020000":{"desc":"IMSS - Retiro 2%","clasif":"Gastos Generales","llave":"1225_Almacen_Nomina","pl_line":"gtos_grales"},"6103030000":{"desc":"INFONAVIT 5%","clasif":"Gastos Generales","llave":"1225_Almacen_Nomina","pl_line":"gtos_grales"},"6103040000":{"desc":"IMSS - Cesant\u00eda en Edad Avanzada y Vejez 3.15%","clasif":"Gastos Generales","llave":"1225_Almacen_Nomina","pl_line":"gtos_grales"},"6103070000":{"desc":"Impuesto sobre n\u00f3minas","clasif":"Gastos Generales","llave":"1225_Almacen_Nomina","pl_line":"gtos_grales"},"5203010110":{"desc":"Arrendamiento a PM residentes nacionales","clasif":"Costo Fijos","llave":"1225_Almacen_Ocupacion_arrendamiento","pl_line":"costos_fijos"},"5203010200":{"desc":"Mantenimiento de inmuebles","clasif":"Costo Fijos","llave":"1225_Almacen_Ocupacion_arrendamiento","pl_line":"costos_fijos"},"5203010400":{"desc":"Servicio de Limpieza","clasif":"Costo Fijos","llave":"1225_Almacen_Ocupacion_arrendamiento","pl_line":"costos_fijos"},"5203011200":{"desc":"Vigilancia","clasif":"Costo Fijos","llave":"1225_Almacen_Ocupacion_arrendamiento","pl_line":"costos_fijos"},"5203011500":{"desc":"Energ\u00eda el\u00e9ctrica","clasif":"Costo Fijos","llave":"1225_Almacen_Ocupacion_arrendamiento","pl_line":"costos_fijos"},"5108030105":{"desc":"Renta de inmuebles interco","clasif":"Costos variables","llave":"1225_Almacen_Ocupacion_general","pl_line":"otros_cv"},"5203012500":{"desc":"Licencias y software","clasif":"Costo Fijos","llave":"1225_Almacen_Ocupacion_general","pl_line":"costos_fijos"},"5203012600":{"desc":"Redes y comunicaci\u00f3n con terminales","clasif":"Costo Fijos","llave":"1225_Almacen_Ocupacion_general","pl_line":"costos_fijos"},"5203013100":{"desc":"Mantenimiento de autom\u00f3viles utilitarios","clasif":"Costo Fijos","llave":"1225_Almacen_Ocupacion_general","pl_line":"costos_fijos"},"5203013101":{"desc":"Mantenimiento y accesorios equipo computo","clasif":"Costo Fijos","llave":"1225_Almacen_Ocupacion_general","pl_line":"costos_fijos"},"5203013102":{"desc":"Mantenimiento maquinaria y equipo","clasif":"Costo Fijos","llave":"1225_Almacen_Ocupacion_general","pl_line":"costos_fijos"},"5203015300":{"desc":"Capacitaci\u00f3n Externa","clasif":"Costo Fijos","llave":"1225_Almacen_Ocupacion_general","pl_line":"costos_fijos"},"5203017500":{"desc":"Apoyo para Beca","clasif":"Costo Fijos","llave":"1225_Almacen_Ocupacion_general","pl_line":"costos_fijos"},"6112010000":{"desc":"Licencias y software","clasif":"Gastos Generales","llave":"1225_Almacen_Ocupacion_general","pl_line":"gtos_grales"},"6201030000":{"desc":"Licencias y Renta de software intercompa\u00f1\u00edas","clasif":"Gastos Generales","llave":"1225_Almacen_Ocupacion_general","pl_line":"gtos_grales"},"6112020000":{"desc":"Redes y comunicaci\u00f3n con terminales","clasif":"Gastos Generales","llave":"1225_Almacen_Ocupacion_general","pl_line":"gtos_grales"},"6124018000":{"desc":"Gastos de fin de a\u00f1o","clasif":"Gastos Generales","llave":"1225_Almacen_Ocupacion_general","pl_line":"gtos_grales"},"6124031000":{"desc":"Gasolina utilitarios","clasif":"Gastos Generales","llave":"1225_Almacen_Ocupacion_general","pl_line":"gtos_grales"},"6124034000":{"desc":"Eventos sociales","clasif":"Gastos Generales","llave":"1225_Almacen_Ocupacion_general","pl_line":"gtos_grales"},"6124046000":{"desc":"Procesamiento en la nube","clasif":"Gastos Generales","llave":"1225_Almacen_Ocupacion_general","pl_line":"gtos_grales"},"5107010900":{"desc":"Renta de montacargas","clasif":"Costos variables","llave":"1225_Almacen_Ocupacion_por_sitio","pl_line":"otros_cv"},"5107011200":{"desc":"Servicio externo y maquila","clasif":"Costos variables","llave":"1225_Almacen_Ocupacion_por_sitio","pl_line":"otros_cv"},"5203011400":{"desc":"Control de plagas y fumigaci\u00f3n","clasif":"Costo Fijos","llave":"1225_Almacen_Ocupacion_por_sitio","pl_line":"costos_fijos"},"5203014700":{"desc":"Salud ocupacional","clasif":"Costo Fijos","llave":"1225_Almacen_Ocupacion_por_sitio","pl_line":"costos_fijos"},"5104010000":{"desc":"Casetas","clasif":"Costos variables","llave":"1225_Transporte_Caseta","pl_line":"fletes"},"5107010400":{"desc":"Servicio A\u00e9reo","clasif":"Costos variables","llave":"1225_Transporte_Flete_5107010400","pl_line":"fletes"},"5108030141":{"desc":"Servicio x Carga Aerea Interco","clasif":"Costos variables","llave":"1225_Transporte_Flete_5107010400","pl_line":"fletes"},"5107012300":{"desc":"Fletes","clasif":"Costos variables","llave":"1225_Transporte_Flete_5107012300","pl_line":"fletes"},"5108030101":{"desc":"Fletes interco","clasif":"Costos variables","llave":"1225_Transporte_Flete_5107012300","pl_line":"fletes"},"5107018300":{"desc":"Mensajer\u00eda y paqueter\u00eda (Serv Adic)","clasif":"Costos variables","llave":"1225_Transporte_Flete_5108030115","pl_line":"fletes"},"5108030115":{"desc":"Mensajer\u00eda y paqueter\u00eda interco","clasif":"Costos variables","llave":"1225_Transporte_Flete_5108030115","pl_line":"fletes"},"5108030130":{"desc":"Provisi\u00f3n Fletes interco","clasif":"Costos variables","llave":"1225_Transporte_Viajes_fletes","pl_line":"fletes"},"5108030120":{"desc":"Renta Otros Equipos interco","clasif":"Costos variables","llave":"1225_Transporte_Viajes_fletes","pl_line":"fletes"},"5203011300":{"desc":"Mensajer\u00eda y paqueter\u00eda","clasif":"Costo Fijos","llave":"1225_Transporte_Viajes_fletes","pl_line":"costos_fijos"},"5108030104":{"desc":"Renta de cajas interco","clasif":"Costos variables","llave":"1225_Transporte_Viajes_ponderado","pl_line":"otros_cv"},"5108030107":{"desc":"Servicios de log\u00edstica interco","clasif":"Costos variables","llave":"1225_Transporte_Viajes_ponderado","pl_line":"otros_cv"},"5107012800":{"desc":"Custodias","clasif":"Costos variables","llave":"1225_Transporte_Viajes_ponderado","pl_line":"otros_cv"},"5107015900":{"desc":"Costos no deducibles","clasif":"Costos variables","llave":"1225_Transporte_Viajes_ponderado","pl_line":"otros_cv"},"5107016500":{"desc":"Transporte a\u00e9reo","clasif":"Costos variables","llave":"1225_Transporte_Viajes_ponderado","pl_line":"otros_cv"},"519999999M":{"desc":"Cargo Farma","clasif":"Costos variables","llave":"1225_Transporte_Viajes_ponderado","pl_line":"cargo_farma"},"5101010100":{"desc":"Di\u00e9sel","clasif":"Costos variables","llave":"1225_Transporte_Viajes_propios","pl_line":"salarios"},"5101010400":{"desc":"Urea","clasif":"Costos variables","llave":"1225_Transporte_Viajes_propios","pl_line":"salarios"},"5106041100":{"desc":"Servicios Externos Taller","clasif":"Costos variables","llave":"1225_Transporte_Viajes_propios","pl_line":"salarios"},"5108030102":{"desc":"Renta de veh\u00edculos interco","clasif":"Costos variables","llave":"1225_Transporte_Viajes_propios","pl_line":"salarios"},"5107016502":{"desc":"Hospedaje","clasif":"Costos variables","llave":"1225_Transporte_Viajes_propios","pl_line":"salarios"},"5202010100":{"desc":"Seguros de equipo de carga","clasif":"Costo Fijos","llave":"1225_Transporte_Viajes_propios","pl_line":"costos_fijos"},"5202020100":{"desc":"Tenencias equipo de carga","clasif":"Costo Fijos","llave":"1225_Transporte_Viajes_propios","pl_line":"costos_fijos"},"5202020300":{"desc":"Verificaci\u00f3n equipo de carga","clasif":"Costo Fijos","llave":"1225_Transporte_Viajes_propios","pl_line":"costos_fijos"},"5202030100":{"desc":"Monitoreo GPS - unidades de carga","clasif":"Costo Fijos","llave":"1225_Transporte_Viajes_propios","pl_line":"costos_fijos"},"5107012500":{"desc":"Maniobras","clasif":"Costos variables","llave":"1225_Transporte_Viajes_propios","pl_line":"salarios"},"5107021000":{"desc":"Estad\u00edas","clasif":"Costos variables","llave":"1225_Transporte_Viajes_propios","pl_line":"salarios"},"5107022001":{"desc":"Costo vta insumos medicamentos","clasif":"Costos variables","llave":"__MODERNA__","pl_line":"costo_insumos"}};
+const LLAVES_CUENTAS = {"1225_Almacen_Aduana":["5107010700"],"1225_Almacen_Ajuste_inventarios":["5106070700"],"1225_Almacen_Gastos_ponderado":["5106071100","5107011500","5107018500","5108030116","5107011100","5107015400","5107015600","5107016600","5203010600","5203011000","5203011800","5203011900","5203012000","5203012700","5203012900","5203013200","5203013500","5203013600","5203013900","5203014000","5203014100","5203014200","5203014300","5203014500","5203014510","5203014900","5203015400","5203016300","5203016610","5203016700","5203016800","5203017100","5203017800","5203017900","5203018500","6104010000","6104040000","6104050000","6124012300","6201100000","6119010000","6119020000","6119030000","6108010000","6108010100","6109010000","6109010100","6109010200","6109010300","6109010400","6109010600","6109020000","6102000830","6102000840","6115010000","6121010000","6121020000","6122020000","6122030000","6124012200","6124008000","6124007000","6124015100","6123010000","6123020000","6123030000","6124010000","6124011000","6201080000","6124012100","6124014000","6124019000","6124021000","6124035000","6124037000","6124038000","6114010000","6124009000","6117010000","6201130000","5107010300"],"1225_Almacen_Material_empaque":["5107011400"],"1225_Almacen_Nomina":["5103010100","5103010200","5103010300","5103010600","5103011610","5103010800","5103011620","5103011100","5103011600","5103010400","5103010500","5103010700","5103010900","5103011400","5103011200","5103020200","5103020400","5103020410","5103020500","5103030100","5103030200","5103030300","5103030400","5103030600","5201010100","5201010200","5201010300","5201010600","5201011620","5201010700","5201011630","5201011100","5201011600","5201011610","5201020100","5201010400","5201010500","5201010800","5201010900","5201011200","5201011400","5201020200","5201020400","5201020410","5201020500","5201030100","5201030200","5201030300","5201030400","5201030600","6101010000","6101020000","6101030000","6101060000","6101110110","6101070000","6101110120","6101100000","6101130000","6102000300","6101110100","6101040000","6101050000","6101080000","6101110200","6102000100","6102000200","6102000210","6102000520","6102000500","6102000800","6103010000","6103020000","6103030000","6103040000","6103070000"],"1225_Almacen_Ocupacion_arrendamiento":["5203010110","5203010200","5203010400","5203011200","5203011500"],"1225_Almacen_Ocupacion_general":["5108030105","5203012500","5203012600","5203013100","5203013101","5203013102","5203015300","5203017500","6112010000","6201030000","6112020000","6124018000","6124031000","6124034000","6124046000"],"1225_Almacen_Ocupacion_por_sitio":["5107010900","5107011200","5203011400","5203014700"],"1225_Transporte_Caseta":["5104010000"],"1225_Transporte_Flete_5107010400":["5107010400","5108030141"],"1225_Transporte_Flete_5107012300":["5107012300","5108030101"],"1225_Transporte_Flete_5108030115":["5107018300","5108030115"],"1225_Transporte_Viajes_fletes":["5108030130","5108030120","5203011300"],"1225_Transporte_Viajes_ponderado":["5108030104","5108030107","5107012800","5107015900","5107016500","519999999M"],"1225_Transporte_Viajes_propios":["5101010100","5101010400","5106041100","5108030102","5107016502","5202010100","5202020100","5202020300","5202030100","5107012500","5107021000"]};
+const CLIENTES_BASE = ["3M","Abbvie","Agilent","Ansell","Bayer","Besins","Biocodex","Bio Products BPL","Cantabria","Cardinal","Celltrion","Convatec","CSL","Dechra","Dequivamed","Desocupado","Disma","Eisai","Falcon","Farmapiel","Fresenius","Galenicum","Genesis","GDA","Grobvater","Grupo Proa","Healink","Ikigai","Janssen","Jayor","Labyes","Mebco","Merit Medical","Mindray","Moderna","Moravi","Neolpharma","NeilMed","Patia","Pfizer","Qiagen","Roche","Romer Labs","Sanofi","Siemens","Silimed","Synthon","Sysmex","Terumo","Thea","Torrent Pharma","TPT","Ulsa Tech","Vetoquinol","Viatris"];
+const LLAVES_NOMBRES = Object.keys(LLAVES_CUENTAS).sort();
+
+// -- LLAVES STATE --
+// Storage: {llave_key: {mes_anio_key: {cliente: pct}}}
+// e.g. LLAVES_DATA['1225_Almacen_Nomina']['1_2026'] = {'Roche': 0.14895, ...}
+const LLAVES_DATA = {};
+
+function llaveMesKey() {
+  const mes  = document.getElementById('llave-mes')?.value  || '1';
+  const anio = document.getElementById('llave-anio')?.value || '2026';
+  return mes + '_' + anio;
+}
+function currentLlave() {
+  return document.getElementById('llave-sel')?.value || '';
+}
+
+// -- TAB SWITCHING --
+function showTab(tab) {
+  ['pl','llaves','clpnl','mmontos','mpcts','mapeo'].forEach(t => {
+    const pg = document.getElementById('page-' + t);
+    if (pg) pg.style.display = t===tab ? 'block' : 'none';
+    document.getElementById('tab-'+t)?.classList.toggle('active', t===tab);
+  });
+  if (tab==='llaves')  initLlaves();
+  if (tab==='mapeo')   initMapeo();
+  if (tab==='clpnl')   { initClientPLSelector(); renderClientPL(); }
+  if (tab==='mmontos') renderMatrices();
+  if (tab==='mpcts')   renderMatrices();
+}
+
+// -- INIT LLAVES --
+function initLlaves() {
+  const sel = document.getElementById('llave-sel');
+  if (sel && sel.options.length === 0) {
+    LLAVES_NOMBRES.forEach(l => {
+      const opt = document.createElement('option');
+      opt.value = l;
+      // Friendly name: remove "1225_" prefix, replace _ with space
+      opt.textContent = l.replace('1225_','').replace(/_/g,' ');
+      sel.appendChild(opt);
+    });
+  }
+  renderLlaveTable();
+}
+
+function clearAllLlaves() {
+  if (!confirm('Borrar todas las llaves guardadas?')) return;
+  Object.keys(LLAVES_DATA).forEach(k => delete LLAVES_DATA[k]);
+  localStorage.removeItem('medistik_llaves_v1');
+  renderLlaveTable();
+  toast('Llaves borradas', '');
+}
+
+function updateLlavesStatus() {
+  const el = document.getElementById('llaves-saved-status');
+  if (!el) return;
+  const total = Object.values(LLAVES_DATA).reduce((s, mesMap) =>
+    s + Object.values(mesMap).reduce((s2, clMap) => s2 + Object.keys(clMap).length, 0), 0);
+  const llavesCon = Object.keys(LLAVES_DATA).filter(l =>
+    Object.keys(LLAVES_DATA[l]).length > 0).length;
+  if (llavesCon > 0) {
+    el.innerHTML = `<span style="color:var(--pos);">&#10003; ${llavesCon} llaves guardadas en este navegador</span>`;
+  } else {
+    el.textContent = 'Sin datos guardados';
+  }
+}
+
+function renderLlaveTable() {
+  const llave  = currentLlave(); if(!llave) return;
+  const mesKey = llaveMesKey();
+  const stored = LLAVES_DATA[llave]?.[mesKey] || {};
+
+  // Build rows: all clientes
+  const rows = CLIENTES_BASE.map(c => ({
+    cliente: c,
+    pct: stored[c] != null ? stored[c] : null
+  }));
+
+  document.getElementById('llave-tbl-name').textContent =
+    llave.replace('1225_','').replace(/_/g,' ');
+
+  const thead = `<thead><tr>
+    <th style="text-align:left;min-width:180px;">Cliente</th>
+    <th style="text-align:right;min-width:140px;">% Distribucion</th>
+    <th style="text-align:right;min-width:100px;">Cuentas asignadas</th>
+  </tr></thead>`;
+
+  const nCuentas = LLAVES_CUENTAS[llave]?.length || 0;
+
+  const tbody = '<tbody>' + rows.map(r => {
+    const pctVal = r.pct != null ? (r.pct * 100).toFixed(6) : '';
+    const nc = LLAVES_CUENTAS[llave] ? nCuentas : 0;
+    return `<tr>
+      <td style="font-weight:500;">${r.cliente}</td>
+      <td><input class="pct-input" type="number" step="0.000001" min="0" max="100"
+        value="${pctVal}" placeholder="0.000000"
+        data-cliente="${r.cliente}"
+        oninput="onPctInput(this)" onchange="onPctInput(this)">
+        <span style="font-size:11px;color:var(--gray-d);margin-left:2px;">%</span>
+      </td>
+      <td style="text-align:right;font-size:11px;color:var(--gray-d);">${r.cliente===rows[0].cliente?nc+'':''}</td>
+    </tr>`;
+  }).join('') +
+  `<tr class="total-row">
+    <td style="font-family:var(--fh);font-weight:800;font-size:13px;">TOTAL</td>
+    <td style="text-align:right;font-family:var(--fh);font-weight:800;font-size:14px;" id="llave-total-val">0.000000 %</td>
+    <td></td>
+  </tr></tbody>`;
+
+  document.getElementById('llave-tbl').innerHTML = thead + tbody;
+  updateTotal();
+}
+
+function onPctInput(input) {
+  const llave   = currentLlave(); if(!llave) return;
+  const mesKey  = llaveMesKey();
+  const cliente = input.dataset.cliente;
+  const val     = parseFloat(input.value) || 0;
+  if (!LLAVES_DATA[llave])         LLAVES_DATA[llave] = {};
+  if (!LLAVES_DATA[llave][mesKey]) LLAVES_DATA[llave][mesKey] = {};
+  LLAVES_DATA[llave][mesKey][cliente] = val / 100;
+  updateTotal();
+}
+
+function updateTotal() {
+  let sum = 0;
+  document.querySelectorAll('.pct-input').forEach(inp => {
+    sum += parseFloat(inp.value) || 0;
+  });
+  const badge    = document.getElementById('llave-total-badge');
+  const faltante = document.getElementById('llave-faltante-badge');
+  const valEl    = document.getElementById('llave-total-val');
+  const txt      = sum.toFixed(6) + ' %';
+  const falta    = 100 - sum;
+  const ok       = Math.abs(falta) < 0.0001;
+
+  if (badge) {
+    badge.textContent = 'Total: ' + sum.toFixed(4) + ' %';
+    badge.className   = 'llave-total-badge ' + (ok ? 'ok' : 'warn');
+  }
+  if (faltante) {
+    if (ok) {
+      faltante.style.display = 'none';
+    } else {
+      faltante.style.display = 'flex';
+      const absFalta = Math.abs(falta);
+      faltante.innerHTML = falta > 0
+        ? `<span style="color:var(--gray-m);font-size:11px;">Falta para 100%:</span>
+           <span style="font-family:var(--fh);font-weight:800;font-size:13px;color:var(--blue);">${absFalta.toFixed(6)}%</span>
+           <button onclick="copyFaltante('${absFalta.toFixed(6)}')" style="font-family:var(--fh);font-weight:700;font-size:10px;letter-spacing:.04em;padding:2px 8px;border-radius:4px;cursor:pointer;border:1.5px solid var(--blue);background:var(--blue-bg);color:var(--blue);transition:all .12s;" title="Copiar al portapapeles">&#128203; Copiar</button>`
+        : `<span style="color:var(--gray-m);font-size:11px;">Exceso:</span>
+           <span style="font-family:var(--fh);font-weight:800;font-size:13px;color:var(--neg);">+${absFalta.toFixed(6)}%</span>`;
+    }
+  }
+  if (valEl) {
+    valEl.textContent = txt;
+    valEl.style.color = ok ? 'var(--pos)' : (falta > 0 ? 'var(--neg)' : 'var(--neg)');
+  }
+}
+
+function copyFaltante(val) {
+  navigator.clipboard.writeText(val).then(() => {
+    toast('\u2713 ' + val + '% copiado al portapapeles', 'ok');
+  }).catch(() => {
+    // Fallback
+    const ta = document.createElement('textarea');
+    ta.value = val; document.body.appendChild(ta);
+    ta.select(); document.execCommand('copy');
+    document.body.removeChild(ta);
+    toast('\u2713 ' + val + '% copiado', 'ok');
+  });
+}
+
+// -- PASTE PARSER --
+function parsePaste() {
+  const raw    = document.getElementById('paste-ta').value.trim();
+  const status = document.getElementById('paste-status');
+  if (!raw) { status.textContent = '? Pega datos primero'; status.className='paste-status err'; return; }
+
+  const lines  = raw.split('\n').filter(l => l.trim());
+  const parsed = {};
+  let errors   = 0;
+
+  lines.forEach(line => {
+    // Split by tab, semicolon, or multiple spaces
+    const parts = line.trim().split(/\t|;|  +/);
+    if (parts.length < 2) { errors++; return; }
+    const cliente = parts[0].trim();
+    const rawStr  = parts[parts.length-1].trim();
+    const hasPct  = rawStr.includes('%');
+    let   pctRaw  = rawStr.replace('%','').replace(',','.').trim();
+    let   pct     = parseFloat(pctRaw);
+    if (isNaN(pct)) { errors++; return; }
+    // If % sign present: already in % form (e.g. 14.895%) - divide by 100
+    // If no % sign: already decimal (e.g. 0.14895) - keep as is
+    if (hasPct) pct = pct / 100;
+    if (cliente) parsed[cliente] = pct;
+  });
+
+  if (!Object.keys(parsed).length) {
+    status.textContent = '? No se pudo parsear ninguna linea';
+    status.className = 'paste-status err'; return;
+  }
+
+  // Apply to current llave
+  const llave  = currentLlave(); if(!llave) return;
+  const mesKey = llaveMesKey();
+  if (!LLAVES_DATA[llave])         LLAVES_DATA[llave] = {};
+  if (!LLAVES_DATA[llave][mesKey]) LLAVES_DATA[llave][mesKey] = {};
+
+  // Match by fuzzy name
+  let matched = 0;
+  Object.entries(parsed).forEach(([nombre, pct]) => {
+    // Try exact match first
+    const exact = CLIENTES_BASE.find(c => c.toLowerCase() === nombre.toLowerCase());
+    if (exact) {
+      LLAVES_DATA[llave][mesKey][exact] = pct;
+      matched++;
+    } else {
+      // Fuzzy: check if any client name is contained in the pasted name
+      const fuzzy = CLIENTES_BASE.find(c =>
+        nombre.toLowerCase().includes(c.toLowerCase()) ||
+        c.toLowerCase().includes(nombre.toLowerCase())
+      );
+      if (fuzzy) { LLAVES_DATA[llave][mesKey][fuzzy] = pct; matched++; }
+      else { LLAVES_DATA[llave][mesKey][nombre] = pct; matched++; }
+    }
+  });
+
+  status.textContent = '? ' + matched + ' clientes cargados' + (errors?'  -  '+errors+' errores':'');
+  status.className   = 'paste-status ok';
+  renderLlaveTable();
+}
+
+function clearPaste() {
+  document.getElementById('paste-ta').value = '';
+  document.getElementById('paste-status').textContent = '';
+  // Clear current llave data
+  const llave  = currentLlave();
+  const mesKey = llaveMesKey();
+  if (LLAVES_DATA[llave]?.[mesKey]) LLAVES_DATA[llave][mesKey] = {};
+  renderLlaveTable();
+}
+
+// -- SAVE LLAVE (local for now, SP later) --
+function saveLlave() {
+  const llave  = currentLlave(); if(!llave) return;
+  const mesKey = llaveMesKey();
+  const data   = LLAVES_DATA[llave]?.[mesKey];
+  if (!data || !Object.keys(data).length) {
+    toast('No hay datos para guardar', ''); return;
+  }
+  // TODO: replace with PA_WRITE call when Power Automate is ready
+  toast('? Guardado localmente  -  ' + llave.replace('1225_','').replace(/_/g,' ') + '  -  ' + mesKey.replace('_',' / '), 'ok');
+}
+
+// -- MAPEO TABLE --
+let mapeoFilter = 'all';
+function initMapeo() {
+  const filtersEl = document.getElementById('mapeo-filters');
+  if (filtersEl && filtersEl.children.length === 0) {
+    const clasifs = ['all', ...new Set(Object.values(MAPEO_CUENTAS).map(v=>v.clasif).filter(Boolean))];
+    filtersEl.innerHTML = clasifs.map(c =>
+      `<button class="mapeo-filter-btn${c==='all'?' active':''}" onclick="setMapeoFilter('${c}',this)">
+        ${c==='all'?'Todas':c}
+      </button>`
+    ).join('');
+  }
+  renderMapeoTable();
+}
+
+function setMapeoFilter(f, btn) {
+  mapeoFilter = f;
+  document.querySelectorAll('.mapeo-filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderMapeoTable();
+}
+
+function renderMapeoTable() {
+  const entries = Object.entries(MAPEO_CUENTAS)
+    .filter(([,v]) => mapeoFilter==='all' || v.clasif===mapeoFilter)
+    .sort((a,b) => a[0].localeCompare(b[0]));
+
+  const thead = `<thead><tr>
+    <th style="text-align:left;min-width:110px;">Cuenta</th>
+    <th style="text-align:left;min-width:280px;">Descripcion</th>
+    <th style="text-align:left;min-width:100px;">Clasificacion</th>
+    <th style="text-align:left;min-width:80px;">Tipo</th>
+    <th style="text-align:left;min-width:260px;">Llave de Reparto</th>
+  </tr></thead>`;
+
+  const tbody = '<tbody>' + entries.map(([cuenta, v]) =>
+    `<tr>
+      <td style="font-family:var(--fh);font-weight:700;font-size:12px;color:var(--blue);">${cuenta}</td>
+      <td style="font-size:12px;">${v.desc}</td>
+      <td style="font-size:11px;color:var(--gray-m);">${v.clasif}</td>
+      <td style="font-size:11px;color:var(--gray-m);">${v.tipo}</td>
+      <td><span class="llave-tag">${v.llave.replace('1225_','').replace(/_/g,' ')}</span></td>
+    </tr>`
+  ).join('') + '</tbody>';
+
+  document.getElementById('mapeo-tbl').innerHTML = thead + tbody;
+}
+
+
+// DISTRIBUTION ENGINE
+// Load persisted llaves from localStorage
+(function() {
+  try {
+    const saved = localStorage.getItem('medistik_llaves_v1');
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      Object.assign(LLAVES_DATA, parsed);
+      console.log('Llaves cargadas desde localStorage:', Object.keys(parsed).length, 'llaves');
+    }
+  } catch(e) { console.warn('No se pudo cargar llaves:', e); }
+})();
+const PL_COLS = [
+  {key:'salarios',      label:'Salarios y Prest.'},
+  {key:'fletes',        label:'Fletes'},
+  {key:'mat_empaque',   label:'Mat. Empaque'},
+  {key:'cargo_farma',   label:'Cargo Farma'},
+  {key:'costo_insumos', label:'Costo Insumos'},
+  {key:'otros_cv',      label:'Otros CV'},
+  {key:'costos_fijos',  label:'Costos Fijos'},
+  {key:'gtos_grales',   label:'Gastos Grales'},
+];
+const MESES_NUM = {Enero:1,Febrero:2,Marzo:3,Abril:4,Mayo:5,Junio:6,
+  Julio:7,Agosto:8,Septiembre:9,Octubre:10,Noviembre:11,Diciembre:12};
+
+function getMesKey() {
+  const pl = window._pl; if(!pl) return '1_2026';
+  const n = MESES_NUM[pl.mes] || 1;
+  const y = pl.mesLabel ? pl.mesLabel.split(' ')[1] : '2026';
+  return n + '_' + y;
+}
+
+function calcDistribucion() {
+  const tb  = window._tbData;
+  const pl  = window._pl;
+  if (!tb || !pl) return null;
+  const mk  = getMesKey();
+  console.log('calcDistribucion: mk=', mk, 'LLAVES_DATA keys=', Object.keys(LLAVES_DATA));
+  console.log('TB accounts with value:', Object.keys(tb).filter(k=>tb[k]!==0).length);
+
+  const result = {};
+  function initClient(c) {
+    if (!result[c]) { result[c] = {}; PL_COLS.forEach(col => { result[c][col.key] = 0; }); }
+  }
+
+  Object.entries(MAPEO_CUENTAS).forEach(([cuenta, data]) => {
+    const monto = tb[cuenta] || 0; if (!monto) return;
+    const llave = data.llave, pl_line = data.pl_line;
+
+    if (llave === '__MODERNA__') {
+      initClient('Moderna');
+      result['Moderna']['costo_insumos'] += monto;
+      return;
+    }
+
+    const llaveData = LLAVES_DATA[llave]; if (!llaveData) return;
+    const clPcts = llaveData[mk] || llaveData[Object.keys(llaveData)[0]];
+    if (!clPcts) return;
+
+    Object.entries(clPcts).forEach(([cliente, pct]) => {
+      initClient(cliente);
+      result[cliente][pl_line] += monto * pct;
+    });
+  });
+
+  // Remove near-zero clients
+  Object.keys(result).forEach(c => {
+    if (PL_COLS.reduce((s,col) => s + Math.abs(result[c][col.key]||0), 0) < 1) delete result[c];
+  });
+  return result;
+}
+
+// P&L POR CLIENTE
+function initClientPLSelector() {
+  const titleEl = document.getElementById('cl-empty-title');
+  const subEl   = document.getElementById('cl-empty-sub');
+  // Check prerequisites
+  if (!window._tbData || !window._pl) {
+    if (titleEl) titleEl.textContent = 'Carga los archivos del mes primero';
+    if (subEl)   subEl.textContent   = 'Ve a la pestana P&L, sube el CV_014 y el archivo de Ingresos, luego regresa aqui.';
+    return;
+  }
+  // Debug: log what's in LLAVES_DATA
+  const llavesKeys = Object.keys(LLAVES_DATA);
+  console.log('LLAVES_DATA keys:', llavesKeys);
+  llavesKeys.forEach(l => {
+    const mesKeys = Object.keys(LLAVES_DATA[l]);
+    const nClients = mesKeys.reduce((s,mk) => s + Object.keys(LLAVES_DATA[l][mk]).length, 0);
+    console.log(' ', l, '-> mes keys:', mesKeys, '-> clients:', nClients);
+  });
+  const llavesCargadas = llavesKeys.filter(l => Object.keys(LLAVES_DATA[l]).length > 0).length;
+  if (llavesCargadas === 0) {
+    if (titleEl) titleEl.textContent = 'Carga las llaves de reparto primero';
+    if (subEl)   subEl.textContent   = 'Ve a la pestana "Llaves de Reparto", pega los % de cada llave y guarda.';
+    return;
+  }
+  const dist = calcDistribucion(); if (!dist) return;
+  const sel  = document.getElementById('cl-sel'); if(!sel) return;
+  const cur  = sel.value;
+  const clients = Object.keys(dist).sort((a,b) => {
+    const ta = PL_COLS.reduce((s,c)=>s+Math.abs(dist[a][c.key]||0),0);
+    const tb2= PL_COLS.reduce((s,c)=>s+Math.abs(dist[b][c.key]||0),0);
+    return tb2-ta;
+  });
+  sel.innerHTML = '<option value="">-- Selecciona un grupo cliente --</option>' +
+    clients.map(c => `<option value="${c}"${c===cur?' selected':''}>${c}</option>`).join('');
+  // Hide empty state if we have clients
+  const emptyEl = document.getElementById('cl-empty-state');
+  if (emptyEl) emptyEl.style.display = clients.length ? 'none' : 'block';
+}
+
+function renderClientPL() {
+  const sel   = document.getElementById('cl-sel');
+  const cl    = sel?.value; if (!cl) return;
+  const dist  = calcDistribucion(); if (!dist) return;
+  const ing   = window._pl?.ing?.[cl] || null;
+  const cd    = dist[cl] || {};
+  const b     = window._pl?.ing_total || 1;
+
+  // Build P&L for this client
+  const ingTotal  = ing ? Object.values(ing).reduce((s,v)=>typeof v==='number'?s+v:s,0) - (ing.total||0) : 0;
+  // ing object has {Almacen:{total,tipos...}, Transporte:{total,tipos...}, ing_total}
+  const ingCl = window._pl?.ing ? (() => {
+    let t = 0;
+    ['Almacen','Transporte'].forEach(div => {
+      const d = window._pl.ing[div];
+      if (d) {
+        // Check if client name appears - for now sum all ingresos for the client from raw
+        // We need per-client ingresos - from ingRealData
+        const ri = window._ingReal;
+        if (ri && ri[window._pl.mes]) {
+          const md = ri[window._pl.mes];
+          // Sum ingresos for this client across all tipos and divs
+          // We need to re-parse at client level
+        }
+      }
+    });
+    return t;
+  })() : 0;
+
+  // Get ingresos for this specific client
+  const clIng = window._ingByCliente?.[window._pl?.mes]?.[cl] || 0;
+
+  const cv  = PL_COLS.filter(c=>['salarios','fletes','mat_empaque','cargo_farma','costo_insumos','otros_cv'].includes(c.key))
+                     .reduce((s,c)=>s+(cd[c.key]||0),0);
+  const cm  = clIng - cv;
+  const cf  = cd['costos_fijos']||0;
+  const tc  = cv + cf;
+  const gg  = cd['gtos_grales']||0;
+  const ul  = clIng - tc - gg;
+
+  const row = (cls,lbl,val,isNeg,ind) => {
+    const isEB=cls==='r-eb',isCM=cls==='r-cm'||cls==='r-ul';
+    const rc = isEB?'vw':isCM?'vl':(!val&&val!==0)?'vz':isNeg?(val>0?'vn':'vp'):(val>0?'vp':'vn');
+    const ist = ind?` style="padding-left:${ind}px;"`:' ';
+    return `<tr class="${cls}"><td${ist}>${lbl}</td>
+      <td class="${rc}">${val!==0?fmt(val):'<span class="vz">-</span>'}</td>
+      <td class="${isEB?'vll':'vz'}">${val!==0?pS(val,clIng||1):''}</td>
+    </tr>`;
+  };
+  const sec = l => `<tr class="r-sec"><td>${l}</td><td></td><td></td></tr>`;
+
+  let t = '';
+  t += sec('INGRESOS');
+  // Show ingresos breakdown for this client
+  if (window._ingByCliente?.[window._pl?.mes]) {
+    const ci = window._ingByClienteDiv?.[window._pl?.mes]?.[cl] || {};
+    ['Almacen','Transporte'].forEach(div => {
+      const vDiv = ci[div]?.total || 0;
+      if (vDiv) t += row('r-child', div==='Almacen'?'Almacenaje':'Transporte', vDiv, false, 24);
+    });
+  }
+  t += row('r-sub','Ingresos de operacion', clIng, false);
+  t += sec('COSTOS VARIABLES');
+  PL_COLS.filter(c=>['salarios','fletes','mat_empaque','cargo_farma','costo_insumos','otros_cv'].includes(c.key))
+    .forEach(c => { if(cd[c.key]) t += row('r-child', c.label, cd[c.key], true, 24); });
+  t += row('r-sub','Costos variables', cv, true);
+  t += row('r-cm','Contribucion Marginal', cm, false);
+  t += sec('COSTOS FIJOS');
+  t += row('r-child','Costos fijos', cf, true, 24);
+  t += row('r-sub','Total de costos', tc, true);
+  t += sec('GASTOS GENERALES');
+  t += row('r-child','Gastos generales', gg, true, 24);
+  t += row('r-ul','Utilidad en viajes / logistica', ul, false);
+
+  const thead = `<thead><tr><th style="min-width:220px;text-align:left;">Concepto</th>
+    <th>${cl}</th><th>% s/Vtas</th></tr></thead>`;
+  const tblHtml = `<div class="tbl-wrap"><table class="pl-tbl">${thead}<tbody>${t}</tbody></table></div>`;
+
+  // KPIs
+  const kpis = [
+    {l:'Ingresos',    v:fmt(clIng),               c:'lime'},
+    {l:'CM',          v:fmt(cm)+(clIng?' ('+(cm/clIng*100).toFixed(1)+'%)':''), c:cm>=0?'pos':'neg'},
+    {l:'Util. Log.',  v:fmt(ul),                  c:ul>=0?'pos':'neg'},
+  ].map(k=>`<div class="pl-kpi"><div class="pl-kpi-lbl">${k.l}</div><div class="pl-kpi-val ${k.c}">${k.v}</div></div>`).join('');
+
+  document.getElementById('cl-pl-content').innerHTML =
+    `<div class="pl-header" style="margin-bottom:16px;">
+      <div class="pl-header-title">${cl}</div>
+      <div class="pl-header-sub">${window._pl?.mesLabel} - P&L distribuido</div>
+      <div class="pl-kpis" style="margin-top:12px;">${kpis}</div>
+    </div>${tblHtml}`;
+}
+
+// MATRICES
+function renderMatrices() {
+  if (!window._tbData || !window._pl) {
+    const msg = '<tr><td colspan="20" style="padding:60px;text-align:center;color:var(--gray-m);font-family:var(--fh);font-weight:700;">Carga el CV_014 y los archivos de ingresos primero en la pestana P&L</td></tr>';
+    const tm = document.getElementById('mtbl-montos');
+    const tp = document.getElementById('mtbl-pcts');
+    if(tm) tm.innerHTML=msg; if(tp) tp.innerHTML=msg;
+    return;
+  }
+  const llavesCargadas = Object.keys(LLAVES_DATA).filter(l => Object.keys(LLAVES_DATA[l]).length > 0).length;
+  if (llavesCargadas === 0) {
+    const msg = '<tr><td colspan="20" style="padding:60px;text-align:center;color:var(--gray-m);font-family:var(--fh);font-weight:700;">Carga las llaves de reparto primero en la pestana "Llaves de Reparto"</td></tr>';
+    const tm = document.getElementById('mtbl-montos');
+    const tp = document.getElementById('mtbl-pcts');
+    if(tm) tm.innerHTML=msg; if(tp) tp.innerHTML=msg;
+    return;
+  }
+  const dist = calcDistribucion(); if (!dist) return;
+  const clients = Object.keys(dist).sort((a,b)=>{
+    const ta=PL_COLS.reduce((s,c)=>s+Math.abs(dist[a][c.key]||0),0);
+    const tb2=PL_COLS.reduce((s,c)=>s+Math.abs(dist[b][c.key]||0),0);
+    return tb2-ta;
+  });
+
+  // Col totals
+  const colTotals = {};
+  PL_COLS.forEach(col => {
+    colTotals[col.key] = clients.reduce((s,c)=>s+(dist[c][col.key]||0),0);
+  });
+  const grandTotal = PL_COLS.reduce((s,col)=>s+colTotals[col.key],0);
+
+  const colHdrs = PL_COLS.map(col=>`<th>${col.label}</th>`).join('') + '<th class="total-col">TOTAL</th>';
+  const thead = `<thead><tr><th style="min-width:150px;text-align:left;">Cliente</th>${colHdrs}</tr></thead>`;
+
+  // MONTOS TABLE
+  const mRows = clients.map(cl => {
+    const rowTotal = PL_COLS.reduce((s,col)=>s+(dist[cl][col.key]||0),0);
+    const cells = PL_COLS.map(col => {
+      const v = dist[cl][col.key]||0;
+      const cls = v>0?'vp':v<0?'vn':'vz';
+      return `<td class="${cls}">${v?fmt(v):'<span class="vz">-</span>'}</td>`;
+    }).join('');
+    const totalCls = rowTotal>0?'vl':rowTotal<0?'vn':'vz';
+    return `<tr><td>${cl}</td>${cells}<td class="total-col ${totalCls}">${fmt(rowTotal)}</td></tr>`;
+  }).join('');
+
+  const totRow = '<tr class="total-row"><td>TOTAL</td>' +
+    PL_COLS.map(col=>`<td class="vl">${fmt(colTotals[col.key])}</td>`).join('') +
+    `<td class="total-col vl">${fmt(grandTotal)}</td></tr>`;
+
+  document.getElementById('mtbl-montos').innerHTML = thead + '<tbody>' + mRows + totRow + '</tbody>';
+  document.getElementById('mmontos-meta').textContent = clients.length + ' clientes - ' + window._pl?.mesLabel;
+
+  // % TABLE
+  const maxPct = {}; PL_COLS.forEach(col => { maxPct[col.key] = 0; });
+  clients.forEach(cl => {
+    PL_COLS.forEach(col => {
+      const ct = colTotals[col.key];
+      const p = ct ? Math.abs((dist[cl][col.key]||0)/ct*100) : 0;
+      if (p > maxPct[col.key]) maxPct[col.key] = p;
+    });
+  });
+
+  const pRows = clients.map(cl => {
+    const rowTotal = PL_COLS.reduce((s,col)=>s+(dist[cl][col.key]||0),0);
+    const rowPct   = grandTotal ? rowTotal/grandTotal*100 : 0;
+    const cells = PL_COLS.map(col => {
+      const ct = colTotals[col.key]; if (!ct) return '<td class="vz">-</td>';
+      const v  = dist[cl][col.key]||0;
+      const p  = v/ct*100;
+      const barW = maxPct[col.key] ? Math.abs(p)/maxPct[col.key]*100 : 0;
+      return `<td><div class="pct-bar">
+        <span style="min-width:52px;text-align:right;font-size:11px;font-weight:600;color:var(--lime-deep);">${p.toFixed(2)}%</span>
+        <div class="pct-bar-inner"><div class="pct-bar-fill" style="width:${barW}%"></div></div>
+      </div></td>`;
+    }).join('');
+    return `<tr><td>${cl}</td>${cells}<td class="total-col" style="font-weight:700;color:var(--lime-deep);">${rowPct.toFixed(2)}%</td></tr>`;
+  }).join('');
+
+  const pTotRow = '<tr class="total-row"><td>TOTAL</td>' +
+    PL_COLS.map(()=>'<td style="color:var(--lime-deep);font-weight:700;">100.00%</td>').join('') +
+    '<td class="total-col" style="font-weight:700;color:var(--lime-deep);">100.00%</td></tr>';
+
+  document.getElementById('mtbl-pcts').innerHTML = thead + '<tbody>' + pRows + pTotRow + '</tbody>';
+  document.getElementById('mpcts-meta').textContent = clients.length + ' clientes - ' + window._pl?.mesLabel;
+}
+
+
+function toast(msg,type){const el=document.getElementById('toast');el.innerHTML=msg;el.className='toast '+(type||'');el.classList.add('show');setTimeout(()=>el.classList.remove('show'),2800);}
+</script>
+</body>
+</html>
