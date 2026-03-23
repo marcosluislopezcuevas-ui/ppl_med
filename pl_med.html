@@ -667,6 +667,9 @@ function parseCostos(rows){
   const cv=n('NA_ERO_5.AA.00.00.00'),sal=n('NA_ERO_5.AA.AB.00.00');
   const flet=(c('5108030101')||0)+(c('5108030107')||0);
   const mat=c('5107011400')||0,farma=byLabel['519999999M']||0,insum=c('5107022001')||0;
+  // Store TB data globally for distribution engine
+  byCuenta['519999999M'] = farma;
+  window._tbData = byCuenta;
   return{mesLabel,periodo,salarios:sal,fletes:flet,mat_empaque:mat,cargo_farma:farma,
     costo_insumos:insum,otros_cv:cv-sal-flet-mat-farma-insum,cv_total:cv,
     costos_fijos:n('NA_ERO_5.AB.00.00.00'),total_costos:n('NA_ERO_5.00.00.00.00'),
