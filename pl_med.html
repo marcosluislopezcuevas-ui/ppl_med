@@ -457,7 +457,11 @@ body{background:var(--white);color:var(--gray);font-family:var(--fb);font-size:1
     <div class="cl-empty" id="cl-empty-state">
       <div class="cl-empty-icon">&#128101;</div>
       <div class="cl-empty-txt" id="cl-empty-title">Carga los archivos primero</div>
-      <div style="font-size:13px;color:var(--gray-m);margin-top:6px;" id="cl-empty-sub">Ve a la pestana P&amp;L, sube el CV_014 y el archivo de Ingresos, luego regresa aqui.</div>
+      <div style="font-size:13px;color:var(--gray-m);margin-top:6px;" id="cl-empty-sub">Ve a la pestana P&L, sube el CV_014 y el archivo de Ingresos, luego regresa aqui.</div>
+      <div style="margin-top:20px;">
+        <button onclick="showDiag()" style="font-family:var(--fh);font-weight:700;font-size:11px;padding:5px 12px;border-radius:6px;cursor:pointer;border:1.5px solid var(--border-m);background:var(--surface2);color:var(--gray-m);">&#128269; Diagnostico</button>
+      </div>
+      <div id="diag-panel" style="display:none;margin-top:12px;text-align:left;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px;max-width:500px;font-size:12px;line-height:1.8;"></div>
     </div>
   </div>
 </div>
@@ -1183,11 +1187,7 @@ function calcDistribucion() {
   const pl  = window._pl;
   if (!tb || !pl) { console.warn('calcDist: no tb or pl', !!tb, !!pl); return null; }
   const mk  = getMesKey();
-  const llavesConData = Object.keys(LLAVES_DATA).filter(l => {
-    return Object.keys(LLAVES_DATA[l]).some(mk2 => Object.keys(LLAVES_DATA[l][mk2]).length > 0);
-  });
-  console.log('calcDist: mk='+mk, 'llaves con data='+llavesConData.length, llavesConData);
-  if (llavesConData.length === 0) { console.warn('calcDist: LLAVES_DATA vacio'); return null; }
+
 
 
   const result = {};
@@ -1205,10 +1205,9 @@ function calcDistribucion() {
       return;
     }
 
-    const llaveData = LLAVES_DATA[llave];
-    if (!llaveData) { return; }
+    const llaveData = LLAVES_DATA[llave]; if (!llaveData) return;
     const clPcts = llaveData[mk] || llaveData[Object.keys(llaveData)[0]];
-    if (!clPcts) { console.warn('No clPcts for llave='+llave+' mk='+mk+' available='+JSON.stringify(Object.keys(llaveData))); return; }
+    if (!clPcts) return;
 
     Object.entries(clPcts).forEach(([cliente, pct]) => {
       initClient(cliente);
@@ -1220,7 +1219,6 @@ function calcDistribucion() {
   Object.keys(result).forEach(c => {
     if (PL_COLS.reduce((s,col) => s + Math.abs(result[c][col.key]||0), 0) < 1) delete result[c];
   });
-  console.log('calcDist result: '+Object.keys(result).length+' clients', Object.keys(result).slice(0,5));
   return result;
 }
 
@@ -1435,6 +1433,42 @@ function renderMatrices() {
   document.getElementById('mpcts-meta').textContent = clients.length + ' clientes - ' + window._pl?.mesLabel;
 }
 
+
+function showDiag() {
+  const el = document.getElementById('diag-panel');
+  if (!el) return;
+  el.style.display = 'block';
+
+  const hasTB  = !!window._tbData;
+  const hasPL  = !!window._pl;
+  const tbKeys = hasTB ? Object.keys(window._tbData).filter(k => window._tbData[k] !== 0).length : 0;
+  const llavesKeys = Object.keys(LLAVES_DATA);
+  const llavesCon  = llavesKeys.filter(l => Object.keys(LLAVES_DATA[l]).length > 0);
+  const mk = getMesKey();
+
+  let html = '';
+  html += `<b>TB cargado:</b> ${hasTB ? '&#10003; SI (' + tbKeys + ' cuentas con monto)' : '&#10007; NO'}<br>`;
+  html += `<b>PL cargado:</b> ${hasPL ? '&#10003; SI (' + (window._pl?.mesLabel||'?') + ')' : '&#10007; NO'}<br>`;
+  html += `<b>Mes key buscado:</b> ${mk}<br>`;
+  html += `<b>Llaves en LLAVES_DATA:</b> ${llavesKeys.length} total, ${llavesCon.length} con datos<br>`;
+  if (llavesCon.length > 0) {
+    llavesCon.forEach(l => {
+      const mesKeys = Object.keys(LLAVES_DATA[l]);
+      const nCl = mesKeys.reduce((s,mk2)=>s+Object.keys(LLAVES_DATA[l][mk2]).length,0);
+      html += `&nbsp;&nbsp;&#8226; ${l.replace('1225_','')}: mes keys=[${mesKeys.join(',')}] (${nCl} clientes)<br>`;
+    });
+  }
+  // Check if mk matches any stored key
+  const mkMatch = llavesCon.some(l => LLAVES_DATA[l][mk]);
+  const mkAny   = llavesCon.some(l => Object.keys(LLAVES_DATA[l]).length > 0);
+  html += `<b>Mes key coincide:</b> ${mkMatch ? '&#10003; SI' : '&#10007; NO - usando primer mes disponible'}<br>`;
+
+  // Try calc
+  const dist = calcDistribucion();
+  html += `<b>Resultado distribucion:</b> ${dist ? Object.keys(dist).length + ' clientes' : 'null - sin datos'}<br>`;
+
+  el.innerHTML = html;
+}
 
 function toast(msg,type){const el=document.getElementById('toast');el.innerHTML=msg;el.className='toast '+(type||'');el.classList.add('show');setTimeout(()=>el.classList.remove('show'),2800);}
 </script>
