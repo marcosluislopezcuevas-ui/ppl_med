@@ -1078,8 +1078,21 @@ function parsePaste() {
     }
   });
 
-  status.textContent = '? ' + matched + ' clientes cargados' + (errors?'  -  '+errors+' errores':'');
-  status.className   = 'paste-status ok';
+  // Find which names were not recognized
+  const notFound = [];
+  Object.keys(parsed).forEach(nombre => {
+    const exact = CLIENTES_BASE.find(c => c.toLowerCase() === nombre.toLowerCase());
+    const fuzzy = !exact && CLIENTES_BASE.find(c =>
+      nombre.toLowerCase().includes(c.toLowerCase()) ||
+      c.toLowerCase().includes(nombre.toLowerCase())
+    );
+    if (!exact && !fuzzy) notFound.push(nombre);
+  });
+  let statusTxt = matched + ' clientes cargados';
+  if (errors) statusTxt += ' - ' + errors + ' errores de parseo';
+  if (notFound.length) statusTxt += ' - Sin match: [' + notFound.join(', ') + ']';
+  status.textContent = statusTxt;
+  status.className = (notFound.length || errors) ? 'paste-status err' : 'paste-status ok';
   renderLlaveTable();
 }
 
