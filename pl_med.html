@@ -261,6 +261,40 @@ body{background:var(--white);color:var(--gray);font-family:var(--fb);font-size:1
 .pct-bar-inner{flex:1;height:4px;background:var(--border);border-radius:2px;overflow:hidden;min-width:30px;}
 .pct-bar-fill{height:100%;border-radius:2px;background:var(--lime-dark);}
 
+.mtbl th.sortable{cursor:pointer;user-select:none;}
+.mtbl th.sortable:hover{background:var(--lime-bg);color:var(--lime-deep);}
+.mtbl th .sort-icon{margin-left:4px;opacity:0.4;font-size:9px;}
+.mtbl th.sort-asc .sort-icon::after{content:'▲';opacity:1;}
+.mtbl th.sort-desc .sort-icon::after{content:'▼';opacity:1;}
+.mtbl th .sort-icon::after{content:'⬍';}
+.mx-cell{display:flex;flex-direction:column;align-items:flex-end;gap:1px;padding:4px 8px;}
+.mx-monto{font-family:var(--fb);font-weight:600;font-size:12px;}
+.mx-pct{font-family:var(--fh);font-weight:700;font-size:10px;color:var(--gray-m);}
+.mx-bar{width:100%;height:3px;background:var(--border);border-radius:2px;margin-top:2px;}
+.mx-bar-fill{height:100%;border-radius:2px;background:var(--lime-dark);}
+.mx-chip{font-family:var(--fh);font-weight:700;font-size:11px;padding:3px 8px;border-radius:4px;
+  cursor:pointer;border:1.5px solid var(--border-m);background:var(--white);color:var(--gray-m);
+  transition:all .12s;user-select:none;}
+.mx-chip.sel{background:var(--lime);border-color:var(--lime-dark);color:var(--gray);}
+
+/* MAPEO PAGE */
+/* MAPEO PAGE */
+.mtbl th.sortable{cursor:pointer;user-select:none;}
+.mtbl th.sortable:hover{background:var(--lime-bg);color:var(--lime-deep);}
+.mtbl th .sort-icon{margin-left:4px;opacity:0.4;font-size:9px;}
+.mtbl th.sort-asc .sort-icon::after{content:'▲';opacity:1;}
+.mtbl th.sort-desc .sort-icon::after{content:'▼';opacity:1;}
+.mtbl th .sort-icon::after{content:'⬍';}
+.mx-cell{display:flex;flex-direction:column;align-items:flex-end;gap:1px;padding:4px 8px;}
+.mx-monto{font-family:var(--fb);font-weight:600;font-size:12px;}
+.mx-pct{font-family:var(--fh);font-weight:700;font-size:10px;color:var(--gray-m);}
+.mx-bar{width:100%;height:3px;background:var(--border);border-radius:2px;margin-top:2px;}
+.mx-bar-fill{height:100%;border-radius:2px;background:var(--lime-dark);}
+.mx-chip{font-family:var(--fh);font-weight:700;font-size:11px;padding:3px 8px;border-radius:4px;
+  cursor:pointer;border:1.5px solid var(--border-m);background:var(--white);color:var(--gray-m);
+  transition:all .12s;user-select:none;}
+.mx-chip.sel{background:var(--lime);border-color:var(--lime-dark);color:var(--gray);}
+
 /* MAPEO PAGE */
 /* MAPEO PAGE */
 .mapeo-page{padding:24px 28px 60px;}
@@ -292,8 +326,7 @@ body{background:var(--white);color:var(--gray);font-family:var(--fb);font-size:1
     <button class="nav-tab active" id="tab-pl"      onclick="showTab('pl')">P&amp;L</button>
     <button class="nav-tab"        id="tab-llaves"  onclick="showTab('llaves')">Llaves de Reparto</button>
     <button class="nav-tab"        id="tab-clpnl"   onclick="showTab('clpnl')">P&amp;L por Cliente</button>
-    <button class="nav-tab"        id="tab-mmontos" onclick="showTab('mmontos')">Matriz Montos</button>
-    <button class="nav-tab"        id="tab-mpcts"   onclick="showTab('mpcts')">Matriz %</button>
+    <button class="nav-tab"        id="tab-mmontos" onclick="showTab('mmontos')">Matriz</button>
     <button class="nav-tab"        id="tab-mapeo"   onclick="showTab('mapeo')">Mapeo de Cuentas</button>
   </div>
   <div class="nav-spacer"></div>
@@ -467,39 +500,51 @@ body{background:var(--white);color:var(--gray);font-family:var(--fb);font-size:1
 </div>
 </div>
 
-<!-- MATRIZ MONTOS -->
+<!-- MATRIZ UNIFICADA -->
 <div class="page" id="page-mmontos">
 <div class="dist-page">
-  <div class="dist-title">Matriz de Costos por Cliente</div>
-  <div class="dist-sub">Distribucion de costos en pesos por grupo cliente y rubro.</div>
-  <div class="matrix-wrap">
-    <div class="matrix-hdr">
-      <span class="matrix-title">Montos distribuidos (MXN)</span>
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px;">
+    <div>
+      <div class="dist-title" style="margin-bottom:2px;">Matriz de Distribucion de Costos</div>
+      <div class="dist-sub" style="margin:0;">Monto y % del total por cliente y rubro</div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+      <select class="dist-sel" id="mx-mes-sel" onchange="renderMatrices()" style="min-width:120px;">
+        <option value="1_2026">Enero 2026</option>
+        <option value="2_2026">Febrero 2026</option>
+        <option value="3_2026">Marzo 2026</option>
+        <option value="4_2026">Abril 2026</option>
+        <option value="5_2026">Mayo 2026</option>
+        <option value="6_2026">Junio 2026</option>
+        <option value="7_2026">Julio 2026</option>
+        <option value="8_2026">Agosto 2026</option>
+        <option value="9_2026">Septiembre 2026</option>
+        <option value="10_2026">Octubre 2026</option>
+        <option value="11_2026">Noviembre 2026</option>
+        <option value="12_2026">Diciembre 2026</option>
+      </select>
       <span style="font-size:11px;color:var(--gray-m);" id="mmontos-meta"></span>
     </div>
-    <div style="overflow-x:auto;max-height:calc(100vh - 260px);overflow-y:auto;">
+  </div>
+  <!-- Cliente filter chips -->
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:10px 14px;margin-bottom:12px;">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+      <span style="font-family:var(--fh);font-weight:700;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--gray-m);">Clientes</span>
+      <button onclick="mxSelectAll()" style="font-family:var(--fh);font-weight:700;font-size:11px;padding:2px 8px;border-radius:4px;cursor:pointer;border:1.5px solid var(--border-m);background:var(--white);color:var(--gray-m);">Todos</button>
+      <button onclick="mxSelectNone()" style="font-family:var(--fh);font-weight:700;font-size:11px;padding:2px 8px;border-radius:4px;cursor:pointer;border:1.5px solid var(--border-m);background:var(--white);color:var(--gray-m);">Ninguno</button>
+    </div>
+    <div id="mx-client-chips" style="display:flex;flex-wrap:wrap;gap:4px;max-height:80px;overflow-y:auto;"></div>
+  </div>
+  <div class="matrix-wrap">
+    <div style="overflow-x:auto;max-height:calc(100vh - 380px);overflow-y:auto;">
       <table class="mtbl" id="mtbl-montos"></table>
     </div>
   </div>
 </div>
 </div>
 
-<!-- MATRIZ % -->
-<div class="page" id="page-mpcts">
-<div class="dist-page">
-  <div class="dist-title">Matriz de % de Distribucion</div>
-  <div class="dist-sub">Que porcentaje del costo total de cada rubro absorbe cada cliente.</div>
-  <div class="matrix-wrap">
-    <div class="matrix-hdr">
-      <span class="matrix-title">% del total de cada rubro</span>
-      <span style="font-size:11px;color:var(--gray-m);" id="mpcts-meta"></span>
-    </div>
-    <div style="overflow-x:auto;max-height:calc(100vh - 260px);overflow-y:auto;">
-      <table class="mtbl" id="mtbl-pcts"></table>
-    </div>
-  </div>
-</div>
-</div>
+<!-- MATRIZ % redirect -->
+<div class="page" id="page-mpcts"></div>
 
 <div class="toast" id="toast"></div>
 
@@ -708,7 +753,7 @@ function renderPL(d){
   document.getElementById('page-pl').style.display='block';
   document.getElementById('nav-tabs').style.display='flex';
   // Make sure pl tab is active
-  ['pl','llaves','clpnl','mmontos','mpcts','mapeo'].forEach(t=>document.getElementById('tab-'+t)?.classList.toggle('active',t==='pl'));
+  ['pl','llaves','clpnl','mmontos','mapeo'].forEach(t=>document.getElementById('tab-'+t)?.classList.toggle('active',t==='pl'));
   const np=document.getElementById('periodo-badge'); np.style.display=''; np.textContent=d.mesLabel;
   document.getElementById('fmt-wrap').style.display='flex';
   renderPeriodChips();
@@ -867,7 +912,7 @@ function currentLlave() {
 
 // -- TAB SWITCHING --
 function showTab(tab) {
-  ['pl','llaves','clpnl','mmontos','mpcts','mapeo'].forEach(t => {
+  ['pl','llaves','clpnl','mmontos','mapeo'].forEach(t => {
     const pg = document.getElementById('page-' + t);
     if (pg) pg.style.display = t===tab ? 'block' : 'none';
     document.getElementById('tab-'+t)?.classList.toggle('active', t===tab);
@@ -875,8 +920,7 @@ function showTab(tab) {
   if (tab==='llaves')  initLlaves();
   if (tab==='mapeo')   initMapeo();
   if (tab==='clpnl')   { initClientPLSelector(); renderClientPL(); }
-  if (tab==='mmontos') renderMatrices();
-  if (tab==='mpcts')   renderMatrices();
+  if (tab==='mmontos') { initMatrixFilters(); renderMatrices(); }
 }
 
 // -- INIT LLAVES --
@@ -1434,91 +1478,132 @@ function renderClientPL() {
     </div>${tblHtml}`;
 }
 
-// MATRICES
+// MATRICES - unified
+let mxSelectedClients = new Set();
+let mxSortCol = 'total';
+let mxSortDir = 'desc';
+
+function initMatrixFilters() {
+  const dist = calcDistribucion();
+  const allClients = dist ? Object.keys(dist).sort() : CLIENTES_BASE.slice().sort();
+  if (mxSelectedClients.size === 0) allClients.forEach(c => mxSelectedClients.add(c));
+  const el = document.getElementById('mx-client-chips');
+  if (el) el.innerHTML = allClients.map(c =>
+    `<span class="mx-chip${mxSelectedClients.has(c)?' sel':''}" onclick="mxToggleClient('${c.replace(/'/g,"&#39;")}')">${c}</span>`
+  ).join('');
+  const mesSel = document.getElementById('mx-mes-sel');
+  if (mesSel && window._pl) {
+    const MN = {Enero:1,Febrero:2,Marzo:3,Abril:4,Mayo:5,Junio:6,Julio:7,Agosto:8,Septiembre:9,Octubre:10,Noviembre:11,Diciembre:12};
+    mesSel.value = (MN[window._pl.mes]||1) + '_2026';
+  }
+}
+
+function mxToggleClient(c) {
+  if (mxSelectedClients.has(c)) { if (mxSelectedClients.size > 1) mxSelectedClients.delete(c); }
+  else mxSelectedClients.add(c);
+  document.querySelectorAll('.mx-chip').forEach(el => el.classList.toggle('sel', mxSelectedClients.has(el.textContent.trim())));
+  renderMatrices();
+}
+function mxSelectAll()  {
+  document.querySelectorAll('.mx-chip').forEach(el => { mxSelectedClients.add(el.textContent.trim()); el.classList.add('sel'); });
+  renderMatrices();
+}
+function mxSelectNone() {
+  const first = [...mxSelectedClients][0];
+  mxSelectedClients.clear();
+  if (first) mxSelectedClients.add(first);
+  document.querySelectorAll('.mx-chip').forEach(el => el.classList.toggle('sel', mxSelectedClients.has(el.textContent.trim())));
+  renderMatrices();
+}
+function mxSort(col) {
+  if (mxSortCol === col) mxSortDir = mxSortDir === 'desc' ? 'asc' : 'desc';
+  else { mxSortCol = col; mxSortDir = 'desc'; }
+  renderMatrices();
+}
+
 function renderMatrices() {
-  if (!window._tbData || !window._pl) {
-    const msg = '<tr><td colspan="20" style="padding:60px;text-align:center;color:var(--gray-m);font-family:var(--fh);font-weight:700;">Carga el CV_014 y los archivos de ingresos primero en la pestana P&L</td></tr>';
-    const tm = document.getElementById('mtbl-montos');
-    const tp = document.getElementById('mtbl-pcts');
-    if(tm) tm.innerHTML=msg; if(tp) tp.innerHTML=msg;
-    return;
-  }
-  const llavesCargadas = Object.keys(LLAVES_DATA).filter(l => Object.keys(LLAVES_DATA[l]).length > 0).length;
-  if (llavesCargadas === 0) {
-    const msg = '<tr><td colspan="20" style="padding:60px;text-align:center;color:var(--gray-m);font-family:var(--fh);font-weight:700;">Carga las llaves de reparto primero en la pestana "Llaves de Reparto"</td></tr>';
-    const tm = document.getElementById('mtbl-montos');
-    const tp = document.getElementById('mtbl-pcts');
-    if(tm) tm.innerHTML=msg; if(tp) tp.innerHTML=msg;
-    return;
-  }
-  const dist = calcDistribucion(); if (!dist) return;
-  const clients = Object.keys(dist).sort((a,b)=>{
-    const ta=PL_COLS.reduce((s,c)=>s+Math.abs(dist[a][c.key]||0),0);
-    const tb2=PL_COLS.reduce((s,c)=>s+Math.abs(dist[b][c.key]||0),0);
-    return tb2-ta;
-  });
+  const el = document.getElementById('mtbl-montos'); if (!el) return;
+  const noData = msg => { el.innerHTML = '<tr><td colspan="20" style="padding:60px;text-align:center;color:var(--gray-m);font-family:var(--fh);font-weight:700;">' + msg + '</td></tr>'; };
+  if (!window._tbData || !window._pl) { noData('Carga el CV_014 y los archivos de ingresos primero en la pestana P&L'); return; }
+  if (!Object.keys(LLAVES_DATA).some(l => Object.keys(LLAVES_DATA[l]).length > 0)) { noData('Carga las llaves de reparto primero'); return; }
 
-  // Col totals
+  const dist = calcDistribucion(); if (!dist) { noData('Sin datos de distribucion'); return; }
+
+  const clients = Object.keys(dist).filter(c => mxSelectedClients.size === 0 || mxSelectedClients.has(c));
   const colTotals = {};
-  PL_COLS.forEach(col => {
-    colTotals[col.key] = clients.reduce((s,c)=>s+(dist[c][col.key]||0),0);
-  });
-  const grandTotal = PL_COLS.reduce((s,col)=>s+colTotals[col.key],0);
-
-  const colHdrs = PL_COLS.map(col=>`<th>${col.label}</th>`).join('') + '<th class="total-col">TOTAL</th>';
-  const thead = `<thead><tr><th style="min-width:150px;text-align:left;">Cliente</th>${colHdrs}</tr></thead>`;
-
-  // MONTOS TABLE
-  const mRows = clients.map(cl => {
-    const rowTotal = PL_COLS.reduce((s,col)=>s+(dist[cl][col.key]||0),0);
-    const cells = PL_COLS.map(col => {
-      const v = dist[cl][col.key]||0;
-      const cls = v>0?'vp':v<0?'vn':'vz';
-      return `<td class="${cls}">${v?fmt(v):'<span class="vz">-</span>'}</td>`;
-    }).join('');
-    const totalCls = rowTotal>0?'vl':rowTotal<0?'vn':'vz';
-    return `<tr><td>${cl}</td>${cells}<td class="total-col ${totalCls}">${fmt(rowTotal)}</td></tr>`;
-  }).join('');
-
-  const totRow = '<tr class="total-row"><td>TOTAL</td>' +
-    PL_COLS.map(col=>`<td class="vl">${fmt(colTotals[col.key])}</td>`).join('') +
-    `<td class="total-col vl">${fmt(grandTotal)}</td></tr>`;
-
-  document.getElementById('mtbl-montos').innerHTML = thead + '<tbody>' + mRows + totRow + '</tbody>';
-  document.getElementById('mmontos-meta').textContent = clients.length + ' clientes - ' + window._pl?.mesLabel;
-
-  // % TABLE
-  const maxPct = {}; PL_COLS.forEach(col => { maxPct[col.key] = 0; });
+  PL_COLS.forEach(col => { colTotals[col.key] = clients.reduce((s,c) => s + (dist[c][col.key]||0), 0); });
+  const grandTotal = PL_COLS.reduce((s,col) => s + colTotals[col.key], 0);
+  const maxPct = {};
+  PL_COLS.forEach(col => { maxPct[col.key] = 0; });
   clients.forEach(cl => {
     PL_COLS.forEach(col => {
-      const ct = colTotals[col.key];
-      const p = ct ? Math.abs((dist[cl][col.key]||0)/ct*100) : 0;
+      const p = colTotals[col.key] ? Math.abs((dist[cl][col.key]||0)/colTotals[col.key]*100) : 0;
       if (p > maxPct[col.key]) maxPct[col.key] = p;
     });
   });
 
-  const pRows = clients.map(cl => {
+  const sorted = [...clients].sort((a,b) => {
+    let va, vb;
+    if (mxSortCol === 'cliente') return mxSortDir === 'asc' ? a.localeCompare(b) : b.localeCompare(a);
+    va = mxSortCol === 'total' ? PL_COLS.reduce((s,c)=>s+(dist[a][c.key]||0),0) : (dist[a][mxSortCol]||0);
+    vb = mxSortCol === 'total' ? PL_COLS.reduce((s,c)=>s+(dist[b][c.key]||0),0) : (dist[b][mxSortCol]||0);
+    return mxSortDir === 'asc' ? va - vb : vb - va;
+  });
+
+  const thCls = col => 'sortable' + (mxSortCol===col?' sort-'+mxSortDir:'');
+  const thead = `<thead><tr>
+    <th class="${thCls('cliente')}" onclick="mxSort('cliente')" style="min-width:160px;text-align:left;position:sticky;left:0;z-index:2;">Cliente <span class="sort-icon"></span></th>
+    ${PL_COLS.map(col=>`<th class="${thCls(col.key)}" onclick="mxSort('${col.key}')" style="text-align:right;min-width:115px;">${col.label} <span class="sort-icon"></span></th>`).join('')}
+    <th class="total-col ${thCls('total')}" onclick="mxSort('total')" style="text-align:right;min-width:105px;">TOTAL <span class="sort-icon"></span></th>
+  </tr></thead>`;
+
+  const rows = sorted.map(cl => {
     const rowTotal = PL_COLS.reduce((s,col)=>s+(dist[cl][col.key]||0),0);
     const rowPct   = grandTotal ? rowTotal/grandTotal*100 : 0;
     const cells = PL_COLS.map(col => {
-      const ct = colTotals[col.key]; if (!ct) return '<td class="vz">-</td>';
-      const v  = dist[cl][col.key]||0;
-      const p  = v/ct*100;
-      const barW = maxPct[col.key] ? Math.abs(p)/maxPct[col.key]*100 : 0;
-      return `<td><div class="pct-bar">
-        <span style="min-width:52px;text-align:right;font-size:11px;font-weight:600;color:var(--lime-deep);">${p.toFixed(2)}%</span>
-        <div class="pct-bar-inner"><div class="pct-bar-fill" style="width:${barW}%"></div></div>
-      </div></td>`;
+      const v = dist[cl][col.key]||0;
+      const ct = colTotals[col.key];
+      const p  = ct ? v/ct*100 : 0;
+      const bw = maxPct[col.key] ? Math.abs(p)/maxPct[col.key]*100 : 0;
+      const mc = v>0?'var(--in-color)':v<0?'var(--neg)':'var(--gray-d)';
+      if (!v) return `<td style="text-align:right;padding:4px 8px;"><span style="color:var(--gray-d);font-size:11px;">-</span></td>`;
+      return `<td style="padding:4px 8px;">
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
+          <span style="font-weight:600;font-size:12px;color:${mc};">${fmt(v)}</span>
+          <span style="font-size:10px;color:var(--lime-deep);font-family:var(--fh);font-weight:700;">${p.toFixed(2)}%</span>
+          <div style="width:60px;height:3px;background:var(--border);border-radius:2px;margin-top:1px;">
+            <div style="width:${bw}%;height:100%;background:var(--lime-dark);border-radius:2px;"></div>
+          </div>
+        </div>
+      </td>`;
     }).join('');
-    return `<tr><td>${cl}</td>${cells}<td class="total-col" style="font-weight:700;color:var(--lime-deep);">${rowPct.toFixed(2)}%</td></tr>`;
+    const tc = rowTotal>0?'var(--lime-deep)':rowTotal<0?'var(--neg)':'var(--gray-d)';
+    return `<tr>
+      <td style="font-weight:500;position:sticky;left:0;background:var(--white);z-index:1;padding:6px 10px;">${cl}</td>
+      ${cells}
+      <td class="total-col" style="padding:4px 8px;">
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
+          <span style="font-weight:700;font-size:12px;color:${tc};">${fmt(rowTotal)}</span>
+          <span style="font-size:10px;color:var(--lime-deep);font-family:var(--fh);font-weight:700;">${rowPct.toFixed(2)}%</span>
+        </div>
+      </td>
+    </tr>`;
   }).join('');
 
-  const pTotRow = '<tr class="total-row"><td>TOTAL</td>' +
-    PL_COLS.map(()=>'<td style="color:var(--lime-deep);font-weight:700;">100.00%</td>').join('') +
-    '<td class="total-col" style="font-weight:700;color:var(--lime-deep);">100.00%</td></tr>';
+  const totRow = `<tr class="total-row">
+    <td style="position:sticky;left:0;z-index:1;background:var(--lime-pale);padding:6px 10px;font-family:var(--fh);font-weight:800;">TOTAL (${sorted.length})</td>
+    ${PL_COLS.map(col=>`<td style="padding:4px 8px;text-align:right;">
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
+        <span style="font-weight:700;font-size:12px;color:var(--lime-deep);">${fmt(colTotals[col.key])}</span>
+        <span style="font-size:10px;color:var(--gray-m);font-family:var(--fh);font-weight:700;">100%</span>
+      </div>
+    </td>`).join('')}
+    <td class="total-col" style="padding:6px 8px;text-align:right;"><span style="font-weight:800;font-size:13px;color:var(--lime-deep);">${fmt(grandTotal)}</span></td>
+  </tr>`;
 
-  document.getElementById('mtbl-pcts').innerHTML = thead + '<tbody>' + pRows + pTotRow + '</tbody>';
-  document.getElementById('mpcts-meta').textContent = clients.length + ' clientes - ' + window._pl?.mesLabel;
+  el.innerHTML = thead + '<tbody>' + rows + totRow + '</tbody>';
+  const meta = document.getElementById('mmontos-meta');
+  if (meta) meta.textContent = sorted.length + ' clientes';
 }
 
 
