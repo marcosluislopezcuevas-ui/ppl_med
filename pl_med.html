@@ -1131,14 +1131,31 @@ function saveLlave() {
   // Save to localStorage cache
   try { localStorage.setItem('medistik_llaves_v1', JSON.stringify(LLAVES_DATA)); } catch(e) {}
   toast('Guardando en SharePoint...', '');
+  const payload = {MesKey: mesKey, registros};
+  console.log('Sending to SP:', JSON.stringify(payload).slice(0,200));
   fetch(PA_LLAVES_WRITE, {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({MesKey: mesKey, registros})
+    body: JSON.stringify(payload)
   })
-  .then(r => { if(!r.ok) throw new Error('HTTP '+r.status); })
-  .then(() => { toast('Guardado en SharePoint - '+llave.replace('1225_','').replace(/_/g,' '), 'ok'); updateLlavesStatus(); })
-  .catch(e  => { toast('Guardado local (SP no disponible)', ''); updateLlavesStatus(); });
+  .then(r => {
+    console.log('SP response status:', r.status, r.ok);
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    return r.text();
+  })
+  .then(txt => {
+    console.log('SP response body:', txt);
+    toast('Guardado en SharePoint - '+llave.replace('1225_','').replace(/_/g,' '), 'ok');
+    updateLlavesStatus();
+  })
+  .catch(e => {
+    console.error('SP write error:', e.message, e);
+    // Show error prominently for 5 seconds
+    const statusEl = document.getElementById('llaves-saved-status');
+    if (statusEl) statusEl.innerHTML = '<span style="color:var(--neg);font-weight:700;">Error SP: ' + e.message + '</span>';
+    toast('Error al guardar: ' + e.message, '');
+    updateLlavesStatus();
+  });
 }
 
 // -- MAPEO TABLE --
