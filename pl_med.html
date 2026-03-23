@@ -699,10 +699,12 @@ function parseIngresosCliente(rows) {
     'varios': 'Varios',
   };
 
+  const UNMATCHED = new Set();
   function normalizeCliente(raw) {
     const lower = raw.toLowerCase().trim();
     if (ALIASES[lower]) return ALIASES[lower];
     if (clienteLookup[lower]) return clienteLookup[lower];
+    UNMATCHED.add(raw);
     return raw;
   }
 
@@ -728,6 +730,10 @@ function parseIngresosCliente(rows) {
   });
   window._ingByCliente=byG;
   window._ingByClienteDiv=byGD;
+  if (UNMATCHED.size > 0) {
+    console.log('parseIngresosCliente UNMATCHED:', [...UNMATCHED]);
+    console.log('clienteLookup keys sample:', Object.keys(clienteLookup).slice(0,10));
+  }
 }
 
 function parseCostos(rows){
