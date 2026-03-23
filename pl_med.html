@@ -481,10 +481,13 @@ body{background:var(--white);color:var(--gray);font-family:var(--fb);font-size:1
 <div class="dist-page">
   <div class="dist-title">P&amp;L por Grupo Cliente</div>
   <div class="dist-sub">P&amp;L individual calculado con las llaves de reparto cargadas.</div>
-  <div class="dist-filters">
-    <select class="dist-sel" id="cl-sel" onchange="renderClientPL()">
-      <option value="">-- Selecciona un grupo cliente --</option>
-    </select>
+  <div class="dist-filters" style="flex-direction:column;align-items:flex-start;gap:10px;">
+    <div style="display:flex;gap:8px;align-items:center;">
+      <select class="dist-sel" id="cl-sel" onchange="renderClientPL()">
+        <option value="">-- Selecciona un grupo cliente --</option>
+      </select>
+    </div>
+    <div id="cl-chips-wrap" style="display:flex;flex-wrap:wrap;gap:4px;max-height:90px;overflow-y:auto;"></div>
   </div>
   <div id="cl-pl-content">
     <div class="cl-empty" id="cl-empty-state">
@@ -1304,6 +1307,9 @@ const PL_COLS = [
   {key:'costos_fijos',  label:'Costos Fijos'},
   {key:'gtos_grales',   label:'Gastos Grales'},
 ];
+// Cost keys only (for distribution)
+const COST_KEYS = ['salarios','fletes','mat_empaque','cargo_farma','costo_insumos','otros_cv','costos_fijos','gtos_grales'];
+const CV_KEYS   = ['salarios','fletes','mat_empaque','cargo_farma','costo_insumos','otros_cv'];
 const MESES_NUM = {Enero:1,Febrero:2,Marzo:3,Abril:4,Mayo:5,Junio:6,
   Julio:7,Agosto:8,Septiembre:9,Octubre:10,Noviembre:11,Diciembre:12};
 
@@ -1380,9 +1386,24 @@ function initClientPLSelector() {
   });
   sel.innerHTML = '<option value="">-- Selecciona un grupo cliente --</option>' +
     clients.map(c => `<option value="${c}"${c===cur?' selected':''}>${c}</option>`).join('');
-  // Hide empty state if we have clients
+  // Render chips
+  const chipsEl = document.getElementById('cl-chips-wrap');
+  if (chipsEl) {
+    chipsEl.innerHTML = clients.map(c =>
+      `<span class="mx-chip${c===cur?' sel':''}" onclick="clSelectClient('${c.replace(/'/g,'&#39;')}')">${c}</span>`
+    ).join('');
+  }
   const emptyEl = document.getElementById('cl-empty-state');
   if (emptyEl) emptyEl.style.display = clients.length ? 'none' : 'block';
+}
+
+function clSelectClient(c) {
+  const sel = document.getElementById('cl-sel');
+  if (sel) sel.value = c;
+  document.querySelectorAll('#cl-chips-wrap .mx-chip').forEach(el =>
+    el.classList.toggle('sel', el.textContent.trim() === c)
+  );
+  renderClientPL();
 }
 
 function renderClientPL() {
@@ -1523,87 +1544,139 @@ function mxSort(col) {
 
 function renderMatrices() {
   const el = document.getElementById('mtbl-montos'); if (!el) return;
-  const noData = msg => { el.innerHTML = '<tr><td colspan="20" style="padding:60px;text-align:center;color:var(--gray-m);font-family:var(--fh);font-weight:700;">' + msg + '</td></tr>'; };
+  const noData = msg => { el.innerHTML = '<tr><td colspan="40" style="padding:60px;text-align:center;color:var(--gray-m);font-family:var(--fh);font-weight:700;">' + msg + '</td></tr>'; };
   if (!window._tbData || !window._pl) { noData('Carga el CV_014 y los archivos de ingresos primero en la pestana P&L'); return; }
   if (!Object.keys(LLAVES_DATA).some(l => Object.keys(LLAVES_DATA[l]).length > 0)) { noData('Carga las llaves de reparto primero'); return; }
-
   const dist = calcDistribucion(); if (!dist) { noData('Sin datos de distribucion'); return; }
 
+  // Get mes from selector
+  const mesSel = document.getElementById('mx-mes-sel');
+  const mk = mesSel ? mesSel.value : getMesKey();
+  const MES_NAMES = {1:'Enero',2:'Febrero',3:'Marzo',4:'Abril',5:'Mayo',6:'Junio',
+                     7:'Julio',8:'Agosto',9:'Septiembre',10:'Octubre',11:'Noviembre',12:'Diciembre'};
+  const mesNum = parseInt(mk.split('_')[0]) || 1;
+  const mesNombre = MES_NAMES[mesNum] || 'Enero';
+
+  // Ingresos por cliente
+  const ingData = window._ingByCliente?.[mesNombre] || {};
+
   const clients = Object.keys(dist).filter(c => mxSelectedClients.size === 0 || mxSelectedClients.has(c));
-  const colTotals = {};
-  PL_COLS.forEach(col => { colTotals[col.key] = clients.reduce((s,c) => s + (dist[c][col.key]||0), 0); });
-  const grandTotal = PL_COLS.reduce((s,col) => s + colTotals[col.key], 0);
-  const maxPct = {};
-  PL_COLS.forEach(col => { maxPct[col.key] = 0; });
+
+  // Build full data per client: {ing, salarios, ..., cv, cm, cf, gg, ebitda}
+  const cdata = {};
   clients.forEach(cl => {
-    PL_COLS.forEach(col => {
-      const p = colTotals[col.key] ? Math.abs((dist[cl][col.key]||0)/colTotals[col.key]*100) : 0;
-      if (p > maxPct[col.key]) maxPct[col.key] = p;
-    });
+    const ing = ingData[cl] || 0;
+    const sal = dist[cl]['salarios']      || 0;
+    const flt = dist[cl]['fletes']        || 0;
+    const mat = dist[cl]['mat_empaque']   || 0;
+    const cfm = dist[cl]['cargo_farma']   || 0;
+    const ins = dist[cl]['costo_insumos'] || 0;
+    const ocv = dist[cl]['otros_cv']      || 0;
+    const cf  = dist[cl]['costos_fijos']  || 0;
+    const gg  = dist[cl]['gtos_grales']   || 0;
+    const cv  = sal + flt + mat + cfm + ins + ocv;
+    const cm  = ing - cv;
+    const ebitda = ing - cv - cf - gg;
+    cdata[cl] = {ing, salarios:sal, fletes:flt, mat_empaque:mat, cargo_farma:cfm,
+                 costo_insumos:ins, otros_cv:ocv, cv, cm, costos_fijos:cf, gtos_grales:gg, ebitda};
   });
 
+  // Totals row
+  const totals = {};
+  const allKeys = ['ing','salarios','fletes','mat_empaque','cargo_farma','costo_insumos','otros_cv','cv','cm','costos_fijos','gtos_grales','ebitda'];
+  allKeys.forEach(k => { totals[k] = clients.reduce((s,c) => s + (cdata[c][k]||0), 0); });
+
+  // Sort
   const sorted = [...clients].sort((a,b) => {
-    let va, vb;
-    if (mxSortCol === 'cliente') return mxSortDir === 'asc' ? a.localeCompare(b) : b.localeCompare(a);
-    va = mxSortCol === 'total' ? PL_COLS.reduce((s,c)=>s+(dist[a][c.key]||0),0) : (dist[a][mxSortCol]||0);
-    vb = mxSortCol === 'total' ? PL_COLS.reduce((s,c)=>s+(dist[b][c.key]||0),0) : (dist[b][mxSortCol]||0);
-    return mxSortDir === 'asc' ? va - vb : vb - va;
+    if (mxSortCol === 'cliente') return mxSortDir==='asc' ? a.localeCompare(b) : b.localeCompare(a);
+    const va = cdata[a][mxSortCol] ?? (mxSortCol==='total' ? cdata[a].cv : 0);
+    const vb = cdata[b][mxSortCol] ?? (mxSortCol==='total' ? cdata[b].cv : 0);
+    return mxSortDir==='asc' ? va-vb : vb-va;
   });
+
+  // Column definitions for matrix
+  // Each col: {key, label, color, isDivider}
+  const COLS = [
+    {key:'ing',          label:'Ingresos',        color:'var(--in-color)',   divAfter:true},
+    {key:'salarios',     label:'Salarios',         color:'var(--neg)'},
+    {key:'fletes',       label:'Fletes',           color:'var(--neg)'},
+    {key:'mat_empaque',  label:'Mat. Empaque',     color:'var(--neg)'},
+    {key:'cargo_farma',  label:'Cargo Farma',      color:'var(--neg)'},
+    {key:'costo_insumos',label:'Costo Insumos',    color:'var(--neg)'},
+    {key:'otros_cv',     label:'Otros CV',         color:'var(--neg)'},
+    {key:'cv',           label:'CV Total',         color:'var(--neg)',        divAfter:true, bold:true},
+    {key:'cm',           label:'Contribucion Marginal', color:'var(--pos-color)', divAfter:true, bold:true},
+    {key:'costos_fijos', label:'Costos Fijos',     color:'var(--neg)'},
+    {key:'gtos_grales',  label:'Gastos Grales',    color:'var(--neg)',        divAfter:true},
+    {key:'ebitda',       label:'EBITDA',           color:'var(--lime-deep)', bold:true},
+  ];
 
   const thCls = col => 'sortable' + (mxSortCol===col?' sort-'+mxSortDir:'');
-  const thead = `<thead><tr>
-    <th class="${thCls('cliente')}" onclick="mxSort('cliente')" style="min-width:160px;text-align:left;position:sticky;left:0;z-index:2;">Cliente <span class="sort-icon"></span></th>
-    ${PL_COLS.map(col=>`<th class="${thCls(col.key)}" onclick="mxSort('${col.key}')" style="text-align:right;min-width:115px;">${col.label} <span class="sort-icon"></span></th>`).join('')}
-    <th class="total-col ${thCls('total')}" onclick="mxSort('total')" style="text-align:right;min-width:105px;">TOTAL <span class="sort-icon"></span></th>
-  </tr></thead>`;
+
+  // Build header: each col has 2 sub-cols (monto, %vtas)
+  const colHdrs = COLS.map(col => {
+    const bl = col.divAfter ? 'border-right:2px solid var(--lime-dark);' : '';
+    return `<th class="${thCls(col.key)}" onclick="mxSort('${col.key}')" colspan="2"
+      style="text-align:center;min-width:160px;${bl}">${col.label} <span class="sort-icon"></span></th>`;
+  }).join('');
+
+  const subHdrs = COLS.map(col => {
+    const bl = col.divAfter ? '' : '';
+    return `<th style="text-align:right;min-width:80px;font-size:10px;font-weight:600;padding:4px 6px;">MXN</th>
+            <th style="text-align:right;min-width:60px;font-size:10px;font-weight:600;padding:4px 6px;color:var(--lime-deep);">% Vtas${col.divAfter?'<span style=margin-right:0></span>':''}</th>`;
+  }).join('');
+
+  const thead = `<thead>
+    <tr>
+      <th rowspan="2" style="min-width:160px;text-align:left;position:sticky;left:0;z-index:3;background:var(--surface2);" class="${thCls('cliente')}" onclick="mxSort('cliente')">Cliente <span class="sort-icon"></span></th>
+      ${colHdrs}
+    </tr>
+    <tr style="background:var(--surface2);">${subHdrs}</tr>
+  </thead>`;
+
+  // Cell renderer
+  const cell = (v, ing, color, bold, divAfter) => {
+    const pct = ing ? v/ing*100 : 0;
+    const c   = color || (v>=0?'var(--in-color)':'var(--neg)');
+    const fw  = bold ? '700' : '500';
+    const bl  = divAfter ? 'border-right:2px solid var(--lime-dark);' : '';
+    if (!v && v!==0) return `<td style="${bl}"></td><td></td>`;
+    return `
+      <td style="text-align:right;padding:4px 8px;${bl}">
+        <span style="font-size:12px;font-weight:${fw};color:${v!==0?c:'var(--gray-d)'};">${v?fmt(v):'-'}</span>
+      </td>
+      <td style="text-align:right;padding:4px 6px;">
+        <span style="font-size:11px;font-weight:700;font-family:var(--fh);color:${pct<0?'var(--neg)':'var(--gray-m)'};">${ing?pct.toFixed(1)+'%':'-'}</span>
+      </td>`;
+  };
 
   const rows = sorted.map(cl => {
-    const rowTotal = PL_COLS.reduce((s,col)=>s+(dist[cl][col.key]||0),0);
-    const rowPct   = grandTotal ? rowTotal/grandTotal*100 : 0;
-    const cells = PL_COLS.map(col => {
-      const v = dist[cl][col.key]||0;
-      const ct = colTotals[col.key];
-      const p  = ct ? v/ct*100 : 0;
-      const bw = maxPct[col.key] ? Math.abs(p)/maxPct[col.key]*100 : 0;
-      const mc = v>0?'var(--in-color)':v<0?'var(--neg)':'var(--gray-d)';
-      if (!v) return `<td style="text-align:right;padding:4px 8px;"><span style="color:var(--gray-d);font-size:11px;">-</span></td>`;
-      return `<td style="padding:4px 8px;">
-        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
-          <span style="font-weight:600;font-size:12px;color:${mc};">${fmt(v)}</span>
-          <span style="font-size:10px;color:var(--lime-deep);font-family:var(--fh);font-weight:700;">${p.toFixed(2)}%</span>
-          <div style="width:60px;height:3px;background:var(--border);border-radius:2px;margin-top:1px;">
-            <div style="width:${bw}%;height:100%;background:var(--lime-dark);border-radius:2px;"></div>
-          </div>
-        </div>
-      </td>`;
-    }).join('');
-    const tc = rowTotal>0?'var(--lime-deep)':rowTotal<0?'var(--neg)':'var(--gray-d)';
+    const d = cdata[cl];
+    const cells = COLS.map(col => cell(d[col.key], d.ing, col.color, col.bold, col.divAfter)).join('');
     return `<tr>
       <td style="font-weight:500;position:sticky;left:0;background:var(--white);z-index:1;padding:6px 10px;">${cl}</td>
       ${cells}
-      <td class="total-col" style="padding:4px 8px;">
-        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
-          <span style="font-weight:700;font-size:12px;color:${tc};">${fmt(rowTotal)}</span>
-          <span style="font-size:10px;color:var(--lime-deep);font-family:var(--fh);font-weight:700;">${rowPct.toFixed(2)}%</span>
-        </div>
-      </td>
     </tr>`;
+  }).join('');
+
+  const totCells = COLS.map(col => {
+    const v   = totals[col.key]||0;
+    const pct = totals.ing ? v/totals.ing*100 : 0;
+    const c   = col.color || 'var(--lime-deep)';
+    const bl  = col.divAfter ? 'border-right:2px solid var(--lime-dark);' : '';
+    return `
+      <td style="text-align:right;padding:4px 8px;${bl}"><span style="font-size:12px;font-weight:800;color:${c};">${fmt(v)}</span></td>
+      <td style="text-align:right;padding:4px 6px;"><span style="font-size:11px;font-weight:700;font-family:var(--fh);color:var(--gray-m);">${totals.ing?pct.toFixed(1)+'%':'-'}</span></td>`;
   }).join('');
 
   const totRow = `<tr class="total-row">
     <td style="position:sticky;left:0;z-index:1;background:var(--lime-pale);padding:6px 10px;font-family:var(--fh);font-weight:800;">TOTAL (${sorted.length})</td>
-    ${PL_COLS.map(col=>`<td style="padding:4px 8px;text-align:right;">
-      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
-        <span style="font-weight:700;font-size:12px;color:var(--lime-deep);">${fmt(colTotals[col.key])}</span>
-        <span style="font-size:10px;color:var(--gray-m);font-family:var(--fh);font-weight:700;">100%</span>
-      </div>
-    </td>`).join('')}
-    <td class="total-col" style="padding:6px 8px;text-align:right;"><span style="font-weight:800;font-size:13px;color:var(--lime-deep);">${fmt(grandTotal)}</span></td>
+    ${totCells}
   </tr>`;
 
   el.innerHTML = thead + '<tbody>' + rows + totRow + '</tbody>';
   const meta = document.getElementById('mmontos-meta');
-  if (meta) meta.textContent = sorted.length + ' clientes';
+  if (meta) meta.textContent = sorted.length + ' clientes - ' + mesNombre;
 }
 
 
