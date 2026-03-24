@@ -395,6 +395,7 @@ body{background:var(--white);color:var(--gray);font-family:var(--fb);font-size:1
       </div>
       <div class="pl-header-actions">
         <button class="btn-upload-new" onclick="toggleUploadPanel()">&#8679; Cargar mes</button>
+        <button class="btn-save-llave" onclick="savePLToSP()" id="btn-save-pl" style="display:none;">&#128190; Guardar en SharePoint</button>
       </div>
     </div>
     <div class="pl-period-row" id="pl-period-row"></div>
@@ -879,6 +880,8 @@ function renderPL(d){
   // Store period
   PERIODOS[d.mesLabel] = d;
   activePeriodo = d.mesLabel;
+  const _spBtn = document.getElementById('btn-save-pl');
+  if (_spBtn) _spBtn.style.display = '';
   document.getElementById('page-upload').style.display='none';
   document.getElementById('page-pl').style.display='block';
   document.getElementById('nav-tabs').style.display='flex';
@@ -1524,6 +1527,42 @@ async function saveIngToSP(mesKey, ingRows) {
     try { localStorage.setItem('medistik_ing_v1', JSON.stringify({ing:window.ING_SP, div:window.ING_SP_DIV})); } catch(e) {}
     return true;
   } catch(e) { console.warn('Ing_Write error:', e); return false; }
+}
+
+
+async function savePLToSP() {
+  const btn = document.getElementById('btn-save-pl');
+  const mesKey = window._currentMesKey || getMesKey();
+  const tbData = window._tbData || {};
+  const ingRows = buildIngRows(mesKey);
+
+  if (!Object.keys(tbData).length && !ingRows.length) {
+    toast('\u26a0 No hay datos cargados en esta sesión', '');
+    return;
+  }
+
+  if (btn) { btn.textContent = '\u23f3 Guardando...'; btn.disabled = true; }
+  toast('Guardando TB e Ingresos en SharePoint...', '');
+  console.log('savePLToSP: mesKey='+mesKey+' tb_cuentas='+Object.keys(tbData).length+' ing_rows='+ingRows.length);
+
+  try {
+    const tbOk  = await saveTBToSP(mesKey, tbData);
+    const ingOk = await saveIngToSP(mesKey, ingRows);
+    console.log('savePLToSP result: tbOk='+tbOk+' ingOk='+ingOk);
+    if (tbOk && ingOk) {
+      toast('\u2713 TB e Ingresos guardados en SharePoint \u00b7 ' + (window._pl?.mesLabel || mesKey), 'ok');
+    } else {
+      const parts = [];
+      if (!tbOk)  parts.push('TB falló');
+      if (!ingOk) parts.push('Ingresos fallaron');
+      toast('\u26a0 Guardado parcial: ' + parts.join(', '), '');
+    }
+  } catch(e) {
+    console.error('savePLToSP error:', e);
+    toast('Error al guardar: ' + e.message, '');
+  } finally {
+    if (btn) { btn.textContent = '\u{1F4BE} Guardar en SharePoint'; btn.disabled = false; }
+  }
 }
 
 // Load localStorage cache on startup
