@@ -554,6 +554,12 @@ body{background:var(--white);color:var(--gray);font-family:var(--fb);font-size:1
       <div class="dist-sub" style="margin:0;">Monto y % del total por cliente y rubro</div>
     </div>
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+      <!-- Vista toggle -->
+      <div style="display:flex;background:var(--surface2);border:1.5px solid var(--border-m);border-radius:var(--r);overflow:hidden;padding:1px;gap:1px;">
+        <button class="fmt-btn on" id="mx-btn-mes"   onclick="setMxVista('mes')"  >Por mes</button>
+        <button class="fmt-btn"    id="mx-btn-acum"  onclick="setMxVista('acum')" >Acumulado</button>
+      </div>
+      <!-- Single month selector -->
       <select class="dist-sel" id="mx-mes-sel" onchange="renderMatrices()" style="min-width:120px;">
         <option value="1_2026">Enero 2026</option>
         <option value="2_2026">Febrero 2026</option>
@@ -568,6 +574,39 @@ body{background:var(--white);color:var(--gray);font-family:var(--fb);font-size:1
         <option value="11_2026">Noviembre 2026</option>
         <option value="12_2026">Diciembre 2026</option>
       </select>
+      <!-- Acum range selectors (hidden by default) -->
+      <div id="mx-acum-range" style="display:none;align-items:center;gap:6px;">
+        <span style="font-family:var(--fh);font-weight:700;font-size:12px;color:var(--gray-m);">De</span>
+        <select class="dist-sel" id="mx-acum-desde" onchange="renderMatrices()" style="min-width:110px;">
+          <option value="1_2026">Enero 2026</option>
+          <option value="2_2026">Febrero 2026</option>
+          <option value="3_2026">Marzo 2026</option>
+          <option value="4_2026">Abril 2026</option>
+          <option value="5_2026">Mayo 2026</option>
+          <option value="6_2026">Junio 2026</option>
+          <option value="7_2026">Julio 2026</option>
+          <option value="8_2026">Agosto 2026</option>
+          <option value="9_2026">Septiembre 2026</option>
+          <option value="10_2026">Octubre 2026</option>
+          <option value="11_2026">Noviembre 2026</option>
+          <option value="12_2026">Diciembre 2026</option>
+        </select>
+        <span style="font-family:var(--fh);font-weight:700;font-size:12px;color:var(--gray-m);">A</span>
+        <select class="dist-sel" id="mx-acum-hasta" onchange="renderMatrices()" style="min-width:110px;">
+          <option value="1_2026">Enero 2026</option>
+          <option value="2_2026" selected>Febrero 2026</option>
+          <option value="3_2026">Marzo 2026</option>
+          <option value="4_2026">Abril 2026</option>
+          <option value="5_2026">Mayo 2026</option>
+          <option value="6_2026">Junio 2026</option>
+          <option value="7_2026">Julio 2026</option>
+          <option value="8_2026">Agosto 2026</option>
+          <option value="9_2026">Septiembre 2026</option>
+          <option value="10_2026">Octubre 2026</option>
+          <option value="11_2026">Noviembre 2026</option>
+          <option value="12_2026">Diciembre 2026</option>
+        </select>
+      </div>
       <span style="font-size:11px;color:var(--gray-m);" id="mmontos-meta"></span>
     </div>
   </div>
@@ -2059,6 +2098,85 @@ function renderClientPL() {
 
 // MATRICES - unified
 let mxSelectedClients = new Set();
+let mxVista = 'mes'; // 'mes' | 'acum'
+
+function setMxVista(v) {
+  mxVista = v;
+  document.getElementById('mx-btn-mes')?.classList.toggle('on',  v === 'mes');
+  document.getElementById('mx-btn-acum')?.classList.toggle('on', v === 'acum');
+  document.getElementById('mx-mes-sel').style.display    = v === 'mes'  ? '' : 'none';
+  document.getElementById('mx-acum-range').style.display = v === 'acum' ? 'flex' : 'none';
+  renderMatrices();
+}
+
+// Returns merged TB cuentas summed across a range of mesKeys
+function calcTBRange(mesKeys) {
+  const merged = {};
+  mesKeys.forEach(mk => {
+    const tb = window.TB_SP?.[mk] || {};
+    Object.entries(tb).forEach(([cuenta, monto]) => {
+      merged[cuenta] = (merged[cuenta] || 0) + monto;
+    });
+  });
+  return merged;
+}
+
+// Returns merged ING_SP summed across a range of mesKeys
+function calcIngRange(mesKeys) {
+  const merged = {}; // cliente -> total
+  mesKeys.forEach(mk => {
+    const ing = window.ING_SP?.[mk] || {};
+    Object.entries(ing).forEach(([cl, v]) => {
+      merged[cl] = (merged[cl] || 0) + v;
+    });
+  });
+  return merged;
+}
+
+// Get ordered list of mesKeys between desde and hasta inclusive
+function getMesKeyRange(desde, hasta) {
+  const toNum = mk => { const [m,y] = mk.split('_').map(Number); return y*12+m; };
+  const nDes = toNum(desde), nHas = toNum(hasta);
+  const all = [];
+  const MES_NUMS = [1,2,3,4,5,6,7,8,9,10,11,12];
+  // Generate all possible mesKeys in 2026 range
+  for (let y = 2026; y <= 2027; y++) {
+    MES_NUMS.forEach(m => {
+      const mk = m + '_' + y;
+      const n  = toNum(mk);
+      if (n >= nDes && n <= nHas) all.push(mk);
+    });
+  }
+  return all;
+}
+
+// Calc distribucion for a merged TB (multi-month)
+function calcDistribucionFromTB(mergedTB, mesKeyForLlaves) {
+  const result = {};
+  function initClient(c) {
+    if (!result[c]) { result[c] = {}; PL_COLS.forEach(col => { result[c][col.key] = 0; }); }
+  }
+  Object.entries(MAPEO_CUENTAS).forEach(([cuenta, data]) => {
+    const monto = mergedTB[cuenta] || 0; if (!monto) return;
+    const llave = data.llave, pl_line = data.pl_line;
+    if (llave === '__MODERNA__') {
+      initClient('Moderna');
+      result['Moderna']['costo_insumos'] += monto;
+      return;
+    }
+    const llaveData = LLAVES_DATA[llave]; if (!llaveData) return;
+    const clPcts = llaveData[mesKeyForLlaves] || llaveData[Object.keys(llaveData)[0]];
+    if (!clPcts) return;
+    Object.entries(clPcts).forEach(([cliente, pct]) => {
+      initClient(cliente);
+      result[cliente][pl_line] += monto * pct;
+    });
+  });
+  Object.keys(result).forEach(c => {
+    if (PL_COLS.reduce((s,col) => s + Math.abs(result[c][col.key]||0), 0) < 1) delete result[c];
+  });
+  return result;
+}
 let mxSortCol = 'total';
 let mxSortDir = 'desc';
 
@@ -2116,22 +2234,51 @@ function mxSort(col) {
 function renderMatrices() {
   const el = document.getElementById('mtbl-montos'); if (!el) return;
   const noData = msg => { el.innerHTML = '<tr><td colspan="40" style="padding:60px;text-align:center;color:var(--gray-m);font-family:var(--fh);font-weight:700;">' + msg + '</td></tr>'; };
-  if (!window._tbData || !window._pl) { noData('Carga el CV_014 y los archivos de ingresos primero en la pestana P&L'); return; }
-  if (!Object.keys(LLAVES_DATA).some(l => Object.keys(LLAVES_DATA[l]).length > 0)) { noData('Carga las llaves de reparto primero'); return; }
-  const dist = calcDistribucion(); if (!dist) { noData('Sin datos de distribucion'); return; }
+  const hasTB  = window.TB_SP && Object.keys(window.TB_SP).length > 0;
+  const hasLlaves = Object.keys(LLAVES_DATA).some(l => Object.keys(LLAVES_DATA[l]).length > 0);
+  if (!hasTB && (!window._tbData || !window._pl)) { noData('Carga el CV_014 y los archivos de ingresos primero en la pestaña P&L'); return; }
+  if (!hasLlaves) { noData('Carga las llaves de reparto primero'); return; }
 
-  // Get mes from selector
-  const mesSel = document.getElementById('mx-mes-sel');
-  const mk = mesSel ? mesSel.value : getMesKey();
   const MES_NAMES = {1:'Enero',2:'Febrero',3:'Marzo',4:'Abril',5:'Mayo',6:'Junio',
                      7:'Julio',8:'Agosto',9:'Septiembre',10:'Octubre',11:'Noviembre',12:'Diciembre'};
-  const mesNum = parseInt(mk.split('_')[0]) || 1;
-  const mesNombre = MES_NAMES[mesNum] || 'Enero';
 
-  // Ingresos por cliente - use ING_SP (multi-month) or fallback to _ingByCliente
-  const ingRaw = (window.ING_SP && window.ING_SP[mk] && Object.keys(window.ING_SP[mk]).length > 0)
-                 ? window.ING_SP[mk]
-                 : (window._ingByCliente?.[mesNombre] || {});
+  let dist, ingRaw, mesLabel;
+
+  if (mxVista === 'acum') {
+    // ── ACUMULADO MODE ──
+    const desde = document.getElementById('mx-acum-desde')?.value || '1_2026';
+    const hasta = document.getElementById('mx-acum-hasta')?.value || getMesKey();
+    const range = getMesKeyRange(desde, hasta);
+    mesLabel = 'Acum. ' + (MES_NAMES[parseInt(desde)] || desde) + ' → ' + (MES_NAMES[parseInt(hasta)] || hasta);
+
+    // Merge TB across range
+    const mergedTB = calcTBRange(range);
+    // Use last month's llaves for distribution %
+    const llavesMk = range[range.length - 1] || hasta;
+    dist = calcDistribucionFromTB(mergedTB, llavesMk);
+    // Merge ingresos across range
+    ingRaw = calcIngRange(range);
+    // Fallback to session data for months not in SP
+    if (!Object.keys(ingRaw).length) {
+      range.forEach(mk => {
+        const mesNom = MES_NAMES[parseInt(mk.split('_')[0])];
+        const sesIng = window._ingByCliente?.[mesNom] || {};
+        Object.entries(sesIng).forEach(([cl,v]) => { ingRaw[cl] = (ingRaw[cl]||0)+v; });
+      });
+    }
+    if (!dist || !Object.keys(dist).length) { noData('Sin datos de TB en SharePoint para el rango seleccionado'); return; }
+  } else {
+    // ── SINGLE MONTH MODE ──
+    const mesSel = document.getElementById('mx-mes-sel');
+    const mk = mesSel ? mesSel.value : getMesKey();
+    const mesNum = parseInt(mk.split('_')[0]) || 1;
+    const mesNombre = MES_NAMES[mesNum] || 'Enero';
+    mesLabel = mesNombre;
+    dist = calcDistribucion(); if (!dist) { noData('Sin datos de distribucion'); return; }
+    ingRaw = (window.ING_SP && window.ING_SP[mk] && Object.keys(window.ING_SP[mk]).length > 0)
+             ? window.ING_SP[mk]
+             : (window._ingByCliente?.[mesNombre] || {});
+  }
   // Build lowercase lookup for fuzzy matching
   const ingLookup = {};
   Object.entries(ingRaw).forEach(([k,v]) => { ingLookup[k.toLowerCase().trim()] = v; });
@@ -2298,7 +2445,7 @@ function renderMatrices() {
 
   el.innerHTML = thead + '<tbody>' + rows + totRow + '</tbody>';
   const meta = document.getElementById('mmontos-meta');
-  if (meta) meta.textContent = sorted.length + ' clientes - ' + mesNombre;
+  if (meta) meta.textContent = sorted.length + ' clientes — ' + mesLabel;
 }
 
 
