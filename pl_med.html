@@ -602,10 +602,29 @@ async function processAll(){
   try{
     sp(10,'Cargando librer\u00eda...');await loadXLSX();
     sp(35,'Leyendo ingresos...');const ingRows=xlsxRows(fileIng);parseIngresosCliente(ingRows);
+    // Detect mesKey from TB filename
+    const tbFileName = fileCos?.name || '';
+    const fnMatch = tbFileName.match(/TB_(\d{4})_(\d{2})/i);
+    const tbMesKey = fnMatch ? parseInt(fnMatch[2]) + '_' + fnMatch[1] : getMesKey();
+    window._currentMesKey = tbMesKey;
     sp(65,'Leyendo resultados...');const cvRows=xlsxRows(fileCv);
     sp(85,'Calculando...');const pl=buildPL(ingRows,cvRows);
     sp(99,'Listo');
-    setTimeout(()=>{renderPL(pl);toast('\u2713 P&L \u00b7 '+pl.mesLabel,'ok');},150);
+    setTimeout(async ()=>{
+      renderPL(pl);
+      // Save TB to SharePoint
+      const mesKey = window._currentMesKey || getMesKey();
+      toast('Guardando TB en SharePoint...', '');
+      const tbOk = await saveTBToSP(mesKey, window._tbData || {});
+      // Save Ingresos to SharePoint
+      const ingRows = buildIngRows(mesKey);
+      const ingOk = await saveIngToSP(mesKey, ingRows);
+      // Update TB_SP for distribution
+      if (!window.TB_SP[mesKey]) window.TB_SP[mesKey] = {};
+      Object.assign(window.TB_SP[mesKey], window._tbData || {});
+      if (tbOk && ingOk) toast('\u2713 P&L + TB + Ingresos guardados en SharePoint \u00b7 ' + pl.mesLabel, 'ok');
+      else toast('\u2713 P&L \u00b7 ' + pl.mesLabel + (tbOk?'':' (TB local)') + (ingOk?'':' (Ing local)'), 'ok');
+    },150);
   }catch(e){toast('Error: '+e.message,'');console.error(e);prog.style.display='none';}
 }
 
@@ -984,6 +1003,10 @@ function currentLlave() {
 
 // -- TAB SWITCHING --
 function showTab(tab) {
+  // Always hide upload page when switching tabs
+  const uploadPg = document.getElementById('page-upload');
+  if (uploadPg) uploadPg.style.display = 'none';
+
   ['pl','llaves','clpnl','mmontos','mapeo'].forEach(t => {
     const pg = document.getElementById('page-' + t);
     if (pg) pg.style.display = t===tab ? 'block' : 'none';
@@ -1370,7 +1393,137 @@ function renderMapeoTable() {
 }
 
 
+// GLOBAL MULTI-MONTH STORES
+// TB_SP[mesKey][cuenta] = monto
+// ING_SP[mesKey][cliente] = total
+// ING_SP_DIV[mesKey][cliente][div][tipo] = monto
+window.TB_SP      = window.TB_SP      || {};
+window.ING_SP     = window.ING_SP     || {};
+window.ING_SP_DIV = window.ING_SP_DIV || {};
+
+// ?? SP READ FUNCTIONS ??
+async function loadTBFromSP() {
+  try {
+    const res = await fetch(PA_TB_READ, {method:'POST', headers:{'Content-Type':'application/json'}, body:'{}'});
+    if (!res.ok) return 0;
+    const items = await res.json();
+    if (!Array.isArray(items) || !items.length) return 0;
+    window.TB_SP = {};
+    items.forEach(item => {
+      const {Cuenta, MesKey, Monto} = item;
+      if (!Cuenta || !MesKey) return;
+      if (!window.TB_SP[MesKey]) window.TB_SP[MesKey] = {};
+      window.TB_SP[MesKey][Cuenta] = parseFloat(Monto) || 0;
+    });
+    try { localStorage.setItem('medistik_tb_v1', JSON.stringify(window.TB_SP)); } catch(e) {}
+    return items.length;
+  } catch(e) { console.warn('TB_Read error:', e); return 0; }
+}
+
+async function loadIngFromSP() {
+  try {
+    const res = await fetch(PA_ING_READ, {method:'POST', headers:{'Content-Type':'application/json'}, body:'{}'});
+    if (!res.ok) return 0;
+    const items = await res.json();
+    if (!Array.isArray(items) || !items.length) return 0;
+    window.ING_SP = {}; window.ING_SP_DIV = {};
+    items.forEach(item => {
+      const {Cliente, MesKey, Division, Tipo, Monto} = item;
+      if (!Cliente || !MesKey) return;
+      const v = parseFloat(Monto) || 0;
+      // Flat total by client+mes
+      if (!window.ING_SP[MesKey]) window.ING_SP[MesKey] = {};
+      window.ING_SP[MesKey][Cliente] = (window.ING_SP[MesKey][Cliente] || 0) + v;
+      // Detailed by div+tipo
+      if (!window.ING_SP_DIV[MesKey]) window.ING_SP_DIV[MesKey] = {};
+      if (!window.ING_SP_DIV[MesKey][Cliente]) window.ING_SP_DIV[MesKey][Cliente] = {};
+      if (!window.ING_SP_DIV[MesKey][Cliente][Division]) window.ING_SP_DIV[MesKey][Cliente][Division] = {total:0};
+      window.ING_SP_DIV[MesKey][Cliente][Division].total += v;
+      if (!window.ING_SP_DIV[MesKey][Cliente][Division][Tipo]) window.ING_SP_DIV[MesKey][Cliente][Division][Tipo] = 0;
+      window.ING_SP_DIV[MesKey][Cliente][Division][Tipo] += v;
+    });
+    try { localStorage.setItem('medistik_ing_v1', JSON.stringify({ing:window.ING_SP, div:window.ING_SP_DIV})); } catch(e) {}
+    return items.length;
+  } catch(e) { console.warn('Ing_Read error:', e); return 0; }
+}
+
+// ?? SP WRITE FUNCTIONS ??
+async function saveTBToSP(mesKey, tbData) {
+  const registros = Object.entries(tbData)
+    .filter(([,v]) => v !== 0)
+    .map(([cuenta, monto]) => ({Cuenta: cuenta, MesKey: mesKey, Monto: monto}));
+  if (!registros.length) return false;
+  try {
+    const res = await fetch(PA_TB_WRITE, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({MesKey: mesKey, registros})
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    // Update local store
+    window.TB_SP[mesKey] = tbData;
+    try { localStorage.setItem('medistik_tb_v1', JSON.stringify(window.TB_SP)); } catch(e) {}
+    return true;
+  } catch(e) { console.warn('TB_Write error:', e); return false; }
+}
+
+async function saveIngToSP(mesKey, ingRows) {
+  // ingRows = [{Cliente, Division, Tipo, Monto}]
+  if (!ingRows.length) return false;
+  try {
+    const res = await fetch(PA_ING_WRITE, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({MesKey: mesKey, registros: ingRows.map(r => ({...r, MesKey: mesKey}))})
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    try { localStorage.setItem('medistik_ing_v1', JSON.stringify({ing:window.ING_SP, div:window.ING_SP_DIV})); } catch(e) {}
+    return true;
+  } catch(e) { console.warn('Ing_Write error:', e); return false; }
+}
+
+// Load localStorage cache on startup
+(function() {
+  try {
+    const tb = localStorage.getItem('medistik_tb_v1');
+    if (tb) window.TB_SP = JSON.parse(tb);
+  } catch(e) {}
+  try {
+    const ing = localStorage.getItem('medistik_ing_v1');
+    if (ing) { const p = JSON.parse(ing); window.ING_SP = p.ing || {}; window.ING_SP_DIV = p.div || {}; }
+  } catch(e) {}
+})();
+
+// Load TB + Ingresos from SharePoint on startup (background)
+(async function() {
+  const nTB  = await loadTBFromSP();
+  const nIng = await loadIngFromSP();
+  const mesKeys = Object.keys(window.TB_SP || {});
+  // Sort ascending
+  mesKeys.sort((a,b) => {
+    const [ma,ya] = a.split('_').map(Number);
+    const [mb,yb] = b.split('_').map(Number);
+    return (ya*12+ma) - (yb*12+mb);
+  });
+  // Set latest as current if not set
+  if (mesKeys.length > 0 && !window._currentMesKey) {
+    window._currentMesKey = mesKeys[mesKeys.length-1];
+  }
+  // Update badge
+  const MESES_N = {1:'Ene',2:'Feb',3:'Mar',4:'Abr',5:'May',6:'Jun',7:'Jul',8:'Ago',9:'Sep',10:'Oct',11:'Nov',12:'Dic'};
+  const badge = document.getElementById('sp-months-badge');
+  if (badge) {
+    if (mesKeys.length === 0) badge.textContent = 'Sin datos en SP';
+    else badge.textContent = mesKeys.map(mk => {
+      const [m,y] = mk.split('_');
+      return MESES_N[parseInt(m)] + ' ' + y;
+    }).join(' - ');
+  }
+})();
+
 // DISTRIBUTION ENGINE
+const PA_TB_WRITE  = 'https://default2a21bd09a37a4ec48d88bb8f1dea12.d5.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/05318eb1613c4221a9cb146240d8b214/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=ic5RHycCPmEZfBMCEM9XB1T9zZdNAOhlIh4H7kyCnqc';
+const PA_TB_READ   = 'https://default2a21bd09a37a4ec48d88bb8f1dea12.d5.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/5cab443954594e899d99d8972fa92f0b/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=0u3Y-uL46yg0N2x0GCRWvAj5Mn-YOoAzdIvHC62T9JM';
+const PA_ING_WRITE = 'https://default2a21bd09a37a4ec48d88bb8f1dea12.d5.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/fc840fe58cab41aab1071a00e59630ae/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=oWxwhegXytlvgTx_BqbdN466a8uv2hbgZiN1hZQHXcs';
+const PA_ING_READ  = 'https://default2a21bd09a37a4ec48d88bb8f1dea12.d5.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/c83359b160ab42979d585802afdba654/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=9RMUxw_5qFUniVm6bnIoEB0hQyQYvNJ98_a15pvnPpc';
 const PA_LLAVES_WRITE = 'https://default2a21bd09a37a4ec48d88bb8f1dea12.d5.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/0e9e0be181df44908099f5ee48ef3367/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=aOXkXHP7CiVGTCrcDWWzgJ0iZfV2035GqVJlbgwCyiU';
 const PA_LLAVES_READ  = 'https://default2a21bd09a37a4ec48d88bb8f1dea12.d5.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/fb6be8ebd32149a1bd406696a6d5a9d3/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=xjIvWuzY4E0GWumy_VEG7WnbcbwQHfjlc34CPkv3Bf4';
 // Load persisted llaves from localStorage (cache)
@@ -1381,7 +1534,26 @@ const PA_LLAVES_READ  = 'https://default2a21bd09a37a4ec48d88bb8f1dea12.d5.enviro
   } catch(e) {}
 })();
 
-async function loadLlavesFromSharePoint(mesKey) {
+async function buildIngRows(mesKey) {
+  // Build flat array of ingresos rows from _ingByClienteDiv for this mes
+  const MESES_NUM_R = {Enero:1,Febrero:2,Marzo:3,Abril:4,Mayo:5,Junio:6,
+    Julio:7,Agosto:8,Septiembre:9,Octubre:10,Noviembre:11,Diciembre:12};
+  const mesNum = parseInt(mesKey.split('_')[0]);
+  const mesNombre = Object.entries(MESES_NUM_R).find(([,v])=>v===mesNum)?.[0] || 'Enero';
+  const divData = window._ingByClienteDiv?.[mesNombre] || {};
+  const rows = [];
+  Object.entries(divData).forEach(([cliente, divs]) => {
+    Object.entries(divs).forEach(([div, tipos]) => {
+      Object.entries(tipos).forEach(([tipo, monto]) => {
+        if (tipo === 'total' || !monto) return;
+        rows.push({Cliente: cliente, Division: div, Tipo: tipo, Monto: monto});
+      });
+    });
+  });
+  return rows;
+}
+
+function loadLlavesFromSharePoint(mesKey) {
   try {
     const res = await fetch(PA_LLAVES_READ, {
       method: 'POST',
@@ -1426,10 +1598,13 @@ function getMesKey() {
 }
 
 function calcDistribucion() {
-  const tb  = window._tbData;
   const pl  = window._pl;
-  if (!tb || !pl) { console.warn('calcDist: no tb or pl', !!tb, !!pl); return null; }
-  const mk  = getMesKey();
+  const mk  = window._currentMesKey || getMesKey();
+  // Use TB_SP[mk] if available (persisted), fallback to _tbData (current session)
+  const tb  = (window.TB_SP && window.TB_SP[mk] && Object.keys(window.TB_SP[mk]).length > 0)
+              ? window.TB_SP[mk]
+              : window._tbData;
+  if (!tb || !pl) { return null; }
 
 
 
@@ -1675,8 +1850,10 @@ function renderMatrices() {
   const mesNum = parseInt(mk.split('_')[0]) || 1;
   const mesNombre = MES_NAMES[mesNum] || 'Enero';
 
-  // Ingresos por cliente - build case-insensitive lookup
-  const ingRaw = window._ingByCliente?.[mesNombre] || {};
+  // Ingresos por cliente - use ING_SP (multi-month) or fallback to _ingByCliente
+  const ingRaw = (window.ING_SP && window.ING_SP[mk] && Object.keys(window.ING_SP[mk]).length > 0)
+                 ? window.ING_SP[mk]
+                 : (window._ingByCliente?.[mesNombre] || {});
   // Build lowercase lookup for fuzzy matching
   const ingLookup = {};
   Object.entries(ingRaw).forEach(([k,v]) => { ingLookup[k.toLowerCase().trim()] = v; });
