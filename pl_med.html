@@ -1713,6 +1713,14 @@ async function savePLToSP() {
   } catch(e) {}
 })();
 
+
+const PA_TB_WRITE  = 'https://default2a21bd09a37a4ec48d88bb8f1dea12.d5.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/05318eb1613c4221a9cb146240d8b214/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=ic5RHycCPmEZfBMCEM9XB1T9zZdNAOhlIh4H7kyCnqc';
+const PA_TB_READ   = 'https://default2a21bd09a37a4ec48d88bb8f1dea12.d5.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/5cab443954594e899d99d8972fa92f0b/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=0u3Y-uL46yg0N2x0GCRWvAj5Mn-YOoAzdIvHC62T9JM';
+const PA_ING_WRITE = 'https://default2a21bd09a37a4ec48d88bb8f1dea12.d5.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/fc840fe58cab41aab1071a00e59630ae/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=oWxwhegXytlvgTx_BqbdN466a8uv2hbgZiN1hZQHXcs';
+const PA_ING_READ  = 'https://default2a21bd09a37a4ec48d88bb8f1dea12.d5.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/c83359b160ab42979d585802afdba654/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=9RMUxw_5qFUniVm6bnIoEB0hQyQYvNJ98_a15pvnPpc';
+const PA_LLAVES_WRITE = 'https://default2a21bd09a37a4ec48d88bb8f1dea12.d5.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/0e9e0be181df44908099f5ee48ef3367/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=aOXkXHP7CiVGTCrcDWWzgJ0iZfV2035GqVJlbgwCyiU';
+const PA_LLAVES_READ  = 'https://default2a21bd09a37a4ec48d88bb8f1dea12.d5.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/fb6be8ebd32149a1bd406696a6d5a9d3/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=xjIvWuzY4E0GWumy_VEG7WnbcbwQHfjlc34CPkv3Bf4';
+
 // Load TB + Ingresos from SharePoint on startup (background)
 (async function() {
   const nTB  = await loadTBFromSP();
@@ -1763,12 +1771,6 @@ async function savePLToSP() {
 })();
 
 // DISTRIBUTION ENGINE
-const PA_TB_WRITE  = 'https://default2a21bd09a37a4ec48d88bb8f1dea12.d5.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/05318eb1613c4221a9cb146240d8b214/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=ic5RHycCPmEZfBMCEM9XB1T9zZdNAOhlIh4H7kyCnqc';
-const PA_TB_READ   = 'https://default2a21bd09a37a4ec48d88bb8f1dea12.d5.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/5cab443954594e899d99d8972fa92f0b/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=0u3Y-uL46yg0N2x0GCRWvAj5Mn-YOoAzdIvHC62T9JM';
-const PA_ING_WRITE = 'https://default2a21bd09a37a4ec48d88bb8f1dea12.d5.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/fc840fe58cab41aab1071a00e59630ae/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=oWxwhegXytlvgTx_BqbdN466a8uv2hbgZiN1hZQHXcs';
-const PA_ING_READ  = 'https://default2a21bd09a37a4ec48d88bb8f1dea12.d5.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/c83359b160ab42979d585802afdba654/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=9RMUxw_5qFUniVm6bnIoEB0hQyQYvNJ98_a15pvnPpc';
-const PA_LLAVES_WRITE = 'https://default2a21bd09a37a4ec48d88bb8f1dea12.d5.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/0e9e0be181df44908099f5ee48ef3367/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=aOXkXHP7CiVGTCrcDWWzgJ0iZfV2035GqVJlbgwCyiU';
-const PA_LLAVES_READ  = 'https://default2a21bd09a37a4ec48d88bb8f1dea12.d5.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/fb6be8ebd32149a1bd406696a6d5a9d3/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=xjIvWuzY4E0GWumy_VEG7WnbcbwQHfjlc34CPkv3Bf4';
 // Load persisted llaves from localStorage (cache)
 (function() {
   try {
