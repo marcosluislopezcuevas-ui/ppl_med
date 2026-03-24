@@ -1395,7 +1395,7 @@ function renderPL(d){
   const b=d.ing_total||1,pc=PPTO_COSTOS[d.mes]||null,pi=PPTO_ING[d.mes]||null,pb=(pc?pc.ing_total:1)||1;
   const cmP=(d.cm/b*100).toFixed(1),ebP=(d.ebitda/b*100).toFixed(1);
   document.getElementById('pl-title').textContent='P&L Operativo \u2014 Medistik';
-  document.getElementById('pl-sub').textContent=d.periodo+'  \u00b7  cifras en pesos';
+  document.getElementById('pl-sub').textContent=d.periodo+'  \u00b7  cifras en pesos' + (window.EXCL_MODERNA?' · Sin Moderna':'');
   document.getElementById('pl-kpis').innerHTML=[
     {l:'Ingresos',v:fmt(d.ing_total),c:'lime'},
     {l:'CM',v:fmt(d.cm)+' ('+cmP+'%)',c:d.cm>=0?'pos':'neg'},
@@ -2632,6 +2632,8 @@ function renderMatrices() {
 
   }
   // Build lowercase lookup for fuzzy matching
+  // Filter Moderna from ingRaw if toggle active
+  if (window.EXCL_MODERNA) { delete ingRaw['Moderna']; }
   const ingLookup = {};
   Object.entries(ingRaw).forEach(([k,v]) => { ingLookup[k.toLowerCase().trim()] = v; });
   // Helper to get ing for a client with fuzzy match
@@ -2656,7 +2658,7 @@ function renderMatrices() {
     ...Object.keys(dist),
     ...Object.keys(ingRaw).filter(c => ingRaw[c] > 0)
   ]);
-  const clients = [...allClientSet].filter(c => mxSelectedClients.size === 0 || mxSelectedClients.has(c));
+  const clients = [...allClientSet].filter(c => !isExcluded(c) && (mxSelectedClients.size === 0 || mxSelectedClients.has(c)));
   // For clients in ingData but not in dist, add empty dist entry
   clients.forEach(cl => { if (!dist[cl]) dist[cl] = {}; });
 
@@ -2919,6 +2921,36 @@ function toggleMxGroup(g) {
   window._mxCollapsed[g] = !window._mxCollapsed[g];
   renderMatrices();
 }
+
+// ══════════════════════════════════════════════════════════════
+// MODERNA TOGGLE — exclude/include in all views
+// ══════════════════════════════════════════════════════════════
+window.EXCL_MODERNA = false;
+
+function toggleModerna() {
+  window.EXCL_MODERNA = !window.EXCL_MODERNA;
+  const btn = document.getElementById('btn-moderna-toggle');
+  if (btn) {
+    btn.textContent  = window.EXCL_MODERNA ? '🚫 Sin Moderna' : '◎ Con Moderna';
+    btn.style.background = window.EXCL_MODERNA ? 'var(--neg-bg)' : 'var(--lime)';
+    btn.style.color      = window.EXCL_MODERNA ? 'var(--neg)' : 'var(--gray)';
+    btn.style.borderColor= window.EXCL_MODERNA ? 'var(--neg)' : 'var(--lime-dark)';
+  }
+  // Re-render all active views
+  if (document.getElementById('page-mmontos')?.style.display !== 'none') {
+    initMatrixFilters(); renderMatrices();
+  }
+  if (document.getElementById('page-cv')?.style.display !== 'none') renderCV();
+  if (document.getElementById('page-cfgg')?.style.display !== 'none') renderCFGG();
+  if (document.getElementById('page-top15')?.style.display !== 'none') renderTop15();
+  if (document.getElementById('page-pl')?.style.display !== 'none' && window._pl) renderPL(window._pl);
+}
+
+// Helper: should we exclude this client?
+function isExcluded(cl) {
+  return window.EXCL_MODERNA && cl === 'Moderna';
+}
+
 </script>
 </body>
 </html><!-- INJECTED JS - new functions -->
@@ -3080,6 +3112,7 @@ function getDistData(tabId) {
     dist = rawDist;
     ingRaw = window.ING_SP?.[mk] || window._ingByCliente?.[mesNom] || {};
   }
+  if (window.EXCL_MODERNA) { ingRaw = Object.fromEntries(Object.entries(ingRaw).filter(([k])=>k!=='Moderna')); }
   if (!dist) return null;
 
   // Build cdata — same as renderMatrices
@@ -3097,7 +3130,7 @@ function getDistData(tabId) {
   };
 
   const allClientSet = new Set([...Object.keys(dist), ...Object.keys(ingRaw).filter(c=>ingRaw[c]>0)]);
-  const clients = [...allClientSet];
+  const clients = [...allClientSet].filter(c => !isExcluded(c));
   clients.forEach(cl=>{if(!dist[cl])dist[cl]={};});
 
   const cdata = {};
@@ -3213,7 +3246,7 @@ function renderCV() {
     ['monto','pct_vtas','pct_dist'].forEach(sub=>{
       const label = sub==='monto'?'$':sub==='pct_vtas'?'%Vtas':'%Dist';
       const sCls = DIST_SORT['cv']?.col===r.key+'_'+sub ? 'sort-'+(DIST_SORT['cv']?.dir||'desc') : '';
-      thead += `<th class="${sCls}" onclick="sortDistTab('cv','${r.key}_${sub}')" style="border-left:${sub==='monto'?'2px solid var(--lime-dark)':'none'}">${label}<span class="sort-icon"></span></th>`;
+      thead += `<th class="${sCls}" onclick="sortDistTab('cv','${r.key}_${sub}')" style="border-left:${sub==='monto'?'2px solid var(--lime-dark)':'none'};min-width:52px;">${label}<span class="sort-icon"></span></th>`;
     });
   });
   thead += '</tr>';
@@ -3371,7 +3404,7 @@ function renderCFGG() {
     ['monto','pct_vtas','pct_dist'].forEach(sub=>{
       const label = sub==='monto'?'$':sub==='pct_vtas'?'%Vtas':'%Dist';
       const sCls = sort.col===r.key+'_'+sub ? 'sort-'+sort.dir : '';
-      thead += `<th class="${sCls}" onclick="sortDistTab('cfgg','${r.key}_${sub}')" style="border-left:${sub==='monto'?'2px solid var(--lime-dark)':'none'}">${label}<span class="sort-icon"></span></th>`;
+      thead += `<th class="${sCls}" onclick="sortDistTab('cfgg','${r.key}_${sub}')" style="border-left:${sub==='monto'?'2px solid var(--lime-dark)':'none'};min-width:52px;">${label}<span class="sort-icon"></span></th>`;
     });
   });
   thead += '</tr>';
@@ -3480,8 +3513,8 @@ function renderTop15() {
   const data = getDistData('top15');
   if (!data) { el.innerHTML='<div style="padding:60px;text-align:center;color:var(--gray-m);font-family:var(--fh);font-weight:700;">Carga los datos primero</div>'; return; }
   const {cdata, totals} = data;
-  // Excluir Moderna de todos los rankings
-  const clients = Object.keys(cdata).filter(c => c !== 'Moderna' && (cdata[c].ing>0||cdata[c].ebitda!==0));
+  // Excluir Moderna si toggle activo, y siempre del Top15
+  const clients = Object.keys(cdata).filter(c => c !== 'Moderna' && !isExcluded(c) && (cdata[c].ing>0||cdata[c].ebitda!==0));
   // Para EBITDA% excluir además los que no tienen ingresos
   const clientsConIng = clients.filter(c => cdata[c].ing > 0);
   const N = 15;
