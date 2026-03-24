@@ -339,7 +339,7 @@ body{background:var(--white);color:var(--gray);font-family:var(--fb);font-size:1
 </nav>
 
 <!-- UPLOAD -->
-<div class="page active" id="page-upload">
+<div class="page" id="page-upload">
 <div class="upload-page"><div class="upload-card">
   <div class="upload-logo">P&amp;L</div>
   <div class="upload-title">P&amp;L Operativo &mdash; Medistik</div>
@@ -385,7 +385,7 @@ body{background:var(--white);color:var(--gray);font-family:var(--fb);font-size:1
 </div>
 
 <!-- PL PAGE -->
-<div class="page" id="page-pl">
+<div class="page active" id="page-pl">
 <div class="pl-page anim">
   <div class="pl-header">
     <div class="pl-header-top">
@@ -398,7 +398,41 @@ body{background:var(--white);color:var(--gray);font-family:var(--fb);font-size:1
       </div>
     </div>
     <div class="pl-period-row" id="pl-period-row"></div>
-    <div class="pl-kpis" id="pl-kpis"></div>
+    <!-- Collapsible upload panel -->
+  <div id="upload-panel" style="display:none;background:var(--lime-bg);border:1.5px solid var(--lime);border-radius:var(--r);margin:0 28px 16px;padding:16px 20px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+      <span style="font-family:var(--fh);font-weight:800;font-size:14px;color:var(--lime-deep);">Cargar nuevo mes</span>
+      <span style="font-size:12px;color:var(--gray-m);" id="sp-months-badge2"></span>
+      <button onclick="toggleUploadPanel()" style="background:none;border:none;cursor:pointer;font-size:18px;color:var(--gray-m);">&#x2715;</button>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+      <div>
+        <div style="font-family:var(--fh);font-weight:700;font-size:12px;color:var(--gray-m);margin-bottom:6px;">1. Ingresos Real (XLSX)</div>
+        <div class="drop-zone" id="drop-ing2" onclick="document.getElementById('f-ing2').click()">
+          <div class="drop-icon">&#128176;</div>
+          <div class="drop-txt"><strong>Ingresos_Real_2026.xlsx</strong>Arrastra o haz clic</div>
+          <input type="file" id="f-ing2" accept=".xlsx,.xls">
+        </div>
+      </div>
+      <div>
+        <div style="font-family:var(--fh);font-weight:700;font-size:12px;color:var(--gray-m);margin-bottom:6px;">2. TB del mes (TB_2026_01.xlsx)</div>
+        <div class="drop-zone" id="drop-cv2" onclick="document.getElementById('f-cv2').click()">
+          <div class="drop-icon">&#128202;</div>
+          <div class="drop-txt"><strong>TB_2026_01.xlsx</strong>Arrastra o haz clic</div>
+          <input type="file" id="f-cv2" accept=".xlsx,.xls">
+        </div>
+      </div>
+    </div>
+    <div class="prog-wrap" id="prog-wrap2">
+      <div class="prog-bar"><div class="prog-fill" id="prog-fill2" style="width:0%"></div></div>
+      <div class="prog-lbl" id="prog-lbl2">Procesando...</div>
+    </div>
+    <button class="btn-primary" onclick="processAll2()" style="font-size:13px;padding:8px 20px;">
+      &#9889; Procesar y guardar
+    </button>
+  </div>
+
+  <div class="pl-kpis" id="pl-kpis"></div>
   </div>
   <div class="tbl-wrap"><div style="overflow-x:auto;">
     <table class="pl-tbl" id="pl-tbl"></table>
@@ -578,7 +612,8 @@ function readMem(file,key,dropId,step){
   const fr=new FileReader();
   fr.onerror=()=>toast('Error: '+file.name,'');
   fr.onload=e=>{
-    if(key==='ing')fileIng=e.target.result; else fileCv=e.target.result;
+    if(key==='ing'||key==='ing2')fileIng=e.target.result; 
+    else fileCv=e.target.result;
     drop.classList.add('loaded');
     drop.querySelector('.drop-txt').innerHTML='<strong>\u2713 '+file.name+'</strong>';
     document.getElementById('step'+step+'-num').classList.add('done');
@@ -843,7 +878,10 @@ function renderPL(d){
   document.getElementById('nav-tabs').style.display='flex';
   // Make sure pl tab is active
   ['pl','llaves','clpnl','mmontos','mapeo'].forEach(t=>document.getElementById('tab-'+t)?.classList.toggle('active',t==='pl'));
-  // Llaves tab always visible - load from SP on startup
+  // Hide old upload page completely
+  const up = document.getElementById('page-upload');
+  if (up) up.style.display = 'none';
+  // Load llaves from SP
   loadLlavesFromSharePoint(llaveMesKey()).then(() => updateLlavesStatus());
   const np=document.getElementById('periodo-badge'); np.style.display=''; np.textContent=d.mesLabel;
   document.getElementById('fmt-wrap').style.display='flex';
