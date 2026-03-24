@@ -2297,30 +2297,7 @@ function renderMatrices() {
   }
   const ingData = ingRaw; // keep for compatibility
   
-  // Debug totals
-  const totalIngData = Object.values(ingData).reduce((s,v)=>s+v,0);
-  const totalDistCV  = Object.keys(dist).reduce((s,cl)=>s+CV_KEYS.reduce((ss,k)=>ss+(dist[cl][k]||0),0),0);
-  const totalDistCF  = Object.keys(dist).reduce((s,cl)=>s+(dist[cl]['costos_fijos']||0),0);
-  const totalDistGG  = Object.keys(dist).reduce((s,cl)=>s+(dist[cl]['gtos_grales']||0),0);
-  console.log('=== MATRIZ TOTALS DEBUG ===');
-  console.log('mesNombre:', mesNombre, 'mk:', mk);
-  console.log('_ingByCliente keys:', Object.keys(window._ingByCliente||{}));
-  console.log('ingData clientes:', Object.keys(ingData).length, 'total:', totalIngData);
-  console.log('PL ing_total:', window._pl?.ing_total);
-  console.log('dist CV total:', totalDistCV, 'vs PL CV:', window._pl?.cv_total);
-  console.log('dist CF total:', totalDistCF, 'vs PL CF:', window._pl?.costos_fijos);
-  console.log('dist GG total:', totalDistGG, 'vs PL GG:', window._pl?.gtos_grales);
-  console.log('dist clientes count:', Object.keys(dist).length);
-  // Show clients with ingData but NOT in dist, and vice versa
-  const ingClients  = Object.keys(ingData).filter(c => ingData[c] > 0);
-  const distClients = Object.keys(dist);
-  const inIngNotDist = ingClients.filter(c => !distClients.includes(c));
-  const inDistNoIng  = distClients.filter(c => !ingData[c] || ingData[c]===0);
-  console.log('In ingData but not in dist:', inIngNotDist);
-  console.log('In dist but no ingresos:', inDistNoIng.slice(0,10));
-  // Show top ingData clients
-  const topIng = ingClients.sort((a,b)=>ingData[b]-ingData[a]).slice(0,10);
-  topIng.forEach(c => console.log('  ing:', c, '->', (ingData[c]/1000).toFixed(1)+'K'));
+
 
   // Merge clients from dist AND from ingData so we don't lose clients with ing but no costs
   const allClientSet = new Set([
