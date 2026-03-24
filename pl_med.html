@@ -2510,47 +2510,29 @@ function renderMatrices() {
                      7:'Julio',8:'Agosto',9:'Septiembre',10:'Octubre',11:'Noviembre',12:'Diciembre'};
 
   let dist, ingRaw, mesLabel;
-
   if (mxVista === 'acum') {
-    // ── ACUMULADO MODE ──
     const desde = document.getElementById('mx-acum-desde')?.value || '1_2026';
-    const hasta = document.getElementById('mx-acum-hasta')?.value || getMesKey();
-    const range = getMesKeyRange(desde, hasta);
-    mesLabel = 'Acum. ' + (MES_NAMES[parseInt(desde)] || desde) + ' → ' + (MES_NAMES[parseInt(hasta)] || hasta);
-
-    // Merge TB across range
-    const mergedTB = calcTBRange(range);
-    // Use last month's llaves for distribution %
-    const llavesMk = range[range.length - 1] || hasta;
-    dist = applyOverrides(calcDistribucionFromTB(mergedTB, llavesMk), mergedTB, llavesMk);
-    // Merge ingresos across range
-    ingRaw = calcIngRange(range);
-    // Fallback to session data for months not in SP
-    if (!Object.keys(ingRaw).length) {
-      range.forEach(mk => {
-        const mesNom = MES_NAMES[parseInt(mk.split('_')[0])];
-        const sesIng = window._ingByCliente?.[mesNom] || {};
-        Object.entries(sesIng).forEach(([cl,v]) => { ingRaw[cl] = (ingRaw[cl]||0)+v; });
-      });
-    }
-    if (!dist || !Object.keys(dist).length) { noData('Sin datos de TB en SharePoint para el rango seleccionado'); return; }
+    const hasta  = document.getElementById('mx-acum-hasta')?.value || getMesKey();
+    const range  = getMesKeyRange(desde, hasta);
+    const mTB    = calcTBRange(range);
+    const lMk    = range[range.length-1] || hasta;
+    dist     = applyOverrides(calcDistribucionFromTB(mTB, lMk), mTB, lMk);
+    ingRaw   = calcIngRange(range);
+    mesLabel = 'Acum. ' + (MES_NAMES[parseInt(desde)]||desde) + ' → ' + (MES_NAMES[parseInt(hasta)]||hasta);
+    if (!dist || !Object.keys(dist).length) { noData('Sin datos de TB en SP para el rango'); return; }
   } else {
-    // ── SINGLE MONTH MODE ──
-    const mesSel = document.getElementById('mx-mes-sel');
-    const mk = mesSel ? mesSel.value : getMesKey();
-    const mesNum = parseInt(mk.split('_')[0]) || 1;
-    const mesNombre = MES_NAMES[mesNum] || 'Enero';
-    mesLabel = mesNombre;
-    // Use calcDistribucionFromTB directly - no dependency on _pl or _currentMesKey
-    const tbForMk = (window.TB_SP?.[mk] && Object.keys(window.TB_SP[mk]).length > 0)
+    const mk      = document.getElementById('mx-mes-sel')?.value || getMesKey();
+    const mesNum  = parseInt(mk.split('_')[0]) || 1;
+    const mesNom  = MES_NAMES[mesNum] || 'Enero';
+    mesLabel = mesNom;
+    const tbMk = window.TB_SP?.[mk] && Object.keys(window.TB_SP[mk]).length
       ? window.TB_SP[mk] : window._tbData;
-    if (!tbForMk) { noData('Sin datos de TB para ' + mk + ' — carga el mes primero'); return; }
-    const rawDist = calcDistribucionFromTB(tbForMk, mk);
-    if (!rawDist || !Object.keys(rawDist).length) { noData('Sin distribución para ' + mesNombre + ' — verifica las llaves'); return; }
-    dist = applyOverrides(rawDist, tbForMk, mk);
-    ingRaw = (window.ING_SP && window.ING_SP[mk] && Object.keys(window.ING_SP[mk]).length > 0)
+    if (!tbMk) { noData('Sin datos de TB para ' + mk + ' — carga el mes primero'); return; }
+    dist   = applyOverrides(calcDistribucionFromTB(tbMk, mk), tbMk, mk);
+    if (!dist || !Object.keys(dist).length) { noData('Sin distribución para ' + mesNom); return; }
+    ingRaw = window.ING_SP?.[mk] && Object.keys(window.ING_SP[mk]).length
              ? window.ING_SP[mk]
-             : (window._ingByCliente?.[mesNombre] || {});
+             : (window._ingByCliente?.[mesNom] || {});
   }
   // Build lowercase lookup for fuzzy matching
   const ingLookup = {};
@@ -2956,7 +2938,7 @@ const DIST_SORT = { cv:{col:'ing',dir:'desc'}, cfgg:{col:'ing',dir:'desc'} };
 
 // Per-tab vista state
 window._tabVista = window._tabVista || {};
-function getTabVista(tabId) { return window._tabVista[tabId] || 'mes'; }
+function getTabVista(tabId) { if (tabId === 'mx') return mxVista; return window._tabVista[tabId] || 'mes'; }
 function setTabVista(tabId, v) {
   window._tabVista[tabId] = v;
   document.getElementById(tabId+'-btn-mes')?.classList.toggle('on',  v==='mes');
@@ -2976,15 +2958,19 @@ function getDistData(tabId) {
     7:'Julio',8:'Agosto',9:'Septiembre',10:'Octubre',11:'Noviembre',12:'Diciembre'};
 
   if (vista === 'acum') {
-    const desde = document.getElementById(tabId+'-acum-desde')?.value || '1_2026';
-    const hasta = document.getElementById(tabId+'-acum-hasta')?.value || getMesKey();
+    const desdeId = tabId === 'mx' ? 'mx-acum-desde' : tabId+'-acum-desde';
+    const hastaId = tabId === 'mx' ? 'mx-acum-hasta' : tabId+'-acum-hasta';
+    const desde = document.getElementById(desdeId)?.value || '1_2026';
+    const hasta = document.getElementById(hastaId)?.value || getMesKey();
     const range = getMesKeyRange(desde, hasta);
     const mergedTB = calcTBRange(range);
     activeMk = range[range.length-1];
     dist = applyOverrides(calcDistribucionFromTB(mergedTB, activeMk), mergedTB, activeMk);
     ingRaw = calcIngRange(range);
   } else {
-    const mk = document.getElementById(tabId+'-mes-sel')?.value || getMesKey();
+    // 'mx' tabId uses matrix selectors
+    const selId = tabId === 'mx' ? 'mx-mes-sel' : tabId+'-mes-sel';
+    const mk = document.getElementById(selId)?.value || getMesKey();
     activeMk = mk;
     const mesNom = MES_NAMES[parseInt(mk.split('_')[0])] || 'Enero';
     const tbForMk = window.TB_SP?.[mk] && Object.keys(window.TB_SP[mk]).length ? window.TB_SP[mk] : window._tbData;
