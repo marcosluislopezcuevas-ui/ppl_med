@@ -1725,6 +1725,9 @@ const PA_LLAVES_READ  = 'https://default2a21bd09a37a4ec48d88bb8f1dea12.d5.enviro
 (async function() {
   const nTB  = await loadTBFromSP();
   const nIng = await loadIngFromSP();
+  console.log("SP startup: nTB="+nTB+" nIng="+nIng);
+  console.log("TB_SP keys:", Object.keys(window.TB_SP||{}));
+  console.log("ING_SP_DIV keys:", Object.keys(window.ING_SP_DIV||{}));
   const mesKeys = Object.keys(window.TB_SP || {});
   // Sort ascending
   mesKeys.sort((a,b) => {
