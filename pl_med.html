@@ -1623,8 +1623,25 @@ function renderMatrices() {
   const mesNum = parseInt(mk.split('_')[0]) || 1;
   const mesNombre = MES_NAMES[mesNum] || 'Enero';
 
-  // Ingresos por cliente
-  const ingData = window._ingByCliente?.[mesNombre] || {};
+  // Ingresos por cliente - build case-insensitive lookup
+  const ingRaw = window._ingByCliente?.[mesNombre] || {};
+  // Build lowercase lookup for fuzzy matching
+  const ingLookup = {};
+  Object.entries(ingRaw).forEach(([k,v]) => { ingLookup[k.toLowerCase().trim()] = v; });
+  // Helper to get ing for a client with fuzzy match
+  function getIng(cl) {
+    const exact = ingRaw[cl];
+    if (exact !== undefined) return exact;
+    const lower = cl.toLowerCase().trim();
+    if (ingLookup[lower] !== undefined) return ingLookup[lower];
+    // Try partial match
+    for (const [k,v] of Object.entries(ingLookup)) {
+      if (lower.includes(k) && k.length > 3) return v;
+      if (k.includes(lower) && lower.length > 3) return v;
+    }
+    return 0;
+  }
+  const ingData = ingRaw; // keep for compatibility
   
   // Debug totals
   const totalIngData = Object.values(ingData).reduce((s,v)=>s+v,0);
@@ -1656,7 +1673,7 @@ function renderMatrices() {
   // Build full data per client: {ing, salarios, ..., cv, cm, cf, gg, ebitda}
   const cdata = {};
   clients.forEach(cl => {
-    const ing = ingData[cl] || 0;
+    const ing = getIng(cl);
     const sal = dist[cl]['salarios']      || 0;
     const flt = dist[cl]['fletes']        || 0;
     const mat = dist[cl]['mat_empaque']   || 0;
