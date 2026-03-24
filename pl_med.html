@@ -394,7 +394,7 @@ body{background:var(--white);color:var(--gray);font-family:var(--fb);font-size:1
         <div class="pl-header-sub" id="pl-sub"></div>
       </div>
       <div class="pl-header-actions">
-        <button class="btn-upload-new" onclick="resetToUpload()">&#8635; Nuevo archivo</button>
+        <button class="btn-upload-new" onclick="toggleUploadPanel()">&#8679; Cargar mes</button>
       </div>
     </div>
     <div class="pl-period-row" id="pl-period-row"></div>
@@ -432,6 +432,12 @@ body{background:var(--white);color:var(--gray);font-family:var(--fb);font-size:1
     </button>
   </div>
 
+  <div id="pl-empty-state" style="padding:60px;text-align:center;color:var(--gray-m);">
+    <div style="font-size:48px;margin-bottom:12px;">&#128202;</div>
+    <div style="font-family:var(--fh);font-weight:700;font-size:18px;color:var(--gray);margin-bottom:8px;">Sin datos cargados</div>
+    <div style="font-size:14px;margin-bottom:20px;">Carga los archivos del mes o espera a que se carguen de SharePoint</div>
+    <button class="btn-primary" onclick="toggleUploadPanel()" style="font-size:13px;padding:9px 22px;">&#8679; Cargar mes</button>
+  </div>
   <div class="pl-kpis" id="pl-kpis"></div>
   </div>
   <div class="tbl-wrap"><div style="overflow-x:auto;">
@@ -876,6 +882,8 @@ function renderPL(d){
   document.getElementById('page-upload').style.display='none';
   document.getElementById('page-pl').style.display='block';
   document.getElementById('nav-tabs').style.display='flex';
+  const emptyState = document.getElementById('pl-empty-state');
+  if (emptyState) emptyState.style.display = 'none';
   // Make sure pl tab is active
   ['pl','llaves','clpnl','mmontos','mapeo'].forEach(t=>document.getElementById('tab-'+t)?.classList.toggle('active',t==='pl'));
   // Hide old upload page completely
