@@ -1668,7 +1668,14 @@ function renderMatrices() {
   const topIng = ingClients.sort((a,b)=>ingData[b]-ingData[a]).slice(0,10);
   topIng.forEach(c => console.log('  ing:', c, '->', (ingData[c]/1000).toFixed(1)+'K'));
 
-  const clients = Object.keys(dist).filter(c => mxSelectedClients.size === 0 || mxSelectedClients.has(c));
+  // Merge clients from dist AND from ingData so we don't lose clients with ing but no costs
+  const allClientSet = new Set([
+    ...Object.keys(dist),
+    ...Object.keys(ingRaw).filter(c => ingRaw[c] > 0)
+  ]);
+  const clients = [...allClientSet].filter(c => mxSelectedClients.size === 0 || mxSelectedClients.has(c));
+  // For clients in ingData but not in dist, add empty dist entry
+  clients.forEach(cl => { if (!dist[cl]) dist[cl] = {}; });
 
   // Build full data per client: {ing, salarios, ..., cv, cm, cf, gg, ebitda}
   const cdata = {};
