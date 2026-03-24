@@ -367,6 +367,44 @@ body{background:var(--white);color:var(--gray);font-family:var(--fb);font-size:1
 .top15-bar-wrap{width:90px;flex-shrink:0;height:6px;background:var(--border);border-radius:3px;overflow:hidden;}
 .top15-bar-fill{height:100%;border-radius:3px;}
 .top15-val{font-family:var(--fh);font-weight:700;font-size:11px;width:60px;text-align:right;flex-shrink:0;}
+
+/* ── OVERRIDES MODAL ── */
+.ov-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:800;display:none;align-items:center;justify-content:center;}
+.ov-backdrop.open{display:flex;}
+.ov-modal{background:var(--white);border-radius:var(--rl);box-shadow:0 12px 40px rgba(0,0,0,.18);
+  width:820px;max-width:95vw;max-height:90vh;display:flex;flex-direction:column;overflow:hidden;}
+.ov-header{padding:18px 22px 14px;border-bottom:3px solid var(--lime);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.ov-title{font-family:var(--fh);font-weight:800;font-size:20px;color:var(--gray);}
+.ov-subtitle{font-size:12px;color:var(--gray-m);margin-top:2px;}
+.ov-close{background:none;border:none;font-size:22px;cursor:pointer;color:var(--gray-m);padding:0 4px;}
+.ov-close:hover{color:var(--neg);}
+.ov-body{padding:18px 22px;overflow-y:auto;flex:1;}
+.ov-footer{padding:12px 22px;border-top:1px solid var(--border);display:flex;gap:8px;align-items:center;flex-shrink:0;background:var(--surface);}
+.ov-section-lbl{font-family:var(--fh);font-weight:700;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--gray-d);margin-bottom:10px;}
+
+/* Add row controls */
+.ov-add-row{display:grid;grid-template-columns:180px 1fr 120px 100px 36px;gap:6px;align-items:center;margin-bottom:8px;}
+.ov-sel,.ov-inp{font-family:var(--fb);font-size:13px;padding:6px 9px;border:1.5px solid var(--border-m);
+  border-radius:var(--r);background:var(--white);color:var(--gray);outline:none;width:100%;}
+.ov-sel:focus,.ov-inp:focus{border-color:var(--lime-dark);box-shadow:0 0 0 3px var(--lime-pale);}
+.ov-btn-add{width:32px;height:32px;border-radius:var(--r);background:var(--lime);border:none;cursor:pointer;
+  font-size:18px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.ov-btn-add:hover{background:var(--lime-dark);}
+
+/* Entries table */
+.ov-tbl{width:100%;border-collapse:collapse;font-size:13px;margin-top:14px;}
+.ov-tbl th{font-family:var(--fh);font-weight:700;font-size:11px;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--gray-m);background:var(--surface2);border-bottom:2px solid var(--lime);padding:7px 10px;text-align:left;}
+.ov-tbl th:last-child{text-align:center;width:40px;}
+.ov-tbl td{padding:6px 10px;border-bottom:1px solid var(--border);vertical-align:middle;}
+.ov-tbl tr:hover td{background:var(--lime-bg);}
+.ov-del-btn{background:none;border:none;cursor:pointer;color:var(--gray-d);font-size:16px;padding:0 4px;}
+.ov-del-btn:hover{color:var(--neg);}
+.ov-badge{font-family:var(--fh);font-weight:700;font-size:10px;padding:2px 7px;border-radius:3px;
+  background:var(--lime-pale);color:var(--lime-deep);}
+.ov-impact{font-size:11px;color:var(--gray-m);font-family:var(--fh);}
+.ov-impact.pos{color:var(--pos);}
+.ov-empty{padding:28px;text-align:center;color:var(--gray-d);font-family:var(--fh);font-weight:700;font-size:13px;}
 </style>
 </head>
 <body>
@@ -680,6 +718,9 @@ body{background:var(--white);color:var(--gray);font-family:var(--fb);font-size:1
           <option value="12_2026">Diciembre 2026</option>
         </select>
       </div>
+      <button class="btn-ghost" onclick="openOvModal()" style="font-size:12px;padding:5px 12px;">
+        ✎ Asignaciones directas
+      </button>
       <span style="font-size:11px;color:var(--gray-m);" id="mmontos-meta"></span>
     </div>
   </div>
@@ -717,6 +758,54 @@ body{background:var(--white);color:var(--gray);font-family:var(--fb);font-size:1
 <!-- TOP 15 PAGE -->
 <div class="page" id="page-top15">
   <div class="dist-page" id="top15-inner"></div>
+</div>
+
+
+<!-- OVERRIDES MODAL -->
+<div class="ov-backdrop" id="ov-backdrop" onclick="ovBackdropClick(event)">
+  <div class="ov-modal">
+    <div class="ov-header">
+      <div>
+        <div class="ov-title">Asignaciones Directas</div>
+        <div class="ov-subtitle" id="ov-modal-sub">Override de distribución por cliente y rubro · <span id="ov-mes-label"></span></div>
+      </div>
+      <button class="ov-close" onclick="closeOvModal()">✕</button>
+    </div>
+    <div class="ov-body">
+      <!-- Add row -->
+      <div class="ov-section-lbl">Nueva asignación directa</div>
+      <div class="ov-add-row">
+        <select class="ov-sel" id="ov-new-cl">
+          <option value="">— Cliente —</option>
+        </select>
+        <select class="ov-sel" id="ov-new-rubro">
+          <option value="salarios">Salarios y Prest.</option>
+          <option value="fletes">Fletes</option>
+          <option value="mat_empaque">Mat. Empaque</option>
+          <option value="cargo_farma">Cargo Farma</option>
+          <option value="costo_insumos">Costo Insumos</option>
+          <option value="otros_cv">Otros CV</option>
+          <option value="costos_fijos">Costos Fijos</option>
+          <option value="gtos_grales">Gastos Generales</option>
+        </select>
+        <input class="ov-inp" id="ov-new-monto" type="text" inputmode="numeric" placeholder="Monto $"
+          onfocus="this.value=this.value.replace(/,/g,'')"
+          onblur="if(parseFloat(this.value.replace(/,/g,''))){const n=parseFloat(this.value.replace(/,/g,''));this.value=n.toLocaleString('es-MX');}"
+        >
+        <input class="ov-inp" id="ov-new-nota" type="text" placeholder="Nota (opc.)">
+        <button class="ov-btn-add" onclick="ovAddEntry()" title="Agregar">＋</button>
+      </div>
+      <!-- Entries table -->
+      <div id="ov-entries-wrap"></div>
+    </div>
+    <div class="ov-footer">
+      <button class="btn-primary" onclick="ovSaveToSP()">💾 Guardar en SharePoint</button>
+      <button class="btn-upload-new" onclick="closeOvModal()">Cerrar</button>
+      <span id="ov-save-status" style="font-size:12px;color:var(--gray-m);margin-left:6px;"></span>
+      <div style="flex:1;"></div>
+      <span style="font-size:11px;color:var(--gray-d);">Los overrides se aplican antes de la distribución proporcional</span>
+    </div>
+  </div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -1858,6 +1947,9 @@ const PA_ING_WRITE = 'https://default2a21bd09a37a4ec48d88bb8f1dea12.d5.environme
 const PA_ING_READ  = 'https://default2a21bd09a37a4ec48d88bb8f1dea12.d5.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/c83359b160ab42979d585802afdba654/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=9RMUxw_5qFUniVm6bnIoEB0hQyQYvNJ98_a15pvnPpc';
 const PA_LLAVES_WRITE = 'https://default2a21bd09a37a4ec48d88bb8f1dea12.d5.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/0e9e0be181df44908099f5ee48ef3367/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=aOXkXHP7CiVGTCrcDWWzgJ0iZfV2035GqVJlbgwCyiU';
 const PA_LLAVES_READ  = 'https://default2a21bd09a37a4ec48d88bb8f1dea12.d5.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/fb6be8ebd32149a1bd406696a6d5a9d3/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=xjIvWuzY4E0GWumy_VEG7WnbcbwQHfjlc34CPkv3Bf4';
+// Overrides SP endpoints — create these flows in Power Automate (same pattern as Llaves)
+const PA_OV_WRITE = ''; // TODO: paste your Overrides_Write flow URL here
+const PA_OV_READ  = ''; // TODO: paste your Overrides_Read flow URL here
 
 // Load TB + Ingresos from SharePoint on startup (background)
 (async function() {
@@ -3140,4 +3232,320 @@ renderPL = function(d) {
   _origRenderPL.call(this, d);
   updatePLClientList();
 };
+</script>
+<script>
+// ══════════════════════════════════════════════════════════════
+// OVERRIDES ENGINE
+// ══════════════════════════════════════════════════════════════
+// Structure: OV_DATA[mesKey][rubro][cliente] = {monto, nota}
+window.OV_DATA = window.OV_DATA || {};
+
+const OV_RUBRO_LABELS = {
+  salarios:'Salarios y Prest.', fletes:'Fletes', mat_empaque:'Mat. Empaque',
+  cargo_farma:'Cargo Farma', costo_insumos:'Costo Insumos', otros_cv:'Otros CV',
+  costos_fijos:'Costos Fijos', gtos_grales:'Gastos Generales'
+};
+
+function ovMesKey() {
+  // Use same mesKey as current matrix view
+  if (mxVista === 'acum') {
+    return document.getElementById('mx-acum-hasta')?.value || getMesKey();
+  }
+  return document.getElementById('mx-mes-sel')?.value || getMesKey();
+}
+
+function ovGetEntries(mk) {
+  const d = window.OV_DATA[mk] || {};
+  const list = [];
+  Object.entries(d).forEach(([rubro, clientes]) => {
+    Object.entries(clientes).forEach(([cliente, entry]) => {
+      list.push({ rubro, cliente, monto: entry.monto, nota: entry.nota || '' });
+    });
+  });
+  return list;
+}
+
+function ovSetEntry(mk, rubro, cliente, monto, nota) {
+  if (!window.OV_DATA[mk]) window.OV_DATA[mk] = {};
+  if (!window.OV_DATA[mk][rubro]) window.OV_DATA[mk][rubro] = {};
+  window.OV_DATA[mk][rubro][cliente] = { monto, nota };
+}
+
+function ovDelEntry(mk, rubro, cliente) {
+  if (window.OV_DATA[mk]?.[rubro]?.[cliente]) {
+    delete window.OV_DATA[mk][rubro][cliente];
+    if (!Object.keys(window.OV_DATA[mk][rubro]).length) delete window.OV_DATA[mk][rubro];
+    if (!Object.keys(window.OV_DATA[mk]).length) delete window.OV_DATA[mk];
+  }
+}
+
+// Apply overrides to distribution result
+// For each rubro that has overrides: subtract direct amounts from total, 
+// redistribute residual proportionally, then add back direct amounts.
+function applyOverrides(dist, tbData, mk) {
+  if (!window.OV_DATA[mk] || !Object.keys(window.OV_DATA[mk]).length) return dist;
+
+  const result = {};
+  // Deep clone dist
+  Object.entries(dist).forEach(([cl, vals]) => {
+    result[cl] = { ...vals };
+  });
+
+  const MES_NAMES = {1:'Enero',2:'Febrero',3:'Marzo',4:'Abril',5:'Mayo',6:'Junio',
+    7:'Julio',8:'Agosto',9:'Septiembre',10:'Octubre',11:'Noviembre',12:'Diciembre'};
+
+  Object.entries(window.OV_DATA[mk] || {}).forEach(([rubro, overrides]) => {
+    // Sum of all direct assignments for this rubro
+    const directTotal = Object.values(overrides).reduce((s, e) => s + (e.monto || 0), 0);
+
+    // Original total for this rubro across all clients
+    const origTotal = Object.values(result).reduce((s, c) => s + (c[rubro] || 0), 0);
+
+    const residual = Math.max(0, origTotal - directTotal);
+    const origResidual = origTotal; // base for proportional rescaling
+
+    // Build proportions from original dist (excluding override clients)
+    const overrideClients = new Set(Object.keys(overrides));
+    const propBase = Object.entries(result)
+      .filter(([cl]) => !overrideClients.has(cl))
+      .reduce((s, [, v]) => s + (v[rubro] || 0), 0);
+
+    // Rescale non-override clients proportionally
+    Object.entries(result).forEach(([cl, vals]) => {
+      if (overrideClients.has(cl)) {
+        // Set direct amount
+        result[cl][rubro] = overrides[cl]?.monto || 0;
+      } else {
+        // Rescale proportionally against residual
+        const origShare = vals[rubro] || 0;
+        result[cl][rubro] = propBase > 0 ? (origShare / propBase) * residual : 0;
+      }
+    });
+
+    // If override client not in dist yet, add them
+    Object.entries(overrides).forEach(([cl, entry]) => {
+      if (!result[cl]) {
+        result[cl] = {};
+        Object.keys(OV_RUBRO_LABELS).forEach(k => { result[cl][k] = 0; });
+      }
+      result[cl][rubro] = entry.monto || 0;
+    });
+  });
+
+  return result;
+}
+
+// ── MODAL ──
+function openOvModal() {
+  const mk = ovMesKey();
+  const MES_NAMES = {1:'Enero',2:'Febrero',3:'Marzo',4:'Abril',5:'Mayo',6:'Junio',
+    7:'Julio',8:'Agosto',9:'Septiembre',10:'Octubre',11:'Noviembre',12:'Diciembre'};
+  const mesNum = parseInt(mk.split('_')[0]);
+  const anio   = mk.split('_')[1] || '2026';
+  document.getElementById('ov-mes-label').textContent =
+    (MES_NAMES[mesNum] || mk) + ' ' + anio;
+
+  // Populate client dropdown
+  const clSel = document.getElementById('ov-new-cl');
+  const dist = calcDistribucion() || {};
+  const clients = [...new Set([
+    ...Object.keys(dist),
+    ...Object.keys(window.ING_SP?.[mk] || {}),
+  ])].sort();
+  clSel.innerHTML = '<option value="">— Cliente —</option>' +
+    clients.map(c => `<option value="${c}">${c}</option>`).join('');
+
+  // Load from SP
+  ovLoadFromSP(mk).then(() => renderOvEntries(mk));
+  renderOvEntries(mk);
+  document.getElementById('ov-backdrop').classList.add('open');
+}
+
+function closeOvModal() {
+  document.getElementById('ov-backdrop').classList.remove('open');
+}
+
+function ovBackdropClick(e) {
+  if (e.target === document.getElementById('ov-backdrop')) closeOvModal();
+}
+
+function renderOvEntries(mk) {
+  const entries = ovGetEntries(mk || ovMesKey());
+  const wrap = document.getElementById('ov-entries-wrap');
+
+  // Get total per rubro from current dist for impact calculation
+  const dist = calcDistribucion() || {};
+  const rubTotals = {};
+  Object.values(dist).forEach(cl => {
+    Object.entries(OV_RUBRO_LABELS).forEach(([k]) => {
+      rubTotals[k] = (rubTotals[k] || 0) + (cl[k] || 0);
+    });
+  });
+
+  if (!entries.length) {
+    wrap.innerHTML = `<div class="ov-empty">Sin asignaciones directas para este periodo.<br>
+      <span style="font-weight:400;font-size:12px;">Agrega una arriba para sobreescribir la distribución proporcional.</span>
+    </div>`;
+    return;
+  }
+
+  let html = `<div class="ov-section-lbl" style="margin-top:8px;">
+    Asignaciones activas · ${entries.length} registro${entries.length>1?'s':''}
+  </div>
+  <table class="ov-tbl">
+    <thead><tr>
+      <th>Cliente</th>
+      <th>Rubro</th>
+      <th style="text-align:right;">Monto asignado</th>
+      <th style="text-align:right;">% del rubro</th>
+      <th>Nota</th>
+      <th style="text-align:center;">✕</th>
+    </tr></thead><tbody>`;
+
+  entries.forEach(({rubro, cliente, monto, nota}) => {
+    const rubTotal = rubTotals[rubro] || 0;
+    const pctRub   = rubTotal ? (monto / rubTotal * 100).toFixed(1) + '%' : '—';
+    const rubLabel = OV_RUBRO_LABELS[rubro] || rubro;
+    html += `<tr>
+      <td style="font-weight:600;">${cliente}</td>
+      <td><span class="ov-badge">${rubLabel}</span></td>
+      <td style="text-align:right;font-family:var(--fb);font-weight:700;color:var(--gray);">
+        ${monto.toLocaleString('es-MX', {minimumFractionDigits:2, maximumFractionDigits:2})}
+      </td>
+      <td style="text-align:right;">
+        <span class="ov-impact pos">${pctRub}</span>
+      </td>
+      <td style="color:var(--gray-m);font-size:12px;">${nota||'—'}</td>
+      <td style="text-align:center;">
+        <button class="ov-del-btn" onclick="ovDelete('${rubro}','${cliente.replace(/'/g,"&#39;")}')">🗑</button>
+      </td>
+    </tr>`;
+  });
+  html += '</tbody></table>';
+  wrap.innerHTML = html;
+}
+
+function ovAddEntry() {
+  const mk     = ovMesKey();
+  const cl     = document.getElementById('ov-new-cl').value;
+  const rubro  = document.getElementById('ov-new-rubro').value;
+  const montoStr = document.getElementById('ov-new-monto').value.replace(/,/g,'');
+  const nota   = document.getElementById('ov-new-nota').value.trim();
+  const monto  = parseFloat(montoStr);
+
+  if (!cl)          { toast('Selecciona un cliente',''); return; }
+  if (!rubro)       { toast('Selecciona un rubro',''); return; }
+  if (!monto || monto <= 0) { toast('Ingresa un monto válido',''); return; }
+
+  ovSetEntry(mk, rubro, cl, monto, nota);
+  // Clear inputs
+  document.getElementById('ov-new-cl').value    = '';
+  document.getElementById('ov-new-monto').value = '';
+  document.getElementById('ov-new-nota').value  = '';
+
+  renderOvEntries(mk);
+  toast(`✓ Asignación agregada · ${cl} · ${OV_RUBRO_LABELS[rubro]}`, 'ok');
+}
+
+function ovDelete(rubro, cliente) {
+  const mk = ovMesKey();
+  ovDelEntry(mk, rubro, cliente);
+  renderOvEntries(mk);
+  toast('Asignación eliminada', '');
+}
+
+// ── SP SYNC ──
+async function ovSaveToSP() {
+  const mk = ovMesKey();
+  const entries = ovGetEntries(mk);
+  const statusEl = document.getElementById('ov-save-status');
+
+  // Always save to localStorage
+  try { localStorage.setItem('medistik_ov_v1', JSON.stringify(window.OV_DATA)); } catch(e){}
+
+  if (!PA_OV_WRITE) {
+    statusEl.textContent = '✓ Guardado local (configura PA_OV_WRITE para SP)';
+    statusEl.style.color = 'var(--warn-color)';
+    toast('✓ Guardado local · configura el flow de Overrides para SP', '');
+    // Still re-render matrix with overrides applied
+    renderMatrices();
+    if (document.getElementById('page-cv')?.style.display==='block') renderCV();
+    if (document.getElementById('page-cfgg')?.style.display==='block') renderCFGG();
+    return;
+  }
+
+  statusEl.textContent = '⏳ Guardando...'; statusEl.style.color = 'var(--gray-m)';
+  try {
+    const registros = entries.map(e => ({
+      MesKey: mk, Rubro: e.rubro, Cliente: e.cliente,
+      Monto: e.monto, Nota: e.nota
+    }));
+    const res = await fetch(PA_OV_WRITE, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ MesKey: mk, registros })
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    statusEl.textContent = `✓ Guardado en SP · ${entries.length} registros`;
+    statusEl.style.color = 'var(--pos)';
+    toast(`✓ Overrides guardados en SharePoint · ${mk}`, 'ok');
+  } catch(e) {
+    statusEl.textContent = 'Error: ' + e.message;
+    statusEl.style.color = 'var(--neg)';
+    toast('Error al guardar overrides: ' + e.message, '');
+  }
+
+  // Re-render with overrides
+  renderMatrices();
+  if (document.getElementById('page-cv')?.style.display==='block') renderCV();
+  if (document.getElementById('page-cfgg')?.style.display==='block') renderCFGG();
+}
+
+async function ovLoadFromSP(mk) {
+  // Load from localStorage first
+  try {
+    const saved = localStorage.getItem('medistik_ov_v1');
+    if (saved) Object.assign(window.OV_DATA, JSON.parse(saved));
+  } catch(e){}
+
+  if (!PA_OV_READ) return;
+  try {
+    const res = await fetch(PA_OV_READ, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ MesKey: mk })
+    });
+    if (!res.ok) return;
+    const items = await res.json();
+    if (!Array.isArray(items) || !items.length) return;
+    // Merge into OV_DATA
+    items.forEach(({MesKey, Rubro, Cliente, Monto, Nota}) => {
+      if (!MesKey || !Rubro || !Cliente) return;
+      ovSetEntry(MesKey, Rubro, Cliente, parseFloat(Monto)||0, Nota||'');
+    });
+    try { localStorage.setItem('medistik_ov_v1', JSON.stringify(window.OV_DATA)); } catch(e){}
+  } catch(e) { console.warn('OV read error:', e); }
+}
+
+// ── PATCH calcDistribucion and calcDistribucionFromTB to apply overrides ──
+const _origCalcDist = calcDistribucion;
+calcDistribucion = function() {
+  const dist = _origCalcDist.call(this);
+  if (!dist) return dist;
+  const mk = window._currentMesKey || getMesKey();
+  return applyOverrides(dist, window._tbData, mk);
+};
+
+const _origCalcDistFromTB = calcDistribucionFromTB;
+calcDistribucionFromTB = function(mergedTB, mesKeyForLlaves) {
+  const dist = _origCalcDistFromTB.call(this, mergedTB, mesKeyForLlaves);
+  if (!dist) return dist;
+  return applyOverrides(dist, mergedTB, mesKeyForLlaves);
+};
+
+// Load OV from localStorage on startup
+(function(){
+  try {
+    const saved = localStorage.getItem('medistik_ov_v1');
+    if (saved) window.OV_DATA = JSON.parse(saved);
+  } catch(e){}
+})();
 </script>
