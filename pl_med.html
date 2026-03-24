@@ -1534,28 +1534,41 @@ async function saveIngToSP(mesKey, ingRows) {
 async function savePLToSP() {
   const btn = document.getElementById('btn-save-pl');
   const mesKey = window._currentMesKey || getMesKey();
-  const tbData = window._tbData || {};
-  const ingRows = buildIngRows(mesKey);
+  const tbData  = window._tbData || {};
+  const anio    = mesKey.split('_')[1] || '2026';
+  const allIngRows = buildAllIngRows(anio); // {mesKey: [rows]}
+  const totalIngRows = Object.values(allIngRows).reduce((s,r)=>s+r.length,0);
 
-  if (!Object.keys(tbData).length && !ingRows.length) {
+  if (!Object.keys(tbData).length && !totalIngRows) {
     toast('\u26a0 No hay datos cargados en esta sesión', '');
     return;
   }
 
   if (btn) { btn.textContent = '\u23f3 Guardando...'; btn.disabled = true; }
-  toast('Guardando TB e Ingresos en SharePoint...', '');
-  console.log('savePLToSP: mesKey='+mesKey+' tb_cuentas='+Object.keys(tbData).length+' ing_rows='+ingRows.length);
+  const mesesIng = Object.keys(allIngRows);
+  toast('Guardando TB + Ingresos (' + mesesIng.length + ' mes' + (mesesIng.length>1?'es':'') + ')...', '');
+  console.log('savePLToSP: TB mesKey='+mesKey+' cuentas='+Object.keys(tbData).length);
+  console.log('savePLToSP: Ingresos meses=', mesesIng, 'total rows='+totalIngRows);
 
   try {
-    const tbOk  = await saveTBToSP(mesKey, tbData);
-    const ingOk = await saveIngToSP(mesKey, ingRows);
+    // 1. Save TB for current month
+    const tbOk = await saveTBToSP(mesKey, tbData);
+
+    // 2. Save ingresos for EVERY month found in the file
+    let ingOk = true;
+    for (const [mk, rows] of Object.entries(allIngRows)) {
+      console.log('  Guardando ingresos '+mk+': '+rows.length+' rows');
+      const ok = await saveIngToSP(mk, rows);
+      if (!ok) { ingOk = false; console.warn('  Falló ingresos '+mk); }
+    }
+
     console.log('savePLToSP result: tbOk='+tbOk+' ingOk='+ingOk);
     if (tbOk && ingOk) {
-      toast('\u2713 TB e Ingresos guardados en SharePoint \u00b7 ' + (window._pl?.mesLabel || mesKey), 'ok');
+      toast('\u2713 TB (' + mesKey + ') + Ingresos (' + mesesIng.join(', ') + ') guardados en SP', 'ok');
     } else {
       const parts = [];
       if (!tbOk)  parts.push('TB falló');
-      if (!ingOk) parts.push('Ingresos fallaron');
+      if (!ingOk) parts.push('algún mes de Ingresos falló — revisa consola');
       toast('\u26a0 Guardado parcial: ' + parts.join(', '), '');
     }
   } catch(e) {
@@ -1621,10 +1634,11 @@ const PA_LLAVES_READ  = 'https://default2a21bd09a37a4ec48d88bb8f1dea12.d5.enviro
 })();
 
 function buildIngRows(mesKey) {
-  // Build flat array of ingresos rows from _ingByClienteDiv for this mes
+  // Build flat array for ONE specific mesKey
   const MESES_NUM_R = {Enero:1,Febrero:2,Marzo:3,Abril:4,Mayo:5,Junio:6,
     Julio:7,Agosto:8,Septiembre:9,Octubre:10,Noviembre:11,Diciembre:12};
   const mesNum = parseInt(mesKey.split('_')[0]);
+  const anio   = mesKey.split('_')[1] || '2026';
   const mesNombre = Object.entries(MESES_NUM_R).find(([,v])=>v===mesNum)?.[0] || 'Enero';
   const divData = window._ingByClienteDiv?.[mesNombre] || {};
   const rows = [];
@@ -1637,6 +1651,35 @@ function buildIngRows(mesKey) {
     });
   });
   return rows;
+}
+
+function buildAllIngRows(anio) {
+  // Build rows for ALL months that have data in _ingByClienteDiv
+  const MESES_NUM_R = {Enero:1,Febrero:2,Marzo:3,Abril:4,Mayo:5,Junio:6,
+    Julio:7,Agosto:8,Septiembre:9,Octubre:10,Noviembre:11,Diciembre:12};
+  const yr = anio || '2026';
+  const allRows = {}; // keyed by mesKey
+  const divDataAll = window._ingByClienteDiv || {};
+  const mesesConDatos = Object.entries(divDataAll)
+    .filter(([mes, clientes]) => Object.keys(clientes).length > 0)
+    .map(([mes]) => mes);
+  console.log('buildAllIngRows: meses con datos en _ingByClienteDiv =', mesesConDatos, '| anio='+yr);
+  Object.entries(divDataAll).forEach(([mesNombre, clienteData]) => {
+    const mesNum = MESES_NUM_R[mesNombre];
+    if (!mesNum) return;
+    const mesKey = mesNum + '_' + yr;
+    const rows = [];
+    Object.entries(clienteData).forEach(([cliente, divs]) => {
+      Object.entries(divs).forEach(([div, tipos]) => {
+        Object.entries(tipos).forEach(([tipo, monto]) => {
+          if (tipo === 'total' || !monto) return;
+          rows.push({Cliente: cliente, Division: div, Tipo: tipo, Monto: monto});
+        });
+      });
+    });
+    if (rows.length) allRows[mesKey] = rows;
+  });
+  return allRows;
 }
 
 async function loadLlavesFromSharePoint(mesKey) {
