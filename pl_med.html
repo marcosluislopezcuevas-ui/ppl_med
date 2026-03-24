@@ -314,6 +314,59 @@ body{background:var(--white);color:var(--gray);font-family:var(--fb);font-size:1
 .mapeo-tbl tr:hover td{background:var(--lime-bg);}
 .llave-tag{font-family:var(--fh);font-weight:700;font-size:10px;letter-spacing:.04em;
   padding:2px 7px;border-radius:3px;background:var(--lime-pale);color:var(--lime-deep);}
+
+/* ── ACUM / CLIENT FILTER in PL ── */
+.pl-filter-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px;padding:10px 0 0;}
+.pl-filter-sel{font-family:var(--fh);font-weight:700;font-size:13px;padding:5px 10px;
+  border:1.5px solid var(--border-m);border-radius:var(--r);background:var(--white);color:var(--gray);outline:none;cursor:pointer;}
+.pl-filter-sel:focus{border-color:var(--lime-dark);}
+
+/* ── SUMMARY KPIS BAR (CV / CFGG pages) ── */
+.kpi-strip{display:grid;gap:10px;margin-bottom:18px;}
+.kpi-card{background:var(--white);border:1px solid var(--border);border-radius:var(--r);padding:13px 16px;}
+.kpi-card-lbl{font-family:var(--fh);font-weight:700;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--gray-d);margin-bottom:4px;}
+.kpi-card-val{font-family:var(--fb);font-weight:700;font-size:20px;line-height:1.1;color:var(--gray);}
+.kpi-card-pct{font-size:12px;color:var(--gray-m);margin-top:2px;font-family:var(--fh);font-weight:600;}
+.kpi-card.neg .kpi-card-val{color:var(--neg);}
+.kpi-card.pos .kpi-card-val{color:var(--pos);}
+.kpi-card.lime .kpi-card-val{color:var(--lime-deep);}
+
+/* ── DIST TABLE (CV / CFGG) ── */
+.dist-tbl-wrap{background:var(--white);border:1px solid var(--border);border-radius:var(--rl);overflow:hidden;}
+.dist-tbl{width:100%;border-collapse:collapse;font-size:12px;}
+.dist-tbl th{font-family:var(--fh);font-weight:700;font-size:10px;letter-spacing:.07em;text-transform:uppercase;
+  color:var(--gray-m);background:var(--surface2);border-bottom:2px solid var(--border);
+  padding:7px 8px;text-align:right;white-space:nowrap;cursor:pointer;user-select:none;}
+.dist-tbl th:first-child{text-align:left;min-width:160px;position:sticky;left:0;background:var(--surface2);}
+.dist-tbl th:hover{background:var(--lime-bg);color:var(--lime-deep);}
+.dist-tbl th.sort-asc .sort-icon::after{content:'▲';opacity:1;}
+.dist-tbl th.sort-desc .sort-icon::after{content:'▼';opacity:1;}
+.dist-tbl th .sort-icon{margin-left:3px;opacity:0.4;font-size:9px;}
+.dist-tbl th .sort-icon::after{content:'⬍';}
+.dist-tbl th.grp-hdr{background:var(--lime-bg);color:var(--lime-deep);border-left:2px solid var(--lime-dark);}
+
+.dist-tbl td{padding:5px 8px;border-bottom:1px solid var(--border);text-align:right;white-space:nowrap;}
+.dist-tbl td:first-child{text-align:left;font-weight:500;position:sticky;left:0;background:var(--white);z-index:1;padding-left:10px;}
+.dist-tbl tr:hover td{background:var(--lime-bg);}
+.dist-tbl tr:hover td:first-child{background:var(--lime-bg);}
+.dist-tbl tr.total-row td{background:var(--lime-pale);font-weight:700;border-top:2px solid var(--lime-dark);}
+.dist-tbl tr.total-row td:first-child{font-family:var(--fh);font-weight:800;background:var(--lime-pale);}
+.dist-tbl td.grp-col{border-left:2px solid var(--lime-dark);background:var(--lime-bg)!important;font-weight:700;}
+.dist-tbl tr.group-hdr-row td{background:var(--surface2);font-family:var(--fh);font-weight:800;font-size:11px;
+  letter-spacing:.1em;text-transform:uppercase;color:var(--gray-m);cursor:pointer;border-top:2px solid var(--border-m);}
+.dist-tbl tr.group-hdr-row:hover td{background:var(--lime-bg);color:var(--lime-deep);}
+
+/* ── TOP 15 ── */
+.top15-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;}
+.top15-card{background:var(--white);border:1px solid var(--border);border-radius:var(--rl);padding:16px;overflow:hidden;}
+.top15-title{font-family:var(--fh);font-weight:800;font-size:13px;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--gray);margin-bottom:12px;display:flex;align-items:center;gap:8px;}
+.top15-bar-row{display:flex;align-items:center;gap:8px;margin-bottom:5px;}
+.top15-rank{font-family:var(--fh);font-weight:800;font-size:11px;color:var(--gray-d);width:18px;flex-shrink:0;text-align:right;}
+.top15-name{font-size:12px;font-weight:500;color:var(--gray);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;flex:1;}
+.top15-bar-wrap{width:90px;flex-shrink:0;height:6px;background:var(--border);border-radius:3px;overflow:hidden;}
+.top15-bar-fill{height:100%;border-radius:3px;}
+.top15-val{font-family:var(--fh);font-weight:700;font-size:11px;width:60px;text-align:right;flex-shrink:0;}
 </style>
 </head>
 <body>
@@ -325,9 +378,11 @@ body{background:var(--white);color:var(--gray);font-family:var(--fb);font-size:1
   <div class="nav-tabs" id="nav-tabs">
     <button class="nav-tab active" id="tab-pl"      onclick="showTab('pl')">P&amp;L</button>
     <button class="nav-tab"        id="tab-llaves"  onclick="showTab('llaves')">Llaves de Reparto</button>
-    <button class="nav-tab"        id="tab-clpnl"   onclick="showTab('clpnl')">P&amp;L por Cliente</button>
     <button class="nav-tab"        id="tab-mmontos" onclick="showTab('mmontos')">Matriz</button>
     <button class="nav-tab"        id="tab-mapeo"   onclick="showTab('mapeo')">Mapeo de Cuentas</button>
+    <button class="nav-tab"        id="tab-cv"      onclick="showTab('cv')">Costos Variables</button>
+    <button class="nav-tab"        id="tab-cfgg"    onclick="showTab('cfgg')">CF y GG</button>
+    <button class="nav-tab"        id="tab-top15"   onclick="showTab('top15')">Top 15</button>
   </div>
   <div class="nav-spacer"></div>
   <span class="periodo-badge" id="periodo-badge"></span>
@@ -399,6 +454,47 @@ body{background:var(--white);color:var(--gray);font-family:var(--fb);font-size:1
       </div>
     </div>
     <div class="pl-period-row" id="pl-period-row"></div>
+    <!-- PL Filters: acum toggle + client selector -->
+    <div class="pl-filter-bar" id="pl-filter-bar">
+      <div style="display:flex;background:var(--surface2);border:1.5px solid var(--border-m);border-radius:var(--r);overflow:hidden;padding:1px;gap:1px;">
+        <button class="fmt-btn on" id="pl-btn-mes"  onclick="setPLVista('mes')" >Por mes</button>
+        <button class="fmt-btn"    id="pl-btn-acum" onclick="setPLVista('acum')">Acumulado</button>
+      </div>
+      <!-- Single month selector -->
+      <select class="pl-filter-sel" id="pl-mes-sel" onchange="renderPLFiltered()">
+        <option value="1_2026">Enero 2026</option><option value="2_2026">Febrero 2026</option>
+        <option value="3_2026">Marzo 2026</option><option value="4_2026">Abril 2026</option>
+        <option value="5_2026">Mayo 2026</option><option value="6_2026">Junio 2026</option>
+        <option value="7_2026">Julio 2026</option><option value="8_2026">Agosto 2026</option>
+        <option value="9_2026">Septiembre 2026</option><option value="10_2026">Octubre 2026</option>
+        <option value="11_2026">Noviembre 2026</option><option value="12_2026">Diciembre 2026</option>
+      </select>
+      <!-- Acum range -->
+      <div id="pl-acum-range" style="display:none;align-items:center;gap:6px;">
+        <span style="font-family:var(--fh);font-weight:700;font-size:12px;color:var(--gray-m);">De</span>
+        <select class="pl-filter-sel" id="pl-acum-desde" onchange="renderPLFiltered()">
+          <option value="1_2026">Enero 2026</option><option value="2_2026">Febrero 2026</option>
+          <option value="3_2026">Marzo 2026</option><option value="4_2026">Abril 2026</option>
+          <option value="5_2026">Mayo 2026</option><option value="6_2026">Junio 2026</option>
+          <option value="7_2026">Julio 2026</option><option value="8_2026">Agosto 2026</option>
+          <option value="9_2026">Septiembre 2026</option><option value="10_2026">Octubre 2026</option>
+          <option value="11_2026">Noviembre 2026</option><option value="12_2026">Diciembre 2026</option>
+        </select>
+        <span style="font-family:var(--fh);font-weight:700;font-size:12px;color:var(--gray-m);">A</span>
+        <select class="pl-filter-sel" id="pl-acum-hasta" onchange="renderPLFiltered()">
+          <option value="1_2026">Enero 2026</option><option value="2_2026" selected>Febrero 2026</option>
+          <option value="3_2026">Marzo 2026</option><option value="4_2026">Abril 2026</option>
+          <option value="5_2026">Mayo 2026</option><option value="6_2026">Junio 2026</option>
+          <option value="7_2026">Julio 2026</option><option value="8_2026">Agosto 2026</option>
+          <option value="9_2026">Septiembre 2026</option><option value="10_2026">Octubre 2026</option>
+          <option value="11_2026">Noviembre 2026</option><option value="12_2026">Diciembre 2026</option>
+        </select>
+      </div>
+      <!-- Client dropdown -->
+      <select class="pl-filter-sel" id="pl-cl-sel" onchange="renderPLFiltered()" style="min-width:180px;">
+        <option value="">Todos los clientes</option>
+      </select>
+    </div>
     <!-- Collapsible upload panel -->
   <div id="upload-panel" style="display:none;background:var(--lime-bg);border:1.5px solid var(--lime);border-radius:var(--r);margin:0 28px 16px;padding:16px 20px;">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
@@ -518,30 +614,7 @@ body{background:var(--white);color:var(--gray);font-family:var(--fb);font-size:1
 </div>
 </div>
 
-<!-- P&L POR CLIENTE -->
-<div class="page" id="page-clpnl">
-<div class="dist-page">
-  <div class="dist-title">P&amp;L por Grupo Cliente</div>
-  <div class="dist-sub">P&amp;L individual calculado con las llaves de reparto cargadas.</div>
-  <div class="dist-filters" style="flex-direction:column;align-items:flex-start;gap:10px;">
-    <div style="display:flex;gap:8px;align-items:center;">
-      <select class="dist-sel" id="cl-sel" onchange="renderClientPL()">
-        <option value="">-- Selecciona un grupo cliente --</option>
-      </select>
-    </div>
-    <div id="cl-chips-wrap" style="display:flex;flex-wrap:wrap;gap:4px;max-height:90px;overflow-y:auto;"></div>
-  </div>
-  <div id="cl-pl-content">
-    <div class="cl-empty" id="cl-empty-state">
-      <div class="cl-empty-icon">&#128101;</div>
-      <div class="cl-empty-txt" id="cl-empty-title">Carga los archivos primero</div>
-      <div style="font-size:13px;color:var(--gray-m);margin-top:6px;" id="cl-empty-sub">Ve a la pestana P&L, sube el CV_014 y el archivo de Ingresos, luego regresa aqui.</div>
-      <div style="margin-top:20px;">
-        <button onclick="showDiag()" style="font-family:var(--fh);font-weight:700;font-size:11px;padding:5px 12px;border-radius:6px;cursor:pointer;border:1.5px solid var(--border-m);background:var(--surface2);color:var(--gray-m);">&#128269; Diagnostico</button>
-      </div>
-      <div id="diag-panel" style="display:none;margin-top:12px;text-align:left;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px;max-width:500px;font-size:12px;line-height:1.8;"></div>
-    </div>
-  </div>
+
 </div>
 </div>
 
@@ -629,6 +702,22 @@ body{background:var(--white);color:var(--gray);font-family:var(--fb);font-size:1
 
 <!-- MATRIZ % redirect -->
 <div class="page" id="page-mpcts"></div>
+
+
+<!-- COSTOS VARIABLES PAGE -->
+<div class="page" id="page-cv">
+  <div class="dist-page" id="cv-inner"></div>
+</div>
+
+<!-- CF Y GG PAGE -->
+<div class="page" id="page-cfgg">
+  <div class="dist-page" id="cfgg-inner"></div>
+</div>
+
+<!-- TOP 15 PAGE -->
+<div class="page" id="page-top15">
+  <div class="dist-page" id="top15-inner"></div>
+</div>
 
 <div class="toast" id="toast"></div>
 
@@ -1049,7 +1138,7 @@ function renderPL(d){
   const emptyState = document.getElementById('pl-empty-state');
   if (emptyState) emptyState.style.display = 'none';
   // Make sure pl tab is active
-  ['pl','llaves','clpnl','mmontos','mapeo'].forEach(t=>document.getElementById('tab-'+t)?.classList.toggle('active',t==='pl'));
+  ['pl','llaves','mmontos','mapeo','cv','cfgg','top15'].forEach(t=>document.getElementById('tab-'+t)?.classList.toggle('active',t==='pl'));
   // Hide old upload page completely
   const up = document.getElementById('page-upload');
   if (up) up.style.display = 'none';
@@ -1217,15 +1306,17 @@ function showTab(tab) {
   const uploadPg = document.getElementById('page-upload');
   if (uploadPg) uploadPg.style.display = 'none';
 
-  ['pl','llaves','clpnl','mmontos','mapeo'].forEach(t => {
+  ['pl','llaves','mmontos','mapeo','cv','cfgg','top15'].forEach(t => {
     const pg = document.getElementById('page-' + t);
     if (pg) pg.style.display = t===tab ? 'block' : 'none';
     document.getElementById('tab-'+t)?.classList.toggle('active', t===tab);
   });
   if (tab==='llaves')  initLlaves();
   if (tab==='mapeo')   initMapeo();
-  if (tab==='clpnl')   { initClientPLSelector(); renderClientPL(); }
   if (tab==='mmontos') { initMatrixFilters(); renderMatrices(); }
+  if (tab==='cv')      renderCV();
+  if (tab==='cfgg')    renderCFGG();
+  if (tab==='top15')   renderTop15();
 }
 
 // -- INIT LLAVES --
@@ -2348,21 +2439,27 @@ function renderMatrices() {
     return mxSortDir==='asc' ? va-vb : vb-va;
   });
 
+  // Groups
+  const mxConIng = sorted.filter(c=>cdata[c].ing>0);
+  const mxSinIng = sorted.filter(c=>cdata[c].ing===0);
+  window._mxCollapsed = window._mxCollapsed || {con:false, sin:true};
+  const mxC = window._mxCollapsed;
+
   // Column definitions for matrix
   // Each col: {key, label, color, isDivider}
   const COLS = [
     {key:'ing',          label:'Ingresos',        color:'var(--in-color)',   divAfter:true},
-    {key:'salarios',     label:'Salarios',         color:'var(--neg)'},
-    {key:'fletes',       label:'Fletes',           color:'var(--neg)'},
-    {key:'mat_empaque',  label:'Mat. Empaque',     color:'var(--neg)'},
-    {key:'cargo_farma',  label:'Cargo Farma',      color:'var(--neg)'},
-    {key:'costo_insumos',label:'Costo Insumos',    color:'var(--neg)'},
-    {key:'otros_cv',     label:'Otros CV',         color:'var(--neg)'},
-    {key:'cv',           label:'CV Total',         color:'var(--neg)',        divAfter:true, bold:true},
-    {key:'cm',           label:'Contribucion Marginal', color:'var(--pos-color)', divAfter:true, bold:true},
-    {key:'costos_fijos', label:'Costos Fijos',     color:'var(--neg)'},
-    {key:'gtos_grales',  label:'Gastos Grales',    color:'var(--neg)',        divAfter:true},
-    {key:'ebitda',       label:'EBITDA',           color:'var(--lime-deep)', bold:true},
+    {key:'salarios',     label:'Salarios',         color:'var(--gray)'},
+    {key:'fletes',       label:'Fletes',           color:'var(--gray)'},
+    {key:'mat_empaque',  label:'Mat. Empaque',     color:'var(--gray)'},
+    {key:'cargo_farma',  label:'Cargo Farma',      color:'var(--gray)'},
+    {key:'costo_insumos',label:'Costo Insumos',    color:'var(--gray)'},
+    {key:'otros_cv',     label:'Otros CV',         color:'var(--gray)'},
+    {key:'cv',           label:'CV Total',         color:'var(--gray)',       divAfter:true, bold:true},
+    {key:'cm',           label:'CM',               color:'var(--pos-color)', divAfter:true, bold:true},
+    {key:'costos_fijos', label:'Costos Fijos',     color:'var(--gray)'},
+    {key:'gtos_grales',  label:'Gastos Grales',    color:'var(--gray)',       divAfter:true},
+    {key:'ebitda',       label:'EBITDA',           colorFn: v=>v>=0?'var(--pos)':'var(--neg)', bold:true},
   ];
 
   const thCls = col => 'sortable' + (mxSortCol===col?' sort-'+mxSortDir:'');
@@ -2389,9 +2486,9 @@ function renderMatrices() {
   </thead>`;
 
   // Cell renderer
-  const cell = (v, ing, color, bold, divAfter) => {
+  const cell = (v, ing, color, bold, divAfter, colorFn) => {
     const pct = ing ? v/ing*100 : 0;
-    const c   = color || (v>=0?'var(--in-color)':'var(--neg)');
+    const c   = colorFn ? colorFn(v) : (color || (v>=0?'var(--in-color)':'var(--neg)'));
     const fw  = bold ? '700' : '500';
     const bl  = divAfter ? 'border-right:2px solid var(--lime-dark);' : '';
     if (!v && v!==0) return `<td style="${bl}"></td><td></td>`;
@@ -2404,19 +2501,30 @@ function renderMatrices() {
       </td>`;
   };
 
-  const rows = sorted.map(cl => {
-    const d = cdata[cl];
-    const cells = COLS.map(col => cell(d[col.key], d.ing, col.color, col.bold, col.divAfter)).join('');
-    return `<tr>
-      <td style="font-weight:500;position:sticky;left:0;background:var(--white);z-index:1;padding:6px 10px;">${cl}</td>
-      ${cells}
+  const buildMxGroup = (group, label, collapsed, toggleFn) => {
+    const icon = collapsed ? '▶' : '▼';
+    let r = `<tr class="group-hdr-row" onclick="${toggleFn}">
+      <td colspan="${1 + COLS.length*2}" style="padding-left:8px;">${icon} ${label} (${group.length})</td>
     </tr>`;
-  }).join('');
+    if (!collapsed) {
+      group.forEach(cl => {
+        const d = cdata[cl];
+        const cells = COLS.map(col => cell(d[col.key], d.ing, col.color, col.bold, col.divAfter, col.colorFn)).join('');
+        r += `<tr>
+          <td style="font-weight:500;position:sticky;left:0;background:var(--white);z-index:1;padding:6px 10px;">${cl}</td>
+          ${cells}
+        </tr>`;
+      });
+    }
+    return r;
+  };
+  const rows = buildMxGroup(mxConIng,'Con Ingresos',mxC.con,"toggleMxGroup('con')")
+             + buildMxGroup(mxSinIng,'Sin Ingresos',mxC.sin,"toggleMxGroup('sin')");
 
   const totCells = COLS.map(col => {
     const v   = totals[col.key]||0;
     const pct = totals.ing ? v/totals.ing*100 : 0;
-    const c   = col.color || 'var(--lime-deep)';
+    const c   = col.colorFn ? col.colorFn(v) : (col.color || 'var(--lime-deep)');
     const bl  = col.divAfter ? 'border-right:2px solid var(--lime-dark);' : '';
     return `
       <td style="text-align:right;padding:4px 8px;${bl}"><span style="font-size:12px;font-weight:800;color:${c};">${fmt(v)}</span></td>
@@ -2518,6 +2626,514 @@ function wireDropZone(dropId, inputId, key) {
 }
 
 function toast(msg,type){const el=document.getElementById('toast');el.innerHTML=msg;el.className='toast '+(type||'');el.classList.add('show');setTimeout(()=>el.classList.remove('show'),2800);}
+
+function toggleMxGroup(g) {
+  window._mxCollapsed = window._mxCollapsed || {con:false,sin:true};
+  window._mxCollapsed[g] = !window._mxCollapsed[g];
+  renderMatrices();
+}
 </script>
 </body>
-</html>
+</html><!-- INJECTED JS - new functions -->
+<script>
+// ══════════════════════════════════════════════════════════════
+// PL ACUM + CLIENT FILTER
+// ══════════════════════════════════════════════════════════════
+let plVista = 'mes';
+
+function setPLVista(v) {
+  plVista = v;
+  document.getElementById('pl-btn-mes')?.classList.toggle('on',  v==='mes');
+  document.getElementById('pl-btn-acum')?.classList.toggle('on', v==='acum');
+  document.getElementById('pl-mes-sel').style.display    = v==='mes'  ? '' : 'none';
+  document.getElementById('pl-acum-range').style.display = v==='acum' ? 'flex' : 'none';
+  renderPLFiltered();
+}
+
+function updatePLClientList() {
+  const sel = document.getElementById('pl-cl-sel'); if (!sel) return;
+  const dist = calcDistribucion(); if (!dist) return;
+  const cur = sel.value;
+  const clients = Object.keys(dist).sort();
+  sel.innerHTML = '<option value="">Todos los clientes</option>' +
+    clients.map(c => `<option value="${c}"${c===cur?' selected':''}>${c}</option>`).join('');
+}
+
+function renderPLFiltered() {
+  const MES_NAMES = {1:'Enero',2:'Febrero',3:'Marzo',4:'Abril',5:'Mayo',6:'Junio',
+    7:'Julio',8:'Agosto',9:'Septiembre',10:'Octubre',11:'Noviembre',12:'Diciembre'};
+  const cl = document.getElementById('pl-cl-sel')?.value || '';
+
+  if (plVista === 'acum') {
+    const desde = document.getElementById('pl-acum-desde')?.value || '1_2026';
+    const hasta = document.getElementById('pl-acum-hasta')?.value || '1_2026';
+    const range = getMesKeyRange(desde, hasta);
+    const mergedTB  = calcTBRange(range);
+    const mergedIng = calcIngRange(range);
+    const llavesMk  = range[range.length-1] || hasta;
+    const dist = calcDistribucionFromTB(mergedTB, llavesMk);
+
+    // Build acum PL data
+    let ing_total = 0;
+    if (cl) {
+      ing_total = mergedIng[cl] || 0;
+    } else {
+      ing_total = Object.values(mergedIng).reduce((s,v)=>s+v,0) ||
+        range.reduce((s,mk)=>s+(window._tbData?0:0),0); // fallback
+    }
+
+    const getCost = (key) => cl
+      ? (dist[cl]?.[key] || 0)
+      : Object.values(dist).reduce((s,d)=>s+(d[key]||0),0);
+
+    const salarios = getCost('salarios'), fletes = getCost('fletes'),
+          mat = getCost('mat_empaque'), farma = getCost('cargo_farma'),
+          insum = getCost('costo_insumos'), ocv = getCost('otros_cv'),
+          cv_total = salarios+fletes+mat+farma+insum+ocv,
+          cm = ing_total - cv_total,
+          costos_fijos = getCost('costos_fijos'),
+          total_costos = cv_total + costos_fijos,
+          gtos_grales = getCost('gtos_grales'),
+          util_log = ing_total - total_costos - gtos_grales;
+
+    // otros_gtos — sum from mergedTB node 7
+    const otros_gtos = Object.entries(mergedTB)
+      .filter(([k])=>k.startsWith('7')).reduce((s,[,v])=>s+v,0);
+    const ebitda = util_log + otros_gtos;
+
+    const acumMes = `${MES_NAMES[parseInt(desde)]} → ${MES_NAMES[parseInt(hasta)]}`;
+    const d = { mesLabel: acumMes, periodo: `Acumulado ${acumMes}`, mes: acumMes,
+      ing: {Almacen:{total:ing_total},Transporte:{total:0}},
+      ing_total, salarios, fletes, mat_empaque:mat, cargo_farma:farma,
+      costo_insumos:insum, otros_cv:ocv, cv_total, cm, costos_fijos,
+      total_costos, gtos_grales, util_log, otros_gtos, ebitda };
+    renderPL(d);
+  } else {
+    // Single month
+    const mk = document.getElementById('pl-mes-sel')?.value || getMesKey();
+    const mesNum = parseInt(mk.split('_')[0]);
+    const mesNombre = MES_NAMES[mesNum] || 'Enero';
+
+    if (cl) {
+      // Build client-level PL
+      const dist = calcDistribucion();
+      const ingRaw = window.ING_SP?.[mk] || window._ingByCliente?.[mesNombre] || {};
+      const ing_total = ingRaw[cl] || 0;
+      const getCost = k => dist?.[cl]?.[k] || 0;
+      const salarios=getCost('salarios'),fletes=getCost('fletes'),mat=getCost('mat_empaque'),
+            farma=getCost('cargo_farma'),insum=getCost('costo_insumos'),ocv=getCost('otros_cv'),
+            cv_total=salarios+fletes+mat+farma+insum+ocv,cm=ing_total-cv_total,
+            costos_fijos=getCost('costos_fijos'),total_costos=cv_total+costos_fijos,
+            gtos_grales=getCost('gtos_grales'),util_log=ing_total-total_costos-gtos_grales,
+            otros_gtos=0,ebitda=util_log+otros_gtos;
+      const d = { mesLabel: mesNombre+' · '+cl, periodo: mesNombre+' 2026 · '+cl,
+        mes: mesNombre, ing:{Almacen:{total:ing_total},Transporte:{total:0}},
+        ing_total,salarios,fletes,mat_empaque:mat,cargo_farma:farma,
+        costo_insumos:insum,otros_cv:ocv,cv_total,cm,costos_fijos,
+        total_costos,gtos_grales,util_log,otros_gtos,ebitda };
+      renderPL(d);
+    } else {
+      // Full PL for the month
+      if (window.TB_SP?.[mk]) {
+        const pl = buildPLFromSP(mk);
+        if (pl) renderPL(pl);
+      } else if (window._pl) {
+        renderPL(window._pl);
+      }
+    }
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+// SHARED DIST TABLE BUILDER
+// ══════════════════════════════════════════════════════════════
+const DIST_SORT = { cv:{col:'ing',dir:'desc'}, cfgg:{col:'ing',dir:'desc'} };
+
+function getDistData(tabId) {
+  // Determine vista from matrix controls (reuse same selectors)
+  const vista = mxVista;
+  let dist, ingRaw;
+  const MES_NAMES = {1:'Enero',2:'Febrero',3:'Marzo',4:'Abril',5:'Mayo',6:'Junio',
+    7:'Julio',8:'Agosto',9:'Septiembre',10:'Octubre',11:'Noviembre',12:'Diciembre'};
+
+  if (vista === 'acum') {
+    const desde = document.getElementById('mx-acum-desde')?.value || '1_2026';
+    const hasta = document.getElementById('mx-acum-hasta')?.value || getMesKey();
+    const range = getMesKeyRange(desde, hasta);
+    const mergedTB = calcTBRange(range);
+    dist = calcDistribucionFromTB(mergedTB, range[range.length-1]);
+    ingRaw = calcIngRange(range);
+  } else {
+    const mk = document.getElementById('mx-mes-sel')?.value || getMesKey();
+    const mesNom = MES_NAMES[parseInt(mk)] || 'Enero';
+    dist = calcDistribucion();
+    ingRaw = window.ING_SP?.[mk] || window._ingByCliente?.[mesNom] || {};
+  }
+  if (!dist) return null;
+
+  // Build cdata — same as renderMatrices
+  const ingLookup = {};
+  Object.entries(ingRaw).forEach(([k,v])=>{ ingLookup[k.toLowerCase().trim()]=v; });
+  const getIng = cl => {
+    if (ingRaw[cl]!==undefined) return ingRaw[cl];
+    const lower=cl.toLowerCase().trim();
+    if (ingLookup[lower]!==undefined) return ingLookup[lower];
+    for(const[k,v] of Object.entries(ingLookup)){
+      if(lower.includes(k)&&k.length>3)return v;
+      if(k.includes(lower)&&lower.length>3)return v;
+    }
+    return 0;
+  };
+
+  const allClientSet = new Set([...Object.keys(dist), ...Object.keys(ingRaw).filter(c=>ingRaw[c]>0)]);
+  const clients = [...allClientSet];
+  clients.forEach(cl=>{if(!dist[cl])dist[cl]={};});
+
+  const cdata = {};
+  clients.forEach(cl=>{
+    const ing=getIng(cl);
+    const sal=dist[cl]['salarios']||0,flt=dist[cl]['fletes']||0,
+          mat=dist[cl]['mat_empaque']||0,cfm=dist[cl]['cargo_farma']||0,
+          ins=dist[cl]['costo_insumos']||0,ocv=dist[cl]['otros_cv']||0,
+          cf=dist[cl]['costos_fijos']||0,gg=dist[cl]['gtos_grales']||0;
+    const cv=sal+flt+mat+cfm+ins+ocv,cm=ing-cv,ebitda=ing-cv-cf-gg;
+    cdata[cl]={ing,salarios:sal,fletes:flt,mat_empaque:mat,cargo_farma:cfm,
+               costo_insumos:ins,otros_cv:ocv,cv,cm,costos_fijos:cf,gtos_grales:gg,ebitda};
+  });
+
+  // Totals
+  const keys=['ing','salarios','fletes','mat_empaque','cargo_farma','costo_insumos','otros_cv','cv','cm','costos_fijos','gtos_grales','ebitda'];
+  const totals={};
+  keys.forEach(k=>{ totals[k]=clients.reduce((s,c)=>s+(cdata[c][k]||0),0); });
+
+  return {cdata, totals, clients};
+}
+
+// Sort helper for dist tables
+function sortDistClients(clients, cdata, col, dir) {
+  return [...clients].sort((a,b)=>{
+    const va=cdata[a][col]??0, vb=cdata[b][col]??0;
+    return dir==='asc' ? va-vb : vb-va;
+  });
+}
+
+// Build a 3-sub-column header group: Monto | %Vtas | %Dist
+function distThGroup(label, key, tabId, color) {
+  const sort = DIST_SORT[tabId] || {col:'ing',dir:'desc'};
+  const mkCls = (subkey) => sort.col===subkey ? 'sort-'+sort.dir : '';
+  return `<th colspan="3" class="grp-hdr" style="text-align:center;border-left:2px solid var(--lime-dark);color:${color||'inherit'}">
+    ${label}
+  </th>`;
+}
+
+function distSubThs(key, tabId) {
+  const sort = DIST_SORT[tabId]||{col:'',dir:''};
+  const th = (subkey, label) => {
+    const cls = sort.col===key+'_'+subkey ? 'sort-'+sort.dir : '';
+    return `<th class="${cls}" onclick="sortDistTab('${tabId}','${key}_${subkey}')" style="border-left:${subkey==='monto'?'2px solid var(--lime-dark)':'none'}">
+      ${label}<span class="sort-icon"></span></th>`;
+  };
+  return th(key+'_monto','$') + th(key+'_pct_vtas','%Vtas') + th(key+'_pct_dist','%Dist');
+}
+
+function sortDistTab(tabId, col) {
+  const cur = DIST_SORT[tabId] || {col:'ing_monto',dir:'desc'};
+  DIST_SORT[tabId] = { col, dir: cur.col===col && cur.dir==='desc' ? 'asc' : 'desc' };
+  if (tabId==='cv')   renderCV();
+  if (tabId==='cfgg') renderCFGG();
+}
+
+// ══════════════════════════════════════════════════════════════
+// COSTOS VARIABLES TAB
+// ══════════════════════════════════════════════════════════════
+function renderCV() {
+  const el = document.getElementById('cv-inner'); if (!el) return;
+  const data = getDistData('cv');
+  if (!data) { el.innerHTML='<div style="padding:60px;text-align:center;color:var(--gray-m);font-family:var(--fh);font-weight:700;">Carga los datos primero en la pestaña P&L y Matriz</div>'; return; }
+  const {cdata, totals, clients} = data;
+
+  const CV_RUBROS = [
+    {key:'ing',      label:'Ingresos',       color:'var(--pos)'},
+    {key:'salarios', label:'Salarios',        color:'var(--gray)'},
+    {key:'fletes',   label:'Fletes',          color:'var(--gray)'},
+    {key:'mat_empaque',   label:'Mat. Empaque',  color:'var(--gray)'},
+    {key:'cargo_farma',   label:'Cargo Farma',   color:'var(--gray)'},
+    {key:'costo_insumos', label:'Costo Insumos', color:'var(--gray)'},
+    {key:'otros_cv', label:'Otros CV',        color:'var(--gray)'},
+    {key:'cv',       label:'CV Total',        color:'var(--neg)'},
+  ];
+
+  // KPI strip
+  const kpiColors = {ing:'pos',salarios:'',fletes:'',mat_empaque:'',cargo_farma:'',costo_insumos:'',otros_cv:'',cv:'neg'};
+  const kpiHtml = `<div class="kpi-strip" style="grid-template-columns:repeat(${CV_RUBROS.length},1fr);">` +
+    CV_RUBROS.map(r=>`<div class="kpi-card ${kpiColors[r.key]||''}">
+      <div class="kpi-card-lbl">${r.label}</div>
+      <div class="kpi-card-val">${fmt(totals[r.key])}</div>
+      <div class="kpi-card-pct">${totals.ing?((totals[r.key]/totals.ing)*100).toFixed(1)+'% s/Vtas':''}</div>
+    </div>`).join('') + '</div>';
+
+  // Sort
+  const sort = DIST_SORT['cv']||{col:'ing_monto',dir:'desc'};
+  const colKey = sort.col.replace(/_monto|_pct_vtas|_pct_dist/,'');
+  const sorted = sortDistClients(clients, cdata, colKey||'ing', sort.dir);
+
+  // Table header
+  const thCls = key => {
+    const s = DIST_SORT['cv']||{col:'',dir:''};
+    return s.col.startsWith(key) ? 'sort-'+s.dir : '';
+  };
+  let thead = `<tr><th rowspan="2" style="position:sticky;left:0;z-index:3;background:var(--surface2);" onclick="sortDistTab('cv','cliente')">Cliente <span class="sort-icon"></span></th>`;
+  CV_RUBROS.forEach(r=>{ thead += `<th colspan="3" class="grp-hdr" style="text-align:center;" onclick="sortDistTab('cv','${r.key}_monto')">${r.label}</th>`; });
+  thead += '</tr><tr>';
+  CV_RUBROS.forEach(r=>{
+    ['monto','pct_vtas','pct_dist'].forEach(sub=>{
+      const label = sub==='monto'?'$':sub==='pct_vtas'?'%Vtas':'%Dist';
+      const sCls = DIST_SORT['cv']?.col===r.key+'_'+sub ? 'sort-'+(DIST_SORT['cv']?.dir||'desc') : '';
+      thead += `<th class="${sCls}" onclick="sortDistTab('cv','${r.key}_${sub}')" style="border-left:${sub==='monto'?'2px solid var(--lime-dark)':'none'}">${label}<span class="sort-icon"></span></th>`;
+    });
+  });
+  thead += '</tr>';
+
+  // Sort clients
+  const sortedClients = (() => {
+    const sc = sort.col, sd = sort.dir;
+    const [rKey, subKey] = sc.includes('_') ? [sc.substring(0,sc.lastIndexOf('_')), sc.substring(sc.lastIndexOf('_')+1)] : [sc,'monto'];
+    return [...clients].sort((a,b)=>{
+      let va=0,vb=0;
+      const getVal = (cl,rk,sk) => {
+        const base = cdata[cl][rk]||0;
+        const tot  = totals[rk]||1;
+        const ing  = cdata[cl]['ing']||0;
+        const tIng = totals['ing']||1;
+        if(sk==='monto')    return base;
+        if(sk==='pct_vtas') return ing?base/ing*100:0;
+        if(sk==='pct_dist') return tot?base/tot*100:0;
+        return base;
+      };
+      va=getVal(a,rKey,subKey); vb=getVal(b,rKey,subKey);
+      return sd==='asc'?va-vb:vb-va;
+    });
+  })();
+
+  // Group: con ingresos / sin ingresos
+  const conIng  = sortedClients.filter(c=>cdata[c].ing>0);
+  const sinIng  = sortedClients.filter(c=>cdata[c].ing===0);
+  const cvCollapsed = window._cvCollapsed || {con:false,sin:true};
+  window._cvCollapsed = cvCollapsed;
+
+  const cellVal = (cl, rKey, sub) => {
+    const base = cdata[cl][rKey]||0;
+    const tot  = totals[rKey]||1;
+    const ing  = cdata[cl]['ing']||0;
+    const tIng = totals['ing']||1;
+    if(sub==='monto')    return base?fmt(base):'<span style="color:var(--gray-d)">-</span>';
+    if(sub==='pct_vtas') return ing?(base/ing*100).toFixed(1)+'%':'<span style="color:var(--gray-d)">-</span>';
+    if(sub==='pct_dist') return tot&&base?(base/tot*100).toFixed(1)+'%':'<span style="color:var(--gray-d)">-</span>';
+    return '-';
+  };
+
+  const buildGroupRows = (group, groupLabel, isCollapsed, toggleFn) => {
+    const icon = isCollapsed ? '▶' : '▼';
+    let rows = `<tr class="group-hdr-row" onclick="${toggleFn}">
+      <td colspan="${1+CV_RUBROS.length*3}" style="padding-left:8px;">${icon} ${groupLabel} (${group.length})</td>
+    </tr>`;
+    if (!isCollapsed) {
+      group.forEach(cl=>{
+        rows += `<tr><td style="position:sticky;left:0;z-index:1;background:var(--white);padding-left:14px;">${cl}</td>`;
+        CV_RUBROS.forEach(r=>{
+          ['monto','pct_vtas','pct_dist'].forEach((sub,si)=>{
+            rows += `<td style="${si===0?'border-left:2px solid var(--lime-dark);':''}">${cellVal(cl,r.key,sub)}</td>`;
+          });
+        });
+        rows += '</tr>';
+      });
+    }
+    return rows;
+  };
+
+  // Total row
+  let totRow = `<tr class="total-row"><td style="position:sticky;left:0;z-index:1;">TOTAL (${clients.length})</td>`;
+  CV_RUBROS.forEach(r=>{
+    const base=totals[r.key]||0, ing=totals['ing']||1;
+    totRow += `<td style="border-left:2px solid var(--lime-dark);">${base?fmt(base):'-'}</td>`;
+    totRow += `<td>${base&&ing?(base/ing*100).toFixed(1)+'%':'-'}</td>`;
+    totRow += `<td>100%</td>`;
+  });
+  totRow += '</tr>';
+
+  el.innerHTML = kpiHtml +
+    `<div class="dist-tbl-wrap"><div style="overflow-x:auto;max-height:calc(100vh - 320px);overflow-y:auto;">
+    <table class="dist-tbl"><thead>${thead}</thead><tbody>
+    ${buildGroupRows(conIng,'Con Ingresos',cvCollapsed.con,"toggleCVGroup('con')")}
+    ${buildGroupRows(sinIng,'Sin Ingresos',cvCollapsed.sin,"toggleCVGroup('sin')")}
+    ${totRow}
+    </tbody></table></div></div>`;
+}
+
+function toggleCVGroup(g) {
+  window._cvCollapsed = window._cvCollapsed || {con:false,sin:true};
+  window._cvCollapsed[g] = !window._cvCollapsed[g];
+  renderCV();
+}
+
+// ══════════════════════════════════════════════════════════════
+// CF Y GG TAB
+// ══════════════════════════════════════════════════════════════
+function renderCFGG() {
+  const el = document.getElementById('cfgg-inner'); if (!el) return;
+  const data = getDistData('cfgg');
+  if (!data) { el.innerHTML='<div style="padding:60px;text-align:center;color:var(--gray-m);font-family:var(--fh);font-weight:700;">Carga los datos primero</div>'; return; }
+  const {cdata, totals, clients} = data;
+
+  const CFGG_RUBROS = [
+    {key:'ing',          label:'Ingresos',        color:'var(--pos)'},
+    {key:'costos_fijos', label:'Costos Fijos',     color:'var(--gray)'},
+    {key:'gtos_grales',  label:'Gastos Generales', color:'var(--gray)'},
+  ];
+
+  const kpiHtml = `<div class="kpi-strip" style="grid-template-columns:repeat(3,1fr);">` +
+    CFGG_RUBROS.map(r=>`<div class="kpi-card ${r.key==='ing'?'pos':''}">
+      <div class="kpi-card-lbl">${r.label}</div>
+      <div class="kpi-card-val">${fmt(totals[r.key])}</div>
+      <div class="kpi-card-pct">${totals.ing?((totals[r.key]/totals.ing)*100).toFixed(1)+'% s/Vtas':''}</div>
+    </div>`).join('') + '</div>';
+
+  const sort = DIST_SORT['cfgg']||{col:'ing_monto',dir:'desc'};
+
+  let thead = `<tr><th rowspan="2" style="position:sticky;left:0;z-index:3;background:var(--surface2);" onclick="sortDistTab('cfgg','cliente')">Cliente <span class="sort-icon"></span></th>`;
+  CFGG_RUBROS.forEach(r=>{ thead += `<th colspan="3" class="grp-hdr" style="text-align:center;" onclick="sortDistTab('cfgg','${r.key}_monto')">${r.label}</th>`; });
+  thead += '</tr><tr>';
+  CFGG_RUBROS.forEach(r=>{
+    ['monto','pct_vtas','pct_dist'].forEach(sub=>{
+      const label = sub==='monto'?'$':sub==='pct_vtas'?'%Vtas':'%Dist';
+      const sCls = sort.col===r.key+'_'+sub ? 'sort-'+sort.dir : '';
+      thead += `<th class="${sCls}" onclick="sortDistTab('cfgg','${r.key}_${sub}')" style="border-left:${sub==='monto'?'2px solid var(--lime-dark)':'none'}">${label}<span class="sort-icon"></span></th>`;
+    });
+  });
+  thead += '</tr>';
+
+  const sortedClients = (() => {
+    const sc=sort.col,sd=sort.dir;
+    const rKey=sc.includes('_')?sc.substring(0,sc.lastIndexOf('_')):sc;
+    const subKey=sc.includes('_')?sc.substring(sc.lastIndexOf('_')+1):'monto';
+    return [...clients].sort((a,b)=>{
+      const getV=(cl,rk,sk)=>{
+        const base=cdata[cl][rk]||0,tot=totals[rk]||1,ing=cdata[cl]['ing']||0;
+        if(sk==='monto')return base;if(sk==='pct_vtas')return ing?base/ing*100:0;
+        if(sk==='pct_dist')return tot?base/tot*100:0;return base;
+      };
+      return sd==='asc'?getV(a,rKey,subKey)-getV(b,rKey,subKey):getV(b,rKey,subKey)-getV(a,rKey,subKey);
+    });
+  })();
+
+  const conIng = sortedClients.filter(c=>cdata[c].ing>0);
+  const sinIng = sortedClients.filter(c=>cdata[c].ing===0);
+  const cfggC  = window._cfggCollapsed||{con:false,sin:true};
+  window._cfggCollapsed = cfggC;
+
+  const cellV = (cl,rKey,sub)=>{
+    const base=cdata[cl][rKey]||0,tot=totals[rKey]||1,ing=cdata[cl]['ing']||0;
+    const na='<span style="color:var(--gray-d)">-</span>';
+    if(sub==='monto')    return base?fmt(base):na;
+    if(sub==='pct_vtas') return ing?(base/ing*100).toFixed(1)+'%':na;
+    if(sub==='pct_dist') return tot&&base?(base/tot*100).toFixed(1)+'%':na;
+    return na;
+  };
+
+  const buildGrp=(group,label,collapsed,fn)=>{
+    const icon=collapsed?'▶':'▼';
+    let rows=`<tr class="group-hdr-row" onclick="${fn}"><td colspan="${1+CFGG_RUBROS.length*3}" style="padding-left:8px;">${icon} ${label} (${group.length})</td></tr>`;
+    if(!collapsed){
+      group.forEach(cl=>{
+        rows+=`<tr><td style="position:sticky;left:0;z-index:1;background:var(--white);padding-left:14px;">${cl}</td>`;
+        CFGG_RUBROS.forEach(r=>{
+          ['monto','pct_vtas','pct_dist'].forEach((sub,si)=>{
+            rows+=`<td style="${si===0?'border-left:2px solid var(--lime-dark);':''}">${cellV(cl,r.key,sub)}</td>`;
+          });
+        });
+        rows+='</tr>';
+      });
+    }
+    return rows;
+  };
+
+  let totRow=`<tr class="total-row"><td style="position:sticky;left:0;z-index:1;">TOTAL (${clients.length})</td>`;
+  CFGG_RUBROS.forEach(r=>{
+    const base=totals[r.key]||0,ing=totals['ing']||1;
+    totRow+=`<td style="border-left:2px solid var(--lime-dark);">${base?fmt(base):'-'}</td><td>${base&&ing?(base/ing*100).toFixed(1)+'%':'-'}</td><td>100%</td>`;
+  });
+  totRow+='</tr>';
+
+  el.innerHTML = kpiHtml +
+    `<div class="dist-tbl-wrap"><div style="overflow-x:auto;max-height:calc(100vh - 320px);overflow-y:auto;">
+    <table class="dist-tbl"><thead>${thead}</thead><tbody>
+    ${buildGrp(conIng,'Con Ingresos',cfggC.con,"toggleCFGGGroup('con')")}
+    ${buildGrp(sinIng,'Sin Ingresos',cfggC.sin,"toggleCFGGGroup('sin')")}
+    ${totRow}
+    </tbody></table></div></div>`;
+}
+
+function toggleCFGGGroup(g){
+  window._cfggCollapsed=window._cfggCollapsed||{con:false,sin:true};
+  window._cfggCollapsed[g]=!window._cfggCollapsed[g];
+  renderCFGG();
+}
+
+// ══════════════════════════════════════════════════════════════
+// TOP 15 TAB
+// ══════════════════════════════════════════════════════════════
+function renderTop15() {
+  const el = document.getElementById('top15-inner'); if (!el) return;
+  const data = getDistData('top15');
+  if (!data) { el.innerHTML='<div style="padding:60px;text-align:center;color:var(--gray-m);font-family:var(--fh);font-weight:700;">Carga los datos primero</div>'; return; }
+  const {cdata, totals} = data;
+  const clients = Object.keys(cdata).filter(c=>cdata[c].ing>0||cdata[c].ebitda!==0);
+  const N = 15;
+
+  const top = (sortFn, label, valFn, color, isFmt) => {
+    const sorted = [...clients].sort(sortFn).slice(0,N);
+    const maxVal = Math.abs(valFn(sorted[0]))||1;
+    return `<div class="top15-card">
+      <div class="top15-title" style="color:${color}">${label}</div>
+      ${sorted.map((cl,i)=>{
+        const v = valFn(cl);
+        const pct = Math.min(100, Math.abs(v)/maxVal*100);
+        const barColor = v>=0 ? color : 'var(--neg)';
+        const vStr = isFmt==='pct' ? (v>=0?'+':'')+v.toFixed(1)+'%' : fmt(v);
+        return `<div class="top15-bar-row">
+          <span class="top15-rank">${i+1}</span>
+          <span class="top15-name" title="${cl}">${cl}</span>
+          <div class="top15-bar-wrap"><div class="top15-bar-fill" style="width:${pct}%;background:${barColor};"></div></div>
+          <span class="top15-val" style="color:${v>=0?color:'var(--neg)'};">${vStr}</span>
+        </div>`;
+      }).join('')}
+    </div>`;
+  };
+
+  el.innerHTML = `
+    <div style="margin-bottom:14px;">
+      <div class="dist-title" style="margin-bottom:2px;">Top ${N} Clientes</div>
+      <div class="dist-sub">Ranking por Ingresos, EBITDA $ y EBITDA %</div>
+    </div>
+    <div class="top15-grid">
+      ${top((a,b)=>cdata[b].ing-cdata[a].ing,         '🏆 Mayor Ingreso',    cl=>cdata[cl].ing,                           'var(--pos)',      'fmt')}
+      ${top((a,b)=>cdata[b].ebitda-cdata[a].ebitda,   '💰 Mayor EBITDA $',   cl=>cdata[cl].ebitda,                        'var(--blue)',     'fmt')}
+      ${top((a,b)=>{const em=cl=>cdata[cl].ing?cdata[cl].ebitda/cdata[cl].ing*100:0;return em(b)-em(a);},
+            '📈 Mayor EBITDA %',  cl=>cdata[cl].ing?cdata[cl].ebitda/cdata[cl].ing*100:0, 'var(--lime-deep)', 'pct')}
+    </div>`;
+}
+
+// ══════════════════════════════════════════════════════════════
+// MATRIX FIXES: grouping + EBITDA colors + cost colors
+// ══════════════════════════════════════════════════════════════
+// Override renderMatrices cell renderer to fix colors
+const _origRenderMatrices = renderMatrices;
+// Patch applied inline in renderMatrices via COLS update below
+
+// Update PL client list when PL renders
+const _origRenderPL = renderPL;
+renderPL = function(d) {
+  _origRenderPL.call(this, d);
+  updatePLClientList();
+};
+</script>
