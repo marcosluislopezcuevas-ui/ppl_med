@@ -865,6 +865,128 @@ function buildPL(ingRows,cvRows){
     gtos_grales:cos.gtos_grales,util_log,otros_gtos:cos.otros_gtos,ebitda:cos.ebitda};
 }
 
+function buildPLFromSP(mesKey) {
+  // Reconstruct PL object from TB_SP cuentas (no Excel needed)
+  const tb = window.TB_SP?.[mesKey] || {};
+  const c  = k => tb[k] || 0;
+
+  // Ingresos from ING_SP
+  const MESES_NUM = {1:'Enero',2:'Febrero',3:'Marzo',4:'Abril',5:'Mayo',6:'Junio',
+    7:'Julio',8:'Agosto',9:'Septiembre',10:'Octubre',11:'Noviembre',12:'Diciembre'};
+  const DIVS_L = ['Almacen','Transporte'];
+  const TIPOS_L = ['Negocios Existentes','Carry Over','Nuevos Negocios','Moderna','Otros'];
+  const mesNum  = parseInt(mesKey.split('_')[0]);
+  const anio    = mesKey.split('_')[1] || '2026';
+  const mesNombre = MESES_NUM[mesNum] || 'Enero';
+  const MESES_ABREV = {Enero:'Ene',Febrero:'Feb',Marzo:'Mar',Abril:'Abr',Mayo:'May',
+    Junio:'Jun',Julio:'Jul',Agosto:'Ago',Septiembre:'Sep',Octubre:'Oct',Noviembre:'Nov',Diciembre:'Dic'};
+
+  // Build ing object from ING_SP_DIV
+  const ingDiv = window.ING_SP_DIV?.[mesKey] || {};
+  const ing = { ing_total: 0 };
+  DIVS_L.forEach(div => {
+    ing[div] = { total: 0 };
+    TIPOS_L.forEach(t => { ing[div][t] = 0; });
+  });
+  Object.entries(ingDiv).forEach(([cliente, divs]) => {
+    Object.entries(divs).forEach(([div, tipos]) => {
+      if (!DIVS_L.includes(div)) return;
+      Object.entries(tipos).forEach(([tipo, monto]) => {
+        if (tipo === 'total') return;
+        const tk = TIPOS_L.includes(tipo) ? tipo : 'Otros';
+        ing[div][tk]  = (ing[div][tk]  || 0) + monto;
+        ing[div].total = (ing[div].total || 0) + monto;
+        ing.ing_total  = (ing.ing_total  || 0) + monto;
+      });
+    });
+  });
+
+  // Reconstruct costos from individual cuentas in TB_SP
+  // Salarios: sum all Nomina cuentas
+  const NOMINA_CV = ['5103010100','5103010200','5103010300','5103010600','5103011610',
+    '5103010800','5103011620','5103011100','5103011600','5103010400','5103010500',
+    '5103010700','5103010900','5103011400','5103011200','5103020200','5103020400',
+    '5103020410','5103020500','5103030100','5103030200','5103030300','5103030400',
+    '5103030600','5103011300',
+    '5101010100','5101010400','5106041100','5108030102','5107016502','5107012500','5107021000'];
+  const salarios = NOMINA_CV.reduce((s,k) => s + c(k), 0);
+
+  // Fletes
+  const FLETES_C = ['5104010000','5107010400','5108030141','5107012300','5108030101',
+    '5107018300','5108030115','5108030130','5108030120','5108030107'];
+  const fletes = FLETES_C.reduce((s,k) => s + c(k), 0);
+
+  const mat_empaque   = c('5107011400');
+  const cargo_farma   = c('519999999M');
+  const costo_insumos = c('5107022001');
+
+  // otros_cv = all CV cuentas not in above categories
+  const CV_KNOWN = new Set([...NOMINA_CV, ...FLETES_C,
+    '5107011400','519999999M','5107022001']);
+  // Sum all cuentas that map to cv (5xxxx range, not nomina/fletes/mat/farma/insum)
+  const OTROS_CV_C = ['5107010700','5106070700','5106071100','5107011500','5107018500',
+    '5108030116','5107011100','5107015400','5107015600','5107016600','5108030105',
+    '5107010900','5107011200','5107010300','5108030104','5107012800','5107015900','5107016500'];
+  const otros_cv = OTROS_CV_C.reduce((s,k) => s + c(k), 0);
+
+  const cv_total = salarios + fletes + mat_empaque + cargo_farma + costo_insumos + otros_cv;
+
+  // Costos fijos: all 52xxx and fixed 51xxx
+  const FIJOS_C = ['5203010110','5203010200','5203010400','5203011200','5203011500',
+    '5203012500','5203012600','5203013100','5203013101','5203013102','5203015300',
+    '5203017500','5203011400','5203014700','5203011300',
+    '5201010100','5201010200','5201010300','5201010600','5201011620','5201010700',
+    '5201011630','5201011100','5201011600','5201011610','5201020100','5201010400',
+    '5201010500','5201010800','5201010900','5201011200','5201011400','5201020200',
+    '5201020400','5201020410','5201020500','5201030100','5201030200','5201030300',
+    '5201030400','5201030600','5202010100','5202020100','5202020300','5202030100',
+    '5203010600','5203011000','5203011800','5203011900','5203012000','5203012700',
+    '5203012900','5203013200','5203013500','5203013600','5203013900','5203014000',
+    '5203014100','5203014200','5203014300','5203014500','5203014510','5203014900',
+    '5203015400','5203016300','5203016610','5203016700','5203016800','5203017100',
+    '5203017800','5203017900','5203018500','5203016500','5203016510'];
+  const costos_fijos = FIJOS_C.reduce((s,k) => s + c(k), 0);
+  const total_costos = cv_total + costos_fijos;
+
+  // Gastos generales: all 6xxxx
+  const GTOS_C = ['6104010000','6104040000','6104050000','6124012300','6201100000',
+    '6119010000','6119020000','6119030000','6108010000','6108010100','6109010000',
+    '6109010100','6109010200','6109010300','6109010400','6109010600','6109020000',
+    '6102000830','6102000840','6115010000','6121010000','6121020000','6122020000',
+    '6122030000','6124012200','6124008000','6124007000','6124015100','6123010000',
+    '6123020000','6123030000','6124010000','6124011000','6201080000','6124012100',
+    '6124014000','6124019000','6124021000','6124035000','6124037000','6124038000',
+    '6114010000','6124009000','6117010000','6201130000','6112010000','6201030000',
+    '6112020000','6124018000','6124031000','6124034000','6124046000','6101010000',
+    '6101020000','6101030000','6101060000','6101110110','6101070000','6101110120',
+    '6101100000','6101130000','6102000300','6101110100','6101040000','6101050000',
+    '6101080000','6101110200','6102000100','6102000200','6102000210','6102000520',
+    '6102000500','6102000800','6103010000','6103020000','6103030000','6103040000',
+    '6103070000','6102000510'];
+  const gtos_grales = GTOS_C.reduce((s,k) => s + c(k), 0);
+
+  // otros_gtos: node 7
+  const OTROS_GTOS_C = Object.keys(tb).filter(k => k.startsWith('7'));
+  const otros_gtos = OTROS_GTOS_C.reduce((s,k) => s + c(k), 0);
+
+  const ing_total = ing.ing_total;
+  const cm        = ing_total - cv_total;
+  const util_log  = ing_total - total_costos - gtos_grales;
+  const ebitda    = util_log + otros_gtos; // ebitda = util_log + otros_gtos (negative = expense)
+
+  // Store as _tbData for distribution engine
+  window._tbData = tb;
+
+  const mesLabel = mesNombre + ' ' + anio;
+  const periodo  = 'Al 28/' + String(mesNum).padStart(2,'0') + '/' + anio;
+
+  return { mesLabel, periodo, mes: mesNombre, ing,
+    ing_total, salarios, fletes, mat_empaque, cargo_farma,
+    costo_insumos, otros_cv, cv_total, cm, costos_fijos,
+    total_costos, gtos_grales, util_log, otros_gtos, ebitda };
+}
+
+
 function setFmt(m){FMT=m;['m','k','e'].forEach(x=>document.getElementById('fmt-'+x).classList.toggle('on',x===m.toLowerCase()));if(window._pl)renderPL(window._pl);}
 function fmt(n){
   if(!n&&n!==0)return'\u2014';
@@ -1615,6 +1737,28 @@ async function savePLToSP() {
       const [m,y] = mk.split('_');
       return MESES_N[parseInt(m)] + ' ' + y;
     }).join(' - ');
+  }
+
+  // Auto-render latest period from SP data (no Excel needed)
+  if (mesKeys.length > 0 && nTB > 0) {
+    const latestMk = mesKeys[mesKeys.length - 1];
+    try {
+      const plSP = buildPLFromSP(latestMk);
+      if (plSP && plSP.ing_total !== undefined) {
+        renderPL(plSP);
+        // Also populate period chips for all available months
+        mesKeys.forEach(mk => {
+          if (mk !== latestMk) {
+            const plMk = buildPLFromSP(mk);
+            if (plMk) PERIODOS[plMk.mesLabel] = plMk;
+          }
+        });
+        renderPeriodChips();
+        toast('\u2713 Datos cargados de SharePoint \u00b7 ' + mesKeys.map(mk => {
+          const [m,y] = mk.split('_'); return MESES_N[parseInt(m)]+' '+y;
+        }).join(', '), 'ok');
+      }
+    } catch(e) { console.warn('Auto-render from SP error:', e); }
   }
 })();
 
