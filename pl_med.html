@@ -794,6 +794,9 @@ body{background:var(--white);color:var(--gray);font-family:var(--fb);font-size:1
       <button class="btn-ghost" onclick="openOvModal()" style="font-size:12px;padding:5px 12px;">
         ✎ Asignaciones directas
       </button>
+      <button class="btn-ghost" onclick="exportMatrixExcel()" style="font-size:12px;padding:5px 12px;">
+        ↓ Excel
+      </button>
       <span style="font-size:11px;color:var(--gray-m);" id="mmontos-meta"></span>
     </div>
   </div>
@@ -2538,16 +2541,12 @@ function renderMatrices() {
     const mesNum = parseInt(mk.split('_')[0]) || 1;
     const mesNombre = MES_NAMES[mesNum] || 'Enero';
     mesLabel = mesNombre;
-    // Force TB to use selected month's data
+    // Use calcDistribucionFromTB directly - no dependency on _pl or _currentMesKey
     const tbForMk = (window.TB_SP?.[mk] && Object.keys(window.TB_SP[mk]).length > 0)
       ? window.TB_SP[mk] : window._tbData;
-    if (!tbForMk) { noData('Sin datos de TB para este mes'); return; }
-    // Temporarily set _currentMesKey so calcDistribucion uses right month
-    const _prevMk = window._currentMesKey;
-    window._currentMesKey = mk;
-    const rawDist = calcDistribucion(); 
-    window._currentMesKey = _prevMk;
-    if (!rawDist) { noData('Sin datos de distribucion'); return; }
+    if (!tbForMk) { noData('Sin datos de TB para ' + mk + ' — carga el mes primero'); return; }
+    const rawDist = calcDistribucionFromTB(tbForMk, mk);
+    if (!rawDist || !Object.keys(rawDist).length) { noData('Sin distribución para ' + mesNombre + ' — verifica las llaves'); return; }
     dist = applyOverrides(rawDist, tbForMk, mk);
     ingRaw = (window.ING_SP && window.ING_SP[mk] && Object.keys(window.ING_SP[mk]).length > 0)
              ? window.ING_SP[mk]
@@ -2711,7 +2710,38 @@ function renderMatrices() {
     ${totCells}
   </tr>`;
 
-  el.innerHTML = thead + '<tbody>' + rows + '</tbody><tfoot>' + totRow + '</tfoot>';
+  // Matrix comprobacion
+  const _plMX = window._pl;
+  const PL_MAP_MX = {
+    ing:_plMX?.ing_total||0, salarios:_plMX?.salarios||0, fletes:_plMX?.fletes||0,
+    mat_empaque:_plMX?.mat_empaque||0, cargo_farma:_plMX?.cargo_farma||0,
+    costo_insumos:_plMX?.costo_insumos||0, otros_cv:_plMX?.otros_cv||0, cv:_plMX?.cv_total||0,
+    cm:_plMX?.cm||0, costos_fijos:_plMX?.costos_fijos||0, gtos_grales:_plMX?.gtos_grales||0, ebitda:_plMX?.ebitda||0
+  };
+  const mxPlCells = COLS.map(col => {
+    const v = PL_MAP_MX[col.key]||0;
+    const ing = PL_MAP_MX['ing']||1;
+    const bl = col.divAfter ? 'border-right:2px solid var(--lime-dark);' : '';
+    return `<td style="text-align:right;padding:4px 8px;${bl};background:#FFF8E8;font-weight:700;color:var(--warn-color);">${v?fmt(v):'—'}</td>
+            <td style="text-align:right;padding:4px 6px;background:#FFF8E8;color:var(--gray-m);">${ing?(v/ing*100).toFixed(1)+'%':'—'}</td>`;
+  }).join('');
+  const mxDiffCells = COLS.map(col => {
+    const diff = (totals[col.key]||0) - (PL_MAP_MX[col.key]||0);
+    const c = Math.abs(diff)<1?'var(--pos)':'var(--neg)';
+    const bl = col.divAfter ? 'border-right:2px solid var(--lime-dark);' : '';
+    return `<td style="text-align:right;padding:4px 8px;${bl};background:#FFF0F0;font-weight:700;color:${c};">${fmt(diff)}</td>
+            <td style="background:#FFF0F0;"></td>`;
+  }).join('');
+  const mxComprobRow = `
+    <tr style="border-top:2px dashed var(--warn-color);">
+      <td style="position:sticky;left:0;z-index:2;background:#FFF8E8;padding:6px 10px;font-family:var(--fh);font-weight:800;font-size:11px;color:var(--warn-color);">✔ Comprobación vs P&L</td>
+      ${mxPlCells}
+    </tr>
+    <tr>
+      <td style="position:sticky;left:0;z-index:2;background:#FFF0F0;padding:6px 10px;font-family:var(--fh);font-weight:800;font-size:11px;color:var(--neg);">△ Diferencia (Tabla − P&L)</td>
+      ${mxDiffCells}
+    </tr>`;
+  el.innerHTML = thead + '<tbody>' + rows + '</tbody><tfoot>' + totRow + mxComprobRow + '</tfoot>';
   const meta = document.getElementById('mmontos-meta');
   if (meta) meta.textContent = sorted.length + ' clientes — ' + mesLabel;
 }
@@ -3078,6 +3108,7 @@ function renderCV() {
         <option value="11_2026">Noviembre 2026</option><option value="12_2026">Diciembre 2026</option>
       </select>
     </div>
+    <div style="margin-left:auto;"><button class="btn-ghost" onclick="exportToExcel('cv')" style="font-size:12px;padding:5px 12px;">↓ Excel</button></div>
   </div>`;
   const data = getDistData('cv');
   if (!data) { el.innerHTML = filterBarHtml + '<div style="padding:60px;text-align:center;color:var(--gray-m);font-family:var(--fh);font-weight:700;">Carga los datos primero en la pestaña P&L y Matriz</div>'; return; }
@@ -3192,12 +3223,52 @@ function renderCV() {
   });
   totRow += '</tr>';
 
+  // Comprobacion rows for CV
+  const _plCV = window._pl;
+  const buildComprobRows = (rubros, plMap) => {
+    const RUBS_LABELS = {ing:'Ingresos',salarios:'Salarios',fletes:'Fletes',mat_empaque:'Mat. Empaque',
+      cargo_farma:'Cargo Farma',costo_insumos:'Costo Insumos',otros_cv:'Otros CV',cv:'CV Total',
+      cm:'CM',costos_fijos:'Costos Fijos',gtos_grales:'Gastos Grales',ebitda:'EBITDA'};
+    // P&L row
+    let plCells = `<td style="position:sticky;left:0;background:#FFF8E8;font-family:var(--fh);font-weight:800;font-size:11px;color:var(--warn-color);">✔ Comprobación vs P&L</td>`;
+    rubros.forEach(r => {
+      const v = plMap[r] || 0;
+      const ing = plMap['ing'] || 1;
+      const na = '<span style="color:var(--gray-d)">—</span>';
+      ['monto','pct_vtas','pct_dist'].forEach((sub,si) => {
+        const style = `border-left:${si===0?'2px solid var(--lime-dark)':'none'};background:#FFF8E8;text-align:right;`;
+        if (sub==='monto') plCells += `<td style="${style};font-weight:700;color:var(--warn-color);">${v?fmt(v):na}</td>`;
+        else if (sub==='pct_vtas') plCells += `<td style="${style};color:var(--gray-m);">${v&&ing?(v/ing*100).toFixed(1)+'%':na}</td>`;
+        else plCells += `<td style="${style};color:var(--gray-d);">—</td>`;
+      });
+    });
+    // Diff row
+    let diffCells = `<td style="position:sticky;left:0;background:#FFF0F0;font-family:var(--fh);font-weight:800;font-size:11px;color:var(--neg);">△ Diferencia (Tabla − P&L)</td>`;
+    rubros.forEach(r => {
+      const diff = (totals[r]||0) - (plMap[r]||0);
+      const c = Math.abs(diff) < 1 ? 'var(--pos)' : 'var(--neg)';
+      ['monto','pct_vtas','pct_dist'].forEach((sub,si) => {
+        const style = `border-left:${si===0?'2px solid var(--lime-dark)':'none'};background:#FFF0F0;text-align:right;`;
+        if (sub==='monto') diffCells += `<td style="${style};font-weight:700;color:${c};">${fmt(diff)}</td>`;
+        else diffCells += `<td style="${style};color:var(--gray-d);">—</td>`;
+      });
+    });
+    return `<tr style="border-top:2px dashed var(--warn-color);">${plCells}</tr>
+            <tr>${diffCells}</tr>`;
+  };
+  const PL_MAP_CV = {
+    ing:_plCV?.ing_total||0, salarios:_plCV?.salarios||0, fletes:_plCV?.fletes||0,
+    mat_empaque:_plCV?.mat_empaque||0, cargo_farma:_plCV?.cargo_farma||0,
+    costo_insumos:_plCV?.costo_insumos||0, otros_cv:_plCV?.otros_cv||0, cv:_plCV?.cv_total||0
+  };
+  const comprobCV = buildComprobRows(['ing','salarios','fletes','mat_empaque','cargo_farma','costo_insumos','otros_cv','cv'], PL_MAP_CV);
+
   el.innerHTML = filterBarHtml + kpiHtml +
     `<div class="dist-tbl-wrap"><div class="dist-tbl-scroll" style="max-height:calc(100vh - 420px);">
     <table class="dist-tbl"><thead>${thead}</thead><tbody>
     ${buildGroupRows(conIng,'Con Ingresos',cvCollapsed.con,"toggleCVGroup('con')")}
     ${buildGroupRows(sinIng,'Sin Ingresos',cvCollapsed.sin,"toggleCVGroup('sin')")}
-    </tbody><tfoot>${totRow}</tfoot></table></div></div>`;
+    </tbody><tfoot>${totRow}${comprobCV}</tfoot></table></div></div>`;
 }
 
 function toggleCVGroup(g) {
@@ -3246,6 +3317,7 @@ function renderCFGG() {
         <option value="11_2026">Noviembre 2026</option><option value="12_2026">Diciembre 2026</option>
       </select>
     </div>
+    <div style="margin-left:auto;"><button class="btn-ghost" onclick="exportToExcel('cfgg')" style="font-size:12px;padding:5px 12px;">↓ Excel</button></div>
   </div>`;
   const data = getDistData('cfgg');
   if (!data) { el.innerHTML = filterBarHtml + '<div style="padding:60px;text-align:center;color:var(--gray-m);font-family:var(--fh);font-weight:700;">Carga los datos primero</div>'; return; }
@@ -3330,12 +3402,42 @@ function renderCFGG() {
   });
   totRow+='</tr>';
 
+  const _plCFGG = window._pl;
+  const buildComprobRowsCFGG = (rubros, plMap) => {
+    let plCells = `<td style="position:sticky;left:0;background:#FFF8E8;font-family:var(--fh);font-weight:800;font-size:11px;color:var(--warn-color);">✔ Comprobación vs P&L</td>`;
+    rubros.forEach(r => {
+      const v = plMap[r]||0, ing = plMap['ing']||1;
+      const na = '<span style="color:var(--gray-d)">—</span>';
+      ['monto','pct_vtas','pct_dist'].forEach((sub,si) => {
+        const style=`border-left:${si===0?'2px solid var(--lime-dark)':'none'};background:#FFF8E8;text-align:right;`;
+        if(sub==='monto') plCells+=`<td style="${style};font-weight:700;color:var(--warn-color);">${v?fmt(v):na}</td>`;
+        else if(sub==='pct_vtas') plCells+=`<td style="${style};color:var(--gray-m);">${v&&ing?(v/ing*100).toFixed(1)+'%':na}</td>`;
+        else plCells+=`<td style="${style};color:var(--gray-d);">—</td>`;
+      });
+    });
+    let diffCells=`<td style="position:sticky;left:0;background:#FFF0F0;font-family:var(--fh);font-weight:800;font-size:11px;color:var(--neg);">△ Diferencia (Tabla − P&L)</td>`;
+    rubros.forEach(r => {
+      const diff=(totals[r]||0)-(plMap[r]||0);
+      const c=Math.abs(diff)<1?'var(--pos)':'var(--neg)';
+      ['monto','pct_vtas','pct_dist'].forEach((sub,si) => {
+        const style=`border-left:${si===0?'2px solid var(--lime-dark)':'none'};background:#FFF0F0;text-align:right;`;
+        if(sub==='monto') diffCells+=`<td style="${style};font-weight:700;color:${c};">${fmt(diff)}</td>`;
+        else diffCells+=`<td style="${style};color:var(--gray-d);">—</td>`;
+      });
+    });
+    return `<tr style="border-top:2px dashed var(--warn-color);">${plCells}</tr><tr>${diffCells}</tr>`;
+  };
+  const PL_MAP_CFGG = {
+    ing:_plCFGG?.ing_total||0, costos_fijos:_plCFGG?.costos_fijos||0, gtos_grales:_plCFGG?.gtos_grales||0
+  };
+  const comprobCFGG = buildComprobRowsCFGG(['ing','costos_fijos','gtos_grales'], PL_MAP_CFGG);
+
   el.innerHTML = filterBarHtml + kpiHtml +
     `<div class="dist-tbl-wrap"><div class="dist-tbl-scroll" style="max-height:calc(100vh - 420px);">
     <table class="dist-tbl"><thead>${thead}</thead><tbody>
     ${buildGrp(conIng,'Con Ingresos',cfggC.con,"toggleCFGGGroup('con')")}
     ${buildGrp(sinIng,'Sin Ingresos',cfggC.sin,"toggleCFGGGroup('sin')")}
-    </tbody><tfoot>${totRow}</tfoot></table></div></div>`;
+    </tbody><tfoot>${totRow}${comprobCFGG}</tfoot></table></div></div>`;
 }
 
 function toggleCFGGGroup(g){
@@ -3708,4 +3810,232 @@ async function ovLoadFromSP(mk) {
     if (saved) window.OV_DATA = JSON.parse(saved);
   } catch(e){}
 })();
+</script>
+<script>
+// ══════════════════════════════════════════════════════════════
+// EXPORT TO EXCEL (SheetJS via CDN)
+// ══════════════════════════════════════════════════════════════
+function loadXLSXLib() {
+  return window.XLSX ? Promise.resolve() : new Promise((res, rej) => {
+    const s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+    s.onload = res; s.onerror = rej;
+    document.head.appendChild(s);
+  });
+}
+
+async function exportToExcel(tabId) {
+  await loadXLSXLib();
+  const data = getDistData(tabId);
+  if (!data) { toast('Sin datos para exportar', ''); return; }
+  const { cdata, totals, clients } = data;
+
+  const MES_NAMES = {1:'Enero',2:'Febrero',3:'Marzo',4:'Abril',5:'Mayo',6:'Junio',
+    7:'Julio',8:'Agosto',9:'Septiembre',10:'Octubre',11:'Noviembre',12:'Diciembre'};
+
+  const RUBROS_CV   = ['ing','salarios','fletes','mat_empaque','cargo_farma','costo_insumos','otros_cv','cv'];
+  const RUBROS_CFGG = ['ing','costos_fijos','gtos_grales'];
+  const RUBROS_MX   = ['ing','salarios','fletes','mat_empaque','cargo_farma','costo_insumos','otros_cv','cv','cm','costos_fijos','gtos_grales','ebitda'];
+  const LABELS = {
+    ing:'Ingresos', salarios:'Salarios', fletes:'Fletes', mat_empaque:'Mat. Empaque',
+    cargo_farma:'Cargo Farma', costo_insumos:'Costo Insumos', otros_cv:'Otros CV',
+    cv:'CV Total', cm:'CM', costos_fijos:'Costos Fijos', gtos_grales:'Gastos Grales', ebitda:'EBITDA'
+  };
+
+  const rubros = tabId === 'cv' ? RUBROS_CV : tabId === 'cfgg' ? RUBROS_CFGG : RUBROS_MX;
+
+  // Build header row
+  const headers = ['Cliente'];
+  rubros.forEach(r => {
+    headers.push(LABELS[r] + ' $');
+    headers.push(LABELS[r] + ' %Vtas');
+    headers.push(LABELS[r] + ' %Dist');
+  });
+
+  const rows = [headers];
+
+  // Con ingresos group
+  rows.push(['▼ Con Ingresos', ...Array(headers.length - 1).fill('')]);
+  clients.filter(c => cdata[c].ing > 0).forEach(cl => {
+    const row = [cl];
+    rubros.forEach(r => {
+      const base = cdata[cl][r] || 0;
+      const ing  = cdata[cl]['ing'] || 1;
+      const tot  = totals[r] || 1;
+      row.push(Math.round(base * 100) / 100);
+      row.push(ing ? +(base/ing*100).toFixed(2) : 0);
+      row.push(tot ? +(base/tot*100).toFixed(2) : 0);
+    });
+    rows.push(row);
+  });
+
+  // Sin ingresos group
+  rows.push(['▼ Sin Ingresos', ...Array(headers.length - 1).fill('')]);
+  clients.filter(c => cdata[c].ing === 0).forEach(cl => {
+    const row = [cl];
+    rubros.forEach(r => {
+      const base = cdata[cl][r] || 0;
+      const tot  = totals[r] || 1;
+      row.push(Math.round(base * 100) / 100);
+      row.push(0);
+      row.push(tot ? +(base/tot*100).toFixed(2) : 0);
+    });
+    rows.push(row);
+  });
+
+  // Totals row
+  const totRow = ['TOTAL'];
+  rubros.forEach(r => {
+    const base = totals[r] || 0;
+    const ing  = totals['ing'] || 1;
+    totRow.push(Math.round(base * 100) / 100);
+    totRow.push(ing ? +(base/ing*100).toFixed(2) : 0);
+    totRow.push(100);
+  });
+  rows.push(totRow);
+
+  // Comprobacion vs P&L row
+  const plRow = ['Comprobación vs P&L'];
+  const pl = window._pl;
+  const PL_MAP = {
+    ing: pl?.ing_total, salarios: pl?.salarios, fletes: pl?.fletes,
+    mat_empaque: pl?.mat_empaque, cargo_farma: pl?.cargo_farma,
+    costo_insumos: pl?.costo_insumos, otros_cv: pl?.otros_cv,
+    cv: pl?.cv_total, cm: pl?.cm, costos_fijos: pl?.costos_fijos,
+    gtos_grales: pl?.gtos_grales, ebitda: pl?.ebitda
+  };
+  rubros.forEach(r => {
+    const v = PL_MAP[r] || 0;
+    const ing = pl?.ing_total || 1;
+    plRow.push(Math.round(v * 100) / 100);
+    plRow.push(ing ? +(v/ing*100).toFixed(2) : 0);
+    plRow.push('');
+  });
+  rows.push(plRow);
+
+  // Diferencia row
+  const diffRow = ['Diferencia (Tabla − P&L)'];
+  rubros.forEach(r => {
+    const tbl = totals[r] || 0;
+    const plv = PL_MAP[r] || 0;
+    const diff = Math.round((tbl - plv) * 100) / 100;
+    diffRow.push(diff);
+    diffRow.push('');
+    diffRow.push('');
+  });
+  rows.push(diffRow);
+
+  // Build worksheet
+  const ws   = XLSX.utils.aoa_to_sheet(rows);
+  const wb   = XLSX.utils.book_new();
+  const sheetName = tabId === 'cv' ? 'Costos Variables' : tabId === 'cfgg' ? 'CF y GG' : 'Matriz';
+  XLSX.utils.book_append_sheet(wb, ws, sheetName);
+
+  // Style column widths
+  ws['!cols'] = [{ wch: 22 }, ...rubros.flatMap(() => [{ wch: 14 }, { wch: 9 }, { wch: 9 }])];
+
+  const mk = document.getElementById(tabId === 'cv' || tabId === 'cfgg'
+    ? tabId + '-mes-sel'
+    : 'mx-mes-sel')?.value || '';
+  const mesNum = parseInt(mk.split('_')[0]);
+  const mesNom = MES_NAMES[mesNum] || mk;
+  const filename = `Medistik_${sheetName.replace(/ /g,'_')}_${mesNom}.xlsx`;
+  XLSX.writeFile(wb, filename);
+  toast('✓ Excel exportado: ' + filename, 'ok');
+}
+
+// Also export matrix
+async function exportMatrixExcel() {
+  await loadXLSXLib();
+  // Get matrix data directly
+  const vista = mxVista;
+  const MES_NAMES = {1:'Enero',2:'Febrero',3:'Marzo',4:'Abril',5:'Mayo',6:'Junio',
+    7:'Julio',8:'Agosto',9:'Septiembre',10:'Octubre',11:'Noviembre',12:'Diciembre'};
+  let dist, ingRaw, mesLabel, mk;
+
+  if (vista === 'acum') {
+    const desde = document.getElementById('mx-acum-desde')?.value || '1_2026';
+    const hasta = document.getElementById('mx-acum-hasta')?.value || getMesKey();
+    const range = getMesKeyRange(desde, hasta);
+    const mergedTB = calcTBRange(range);
+    mk = range[range.length-1];
+    dist = applyOverrides(calcDistribucionFromTB(mergedTB, mk), mergedTB, mk);
+    ingRaw = calcIngRange(range);
+    mesLabel = 'Acum_' + (MES_NAMES[parseInt(desde.split('_')[0])]||desde) + '_a_' + (MES_NAMES[parseInt(hasta.split('_')[0])]||hasta);
+  } else {
+    mk = document.getElementById('mx-mes-sel')?.value || getMesKey();
+    const tbForMk = window.TB_SP?.[mk] && Object.keys(window.TB_SP[mk]).length ? window.TB_SP[mk] : window._tbData;
+    dist = applyOverrides(calcDistribucionFromTB(tbForMk, mk), tbForMk, mk);
+    ingRaw = window.ING_SP?.[mk] || {};
+    mesLabel = MES_NAMES[parseInt(mk.split('_')[0])] || mk;
+  }
+  if (!dist) { toast('Sin datos para exportar', ''); return; }
+
+  const RUBROS = ['ing','salarios','fletes','mat_empaque','cargo_farma','costo_insumos','otros_cv','cv','cm','costos_fijos','gtos_grales','ebitda'];
+  const LABELS = {ing:'Ingresos',salarios:'Salarios',fletes:'Fletes',mat_empaque:'Mat. Empaque',
+    cargo_farma:'Cargo Farma',costo_insumos:'Costo Insumos',otros_cv:'Otros CV',cv:'CV Total',
+    cm:'CM',costos_fijos:'Costos Fijos',gtos_grales:'Gastos Grales',ebitda:'EBITDA'};
+
+  const ingLookup = {};
+  Object.entries(ingRaw).forEach(([k,v])=>{ ingLookup[k.toLowerCase().trim()]=v; });
+  const getIng = cl => {
+    if (ingRaw[cl]!==undefined) return ingRaw[cl];
+    const lower = cl.toLowerCase().trim();
+    if (ingLookup[lower]!==undefined) return ingLookup[lower];
+    return 0;
+  };
+
+  const clients = [...new Set([...Object.keys(dist), ...Object.keys(ingRaw).filter(c=>ingRaw[c]>0)])];
+  clients.forEach(cl=>{if(!dist[cl])dist[cl]={};});
+
+  const cdata = {};
+  clients.forEach(cl=>{
+    const ing=getIng(cl);
+    const sal=dist[cl]['salarios']||0,flt=dist[cl]['fletes']||0,mat=dist[cl]['mat_empaque']||0,
+          cfm=dist[cl]['cargo_farma']||0,ins=dist[cl]['costo_insumos']||0,ocv=dist[cl]['otros_cv']||0,
+          cf=dist[cl]['costos_fijos']||0,gg=dist[cl]['gtos_grales']||0;
+    const cv=sal+flt+mat+cfm+ins+ocv,cm=ing-cv,ebitda=ing-cv-cf-gg;
+    cdata[cl]={ing,salarios:sal,fletes:flt,mat_empaque:mat,cargo_farma:cfm,
+               costo_insumos:ins,otros_cv:ocv,cv,cm,costos_fijos:cf,gtos_grales:gg,ebitda};
+  });
+  const totals={};
+  RUBROS.forEach(r=>{ totals[r]=clients.reduce((s,c)=>s+(cdata[c][r]||0),0); });
+
+  const headers = ['Cliente', ...RUBROS.flatMap(r=>[LABELS[r]+' $', LABELS[r]+' %Vtas'])];
+  const rows = [headers];
+
+  clients.filter(c=>cdata[c].ing>0).forEach(cl=>{
+    const row=[cl];
+    RUBROS.forEach(r=>{
+      const v=cdata[cl][r]||0, ing=cdata[cl]['ing']||1;
+      row.push(Math.round(v*100)/100);
+      row.push(ing?+(v/ing*100).toFixed(2):0);
+    });
+    rows.push(row);
+  });
+  clients.filter(c=>cdata[c].ing===0).forEach(cl=>{
+    const row=[cl];
+    RUBROS.forEach(r=>{ row.push(Math.round((cdata[cl][r]||0)*100)/100); row.push(0); });
+    rows.push(row);
+  });
+
+  // Totals
+  const totRow=['TOTAL',...RUBROS.flatMap(r=>[Math.round((totals[r]||0)*100)/100, totals.ing?+((totals[r]||0)/totals.ing*100).toFixed(2):0])];
+  rows.push(totRow);
+
+  // Comprobacion
+  const pl=window._pl;
+  const PL_MAP={ing:pl?.ing_total,salarios:pl?.salarios,fletes:pl?.fletes,mat_empaque:pl?.mat_empaque,
+    cargo_farma:pl?.cargo_farma,costo_insumos:pl?.costo_insumos,otros_cv:pl?.otros_cv,
+    cv:pl?.cv_total,cm:pl?.cm,costos_fijos:pl?.costos_fijos,gtos_grales:pl?.gtos_grales,ebitda:pl?.ebitda};
+  rows.push(['Comprobación vs P&L',...RUBROS.flatMap(r=>[Math.round((PL_MAP[r]||0)*100)/100,''])]);
+  rows.push(['Diferencia (Tabla − P&L)',...RUBROS.flatMap(r=>[Math.round(((totals[r]||0)-(PL_MAP[r]||0))*100)/100,''])]);
+
+  const ws=XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols']=[{wch:22},...RUBROS.flatMap(()=>[{wch:14},{wch:9}])];
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'Matriz');
+  XLSX.writeFile(wb,`Medistik_Matriz_${mesLabel}.xlsx`);
+  toast('✓ Excel exportado','ok');
+}
 </script>
