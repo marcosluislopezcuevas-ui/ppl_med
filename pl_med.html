@@ -1255,7 +1255,7 @@ function saveLlave() {
   // Save to localStorage cache
   try { localStorage.setItem('medistik_llaves_v1', JSON.stringify(LLAVES_DATA)); } catch(e) {}
   toast('Guardando en SharePoint...', '');
-  const payload = {MesKey: mesKey, registros};
+  const payload = {MesKey: mesKey, Llave: llave, registros};
   console.log('Sending to SP:', JSON.stringify(payload).slice(0,200));
   fetch(PA_LLAVES_WRITE, {
     method: 'POST',
