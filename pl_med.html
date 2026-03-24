@@ -225,7 +225,7 @@ body{background:var(--white);color:var(--gray);font-family:var(--fb);font-size:1
 .btn-save-llave:hover{background:var(--lime-dark);}
 
 /* DISTRIBUCION TABS */
-.dist-page{padding:24px 28px 60px;}
+.dist-page{padding:24px 28px 60px;min-height:calc(100vh - 52px);}
 .dist-title{font-family:var(--fh);font-weight:800;font-size:22px;color:var(--gray);margin-bottom:4px;}
 .dist-sub{font-size:13px;color:var(--gray-m);margin-bottom:16px;}
 .dist-filters{display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap;}
@@ -244,18 +244,22 @@ body{background:var(--white);color:var(--gray);font-family:var(--fb);font-size:1
 .matrix-hdr{padding:12px 18px;display:flex;align-items:center;justify-content:space-between;
   background:var(--surface);border-bottom:2px solid var(--lime);}
 .matrix-title{font-family:var(--fh);font-weight:800;font-size:14px;color:var(--gray);}
-.mtbl{width:100%;border-collapse:collapse;font-size:12px;}
+.mtbl{width:100%;border-collapse:separate;border-spacing:0;font-size:12px;}
 .mtbl th{font-family:var(--fh);font-weight:700;font-size:10px;letter-spacing:.07em;text-transform:uppercase;
   color:var(--gray-m);background:var(--surface2);border-bottom:2px solid var(--border);
-  padding:7px 10px;text-align:right;white-space:nowrap;}
-.mtbl th:first-child{text-align:left;min-width:160px;position:sticky;left:0;background:var(--surface2);}
+  padding:7px 10px;text-align:right;white-space:nowrap;
+  position:sticky;top:0;z-index:4;}
+.mtbl thead tr:nth-child(2) th{top:28px;}
+.mtbl th:first-child{text-align:left;min-width:160px;position:sticky;left:0;top:0;background:var(--surface2);z-index:6;}
 .mtbl th.total-col{background:var(--lime-bg);color:var(--lime-deep);border-left:2px solid var(--lime-dark);}
 .mtbl td{padding:6px 10px;border-bottom:1px solid var(--border);text-align:right;white-space:nowrap;}
 .mtbl td:first-child{text-align:left;font-weight:500;position:sticky;left:0;background:var(--white);}
 .mtbl tr:hover td{background:var(--lime-bg);}
 .mtbl tr:hover td:first-child{background:var(--lime-bg);}
-.mtbl tr.total-row td{background:var(--lime-pale);font-weight:700;border-top:2px solid var(--lime-dark);}
-.mtbl tr.total-row td:first-child{font-family:var(--fh);font-weight:800;font-size:12px;background:var(--lime-pale);}
+.mtbl tr.total-row td{background:var(--lime-pale);font-weight:700;border-top:2px solid var(--lime-dark);
+  position:sticky;bottom:0;z-index:3;}
+.mtbl tr.total-row td:first-child{font-family:var(--fh);font-weight:800;font-size:12px;background:var(--lime-pale);
+  position:sticky;left:0;bottom:0;z-index:5;}
 .mtbl td.total-col{background:var(--lime-bg) !important;font-weight:700;border-left:2px solid var(--lime-dark);}
 .pct-bar{display:flex;align-items:center;gap:4px;}
 .pct-bar-inner{flex:1;height:4px;background:var(--border);border-radius:2px;overflow:hidden;min-width:30px;}
@@ -333,11 +337,14 @@ body{background:var(--white);color:var(--gray);font-family:var(--fb);font-size:1
 
 /* ── DIST TABLE (CV / CFGG) ── */
 .dist-tbl-wrap{background:var(--white);border:1px solid var(--border);border-radius:var(--rl);overflow:hidden;}
-.dist-tbl{width:100%;border-collapse:collapse;font-size:12px;}
+.dist-tbl{width:100%;border-collapse:separate;border-spacing:0;font-size:12px;}
 .dist-tbl th{font-family:var(--fh);font-weight:700;font-size:10px;letter-spacing:.07em;text-transform:uppercase;
   color:var(--gray-m);background:var(--surface2);border-bottom:2px solid var(--border);
-  padding:7px 8px;text-align:right;white-space:nowrap;cursor:pointer;user-select:none;}
-.dist-tbl th:first-child{text-align:left;min-width:160px;position:sticky;left:0;background:var(--surface2);}
+  padding:7px 8px;text-align:right;white-space:nowrap;cursor:pointer;user-select:none;
+  position:sticky;top:0;z-index:4;}
+.dist-tbl th:first-child{text-align:left;min-width:160px;position:sticky;left:0;top:0;background:var(--surface2);z-index:6;}
+.dist-tbl thead tr:nth-child(2) th{top:26px;}
+.dist-tbl thead tr:nth-child(2) th:first-child{display:none;}
 .dist-tbl th:hover{background:var(--lime-bg);color:var(--lime-deep);}
 .dist-tbl th.sort-asc .sort-icon::after{content:'▲';opacity:1;}
 .dist-tbl th.sort-desc .sort-icon::after{content:'▼';opacity:1;}
@@ -349,8 +356,10 @@ body{background:var(--white);color:var(--gray);font-family:var(--fb);font-size:1
 .dist-tbl td:first-child{text-align:left;font-weight:500;position:sticky;left:0;background:var(--white);z-index:1;padding-left:10px;}
 .dist-tbl tr:hover td{background:var(--lime-bg);}
 .dist-tbl tr:hover td:first-child{background:var(--lime-bg);}
-.dist-tbl tr.total-row td{background:var(--lime-pale);font-weight:700;border-top:2px solid var(--lime-dark);}
-.dist-tbl tr.total-row td:first-child{font-family:var(--fh);font-weight:800;background:var(--lime-pale);}
+.dist-tbl tr.total-row td{background:var(--lime-pale);font-weight:700;border-top:2px solid var(--lime-dark);
+  position:sticky;bottom:0;z-index:3;}
+.dist-tbl tr.total-row td:first-child{font-family:var(--fh);font-weight:800;background:var(--lime-pale);
+  position:sticky;left:0;bottom:0;z-index:5;}
 .dist-tbl td.grp-col{border-left:2px solid var(--lime-dark);background:var(--lime-bg)!important;font-weight:700;}
 .dist-tbl tr.group-hdr-row td{background:var(--surface2);font-family:var(--fh);font-weight:800;font-size:11px;
   letter-spacing:.1em;text-transform:uppercase;color:var(--gray-m);cursor:pointer;border-top:2px solid var(--border-m);}
@@ -405,6 +414,69 @@ body{background:var(--white);color:var(--gray);font-family:var(--fb);font-size:1
 .ov-impact{font-size:11px;color:var(--gray-m);font-family:var(--fh);}
 .ov-impact.pos{color:var(--pos);}
 .ov-empty{padding:28px;text-align:center;color:var(--gray-d);font-family:var(--fh);font-weight:700;font-size:13px;}
+
+/* ── STICKY HEADERS & TOTALS (Matriz, CV, CFGG) ── */
+/* The scroll container needs position:relative so sticky works */
+.mtbl-scroll, .dist-tbl-scroll {
+  overflow-x: auto;
+  overflow-y: auto;
+  position: relative;
+}
+
+/* Sticky thead */
+.mtbl thead tr th,
+.dist-tbl thead tr th {
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  background: var(--surface2) !important;
+  /* Double border trick to show border when sticky */
+  box-shadow: 0 2px 0 var(--lime);
+}
+/* Second header row (sub-headers) */
+.dist-tbl thead tr:nth-child(2) th {
+  top: 28px; /* height of first header row */
+  z-index: 3;
+  box-shadow: 0 2px 0 var(--border);
+}
+
+/* grp-hdr cells inside thead stay on top */
+.dist-tbl thead tr th.grp-hdr {
+  z-index: 4;
+}
+
+/* Sticky first column (already has position:sticky but needs z-index boost in header) */
+.mtbl thead tr th:first-child,
+.dist-tbl thead tr th:first-child {
+  z-index: 5 !important;
+  left: 0;
+}
+
+/* Sticky total row at bottom */
+.mtbl tbody tr.total-row td,
+.dist-tbl tbody tr.total-row td {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  background: var(--lime-pale) !important;
+  box-shadow: 0 -2px 0 var(--lime-dark);
+}
+.mtbl tbody tr.total-row td:first-child,
+.dist-tbl tbody tr.total-row td:first-child {
+  z-index: 3 !important;
+  background: var(--lime-pale) !important;
+}
+
+/* mtbl specific - first col sticky in header */
+.mtbl thead tr th:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 6 !important;
+}
+
+/* Fine-tune sub-header sticky top offset */
+.dist-tbl thead tr:first-child th  { top: 0;    height: 33px; }
+.dist-tbl thead tr:nth-child(2) th { top: 33px; }
 </style>
 </head>
 <body>
@@ -734,7 +806,7 @@ body{background:var(--white);color:var(--gray);font-family:var(--fb);font-size:1
     <div id="mx-client-chips" style="display:flex;flex-wrap:wrap;gap:4px;max-height:80px;overflow-y:auto;"></div>
   </div>
   <div class="matrix-wrap">
-    <div style="overflow-x:auto;max-height:calc(100vh - 380px);overflow-y:auto;">
+    <div class="mtbl-scroll" style="max-height:calc(100vh - 380px);">
       <table class="mtbl" id="mtbl-montos"></table>
     </div>
   </div>
@@ -2446,7 +2518,7 @@ function renderMatrices() {
     const mergedTB = calcTBRange(range);
     // Use last month's llaves for distribution %
     const llavesMk = range[range.length - 1] || hasta;
-    dist = calcDistribucionFromTB(mergedTB, llavesMk);
+    dist = applyOverrides(calcDistribucionFromTB(mergedTB, llavesMk), mergedTB, llavesMk);
     // Merge ingresos across range
     ingRaw = calcIngRange(range);
     // Fallback to session data for months not in SP
@@ -2465,7 +2537,8 @@ function renderMatrices() {
     const mesNum = parseInt(mk.split('_')[0]) || 1;
     const mesNombre = MES_NAMES[mesNum] || 'Enero';
     mesLabel = mesNombre;
-    dist = calcDistribucion(); if (!dist) { noData('Sin datos de distribucion'); return; }
+    const rawDist = calcDistribucion(); if (!rawDist) { noData('Sin datos de distribucion'); return; }
+    dist = applyOverrides(rawDist, window.TB_SP?.[mk] || window._tbData, mk);
     ingRaw = (window.ING_SP && window.ING_SP[mk] && Object.keys(window.ING_SP[mk]).length > 0)
              ? window.ING_SP[mk]
              : (window._ingByCliente?.[mesNombre] || {});
@@ -2841,24 +2914,44 @@ function renderPLFiltered() {
 // ══════════════════════════════════════════════════════════════
 const DIST_SORT = { cv:{col:'ing',dir:'desc'}, cfgg:{col:'ing',dir:'desc'} };
 
+// Per-tab vista state
+window._tabVista = window._tabVista || {};
+function getTabVista(tabId) { return window._tabVista[tabId] || 'mes'; }
+function setTabVista(tabId, v) {
+  window._tabVista[tabId] = v;
+  document.getElementById(tabId+'-btn-mes')?.classList.toggle('on',  v==='mes');
+  document.getElementById(tabId+'-btn-acum')?.classList.toggle('on', v==='acum');
+  const mesSel = document.getElementById(tabId+'-mes-sel');
+  const acumRange = document.getElementById(tabId+'-acum-range');
+  if (mesSel)    mesSel.style.display    = v==='mes'  ? '' : 'none';
+  if (acumRange) acumRange.style.display = v==='acum' ? 'flex' : 'none';
+  if (tabId==='cv')   renderCV();
+  if (tabId==='cfgg') renderCFGG();
+}
+
 function getDistData(tabId) {
-  // Determine vista from matrix controls (reuse same selectors)
-  const vista = mxVista;
-  let dist, ingRaw;
+  const vista = getTabVista(tabId);
+  let dist, ingRaw, activeMk;
   const MES_NAMES = {1:'Enero',2:'Febrero',3:'Marzo',4:'Abril',5:'Mayo',6:'Junio',
     7:'Julio',8:'Agosto',9:'Septiembre',10:'Octubre',11:'Noviembre',12:'Diciembre'};
 
   if (vista === 'acum') {
-    const desde = document.getElementById('mx-acum-desde')?.value || '1_2026';
-    const hasta = document.getElementById('mx-acum-hasta')?.value || getMesKey();
+    const desde = document.getElementById(tabId+'-acum-desde')?.value || '1_2026';
+    const hasta = document.getElementById(tabId+'-acum-hasta')?.value || getMesKey();
     const range = getMesKeyRange(desde, hasta);
     const mergedTB = calcTBRange(range);
-    dist = calcDistribucionFromTB(mergedTB, range[range.length-1]);
+    activeMk = range[range.length-1];
+    dist = applyOverrides(calcDistribucionFromTB(mergedTB, activeMk), mergedTB, activeMk);
     ingRaw = calcIngRange(range);
   } else {
-    const mk = document.getElementById('mx-mes-sel')?.value || getMesKey();
-    const mesNom = MES_NAMES[parseInt(mk)] || 'Enero';
-    dist = calcDistribucion();
+    const mk = document.getElementById(tabId+'-mes-sel')?.value || getMesKey();
+    activeMk = mk;
+    const mesNom = MES_NAMES[parseInt(mk.split('_')[0])] || 'Enero';
+    const tbForMk = window.TB_SP?.[mk] && Object.keys(window.TB_SP[mk]).length ? window.TB_SP[mk] : window._tbData;
+    const rawDist = tbForMk
+      ? applyOverrides(calcDistribucionFromTB(tbForMk, mk), tbForMk, mk)
+      : applyOverrides(calcDistribucion(), window._tbData, mk);
+    dist = rawDist;
     ingRaw = window.ING_SP?.[mk] || window._ingByCliente?.[mesNom] || {};
   }
   if (!dist) return null;
@@ -2940,8 +3033,44 @@ function sortDistTab(tabId, col) {
 // ══════════════════════════════════════════════════════════════
 function renderCV() {
   const el = document.getElementById('cv-inner'); if (!el) return;
+  // Filter bar
+  const filterBarHtml = `<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--border);">
+    <div style="display:flex;background:var(--surface2);border:1.5px solid var(--border-m);border-radius:var(--r);overflow:hidden;padding:1px;gap:1px;">
+      <button class="fmt-btn${getTabVista('cv')==='mes'?' on':''}" id="cv-btn-mes" onclick="setTabVista('cv','mes')">Por mes</button>
+      <button class="fmt-btn${getTabVista('cv')==='acum'?' on':''}" id="cv-btn-acum" onclick="setTabVista('cv','acum')">Acumulado</button>
+    </div>
+    <select class="dist-sel" id="cv-mes-sel" onchange="renderCV()"
+      style="min-width:120px;${getTabVista('cv')==='acum'?'display:none;':''}">
+      <option value="1_2026">Enero 2026</option><option value="2_2026">Febrero 2026</option>
+          <option value="3_2026">Marzo 2026</option><option value="4_2026">Abril 2026</option>
+          <option value="5_2026">Mayo 2026</option><option value="6_2026">Junio 2026</option>
+          <option value="7_2026">Julio 2026</option><option value="8_2026">Agosto 2026</option>
+          <option value="9_2026">Septiembre 2026</option><option value="10_2026">Octubre 2026</option>
+          <option value="11_2026">Noviembre 2026</option><option value="12_2026">Diciembre 2026</option>
+    </select>
+    <div id="cv-acum-range" style="display:${getTabVista('cv')==='acum'?'flex':'none'};align-items:center;gap:6px;">
+      <span style="font-family:var(--fh);font-weight:700;font-size:12px;color:var(--gray-m);">De</span>
+      <select class="dist-sel" id="cv-acum-desde" onchange="renderCV()" style="min-width:110px;">
+        <option value="1_2026">Enero 2026</option><option value="2_2026">Febrero 2026</option>
+          <option value="3_2026">Marzo 2026</option><option value="4_2026">Abril 2026</option>
+          <option value="5_2026">Mayo 2026</option><option value="6_2026">Junio 2026</option>
+          <option value="7_2026">Julio 2026</option><option value="8_2026">Agosto 2026</option>
+          <option value="9_2026">Septiembre 2026</option><option value="10_2026">Octubre 2026</option>
+          <option value="11_2026">Noviembre 2026</option><option value="12_2026">Diciembre 2026</option>
+      </select>
+      <span style="font-family:var(--fh);font-weight:700;font-size:12px;color:var(--gray-m);">A</span>
+      <select class="dist-sel" id="cv-acum-hasta" onchange="renderCV()" style="min-width:110px;">
+        <option value="1_2026">Enero 2026</option><option value="2_2026" selected>Febrero 2026</option>
+        <option value="3_2026">Marzo 2026</option><option value="4_2026">Abril 2026</option>
+        <option value="5_2026">Mayo 2026</option><option value="6_2026">Junio 2026</option>
+        <option value="7_2026">Julio 2026</option><option value="8_2026">Agosto 2026</option>
+        <option value="9_2026">Septiembre 2026</option><option value="10_2026">Octubre 2026</option>
+        <option value="11_2026">Noviembre 2026</option><option value="12_2026">Diciembre 2026</option>
+      </select>
+    </div>
+  </div>`;
   const data = getDistData('cv');
-  if (!data) { el.innerHTML='<div style="padding:60px;text-align:center;color:var(--gray-m);font-family:var(--fh);font-weight:700;">Carga los datos primero en la pestaña P&L y Matriz</div>'; return; }
+  if (!data) { el.innerHTML = filterBarHtml + '<div style="padding:60px;text-align:center;color:var(--gray-m);font-family:var(--fh);font-weight:700;">Carga los datos primero en la pestaña P&L y Matriz</div>'; return; }
   const {cdata, totals, clients} = data;
 
   const CV_RUBROS = [
@@ -3053,8 +3182,8 @@ function renderCV() {
   });
   totRow += '</tr>';
 
-  el.innerHTML = kpiHtml +
-    `<div class="dist-tbl-wrap"><div style="overflow-x:auto;max-height:calc(100vh - 320px);overflow-y:auto;">
+  el.innerHTML = filterBarHtml + kpiHtml +
+    `<div class="dist-tbl-wrap"><div class="dist-tbl-scroll" style="max-height:calc(100vh - 420px);">
     <table class="dist-tbl"><thead>${thead}</thead><tbody>
     ${buildGroupRows(conIng,'Con Ingresos',cvCollapsed.con,"toggleCVGroup('con')")}
     ${buildGroupRows(sinIng,'Sin Ingresos',cvCollapsed.sin,"toggleCVGroup('sin')")}
@@ -3073,8 +3202,44 @@ function toggleCVGroup(g) {
 // ══════════════════════════════════════════════════════════════
 function renderCFGG() {
   const el = document.getElementById('cfgg-inner'); if (!el) return;
+  // Filter bar
+  const filterBarHtml = `<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--border);">
+    <div style="display:flex;background:var(--surface2);border:1.5px solid var(--border-m);border-radius:var(--r);overflow:hidden;padding:1px;gap:1px;">
+      <button class="fmt-btn${getTabVista('cfgg')==='mes'?' on':''}" id="cfgg-btn-mes" onclick="setTabVista('cfgg','mes')">Por mes</button>
+      <button class="fmt-btn${getTabVista('cfgg')==='acum'?' on':''}" id="cfgg-btn-acum" onclick="setTabVista('cfgg','acum')">Acumulado</button>
+    </div>
+    <select class="dist-sel" id="cfgg-mes-sel" onchange="renderCFGG()"
+      style="min-width:120px;${getTabVista('cfgg')==='acum'?'display:none;':''}">
+      <option value="1_2026">Enero 2026</option><option value="2_2026">Febrero 2026</option>
+          <option value="3_2026">Marzo 2026</option><option value="4_2026">Abril 2026</option>
+          <option value="5_2026">Mayo 2026</option><option value="6_2026">Junio 2026</option>
+          <option value="7_2026">Julio 2026</option><option value="8_2026">Agosto 2026</option>
+          <option value="9_2026">Septiembre 2026</option><option value="10_2026">Octubre 2026</option>
+          <option value="11_2026">Noviembre 2026</option><option value="12_2026">Diciembre 2026</option>
+    </select>
+    <div id="cfgg-acum-range" style="display:${getTabVista('cfgg')==='acum'?'flex':'none'};align-items:center;gap:6px;">
+      <span style="font-family:var(--fh);font-weight:700;font-size:12px;color:var(--gray-m);">De</span>
+      <select class="dist-sel" id="cfgg-acum-desde" onchange="renderCFGG()" style="min-width:110px;">
+        <option value="1_2026">Enero 2026</option><option value="2_2026">Febrero 2026</option>
+          <option value="3_2026">Marzo 2026</option><option value="4_2026">Abril 2026</option>
+          <option value="5_2026">Mayo 2026</option><option value="6_2026">Junio 2026</option>
+          <option value="7_2026">Julio 2026</option><option value="8_2026">Agosto 2026</option>
+          <option value="9_2026">Septiembre 2026</option><option value="10_2026">Octubre 2026</option>
+          <option value="11_2026">Noviembre 2026</option><option value="12_2026">Diciembre 2026</option>
+      </select>
+      <span style="font-family:var(--fh);font-weight:700;font-size:12px;color:var(--gray-m);">A</span>
+      <select class="dist-sel" id="cfgg-acum-hasta" onchange="renderCFGG()" style="min-width:110px;">
+        <option value="1_2026">Enero 2026</option><option value="2_2026" selected>Febrero 2026</option>
+        <option value="3_2026">Marzo 2026</option><option value="4_2026">Abril 2026</option>
+        <option value="5_2026">Mayo 2026</option><option value="6_2026">Junio 2026</option>
+        <option value="7_2026">Julio 2026</option><option value="8_2026">Agosto 2026</option>
+        <option value="9_2026">Septiembre 2026</option><option value="10_2026">Octubre 2026</option>
+        <option value="11_2026">Noviembre 2026</option><option value="12_2026">Diciembre 2026</option>
+      </select>
+    </div>
+  </div>`;
   const data = getDistData('cfgg');
-  if (!data) { el.innerHTML='<div style="padding:60px;text-align:center;color:var(--gray-m);font-family:var(--fh);font-weight:700;">Carga los datos primero</div>'; return; }
+  if (!data) { el.innerHTML = filterBarHtml + '<div style="padding:60px;text-align:center;color:var(--gray-m);font-family:var(--fh);font-weight:700;">Carga los datos primero</div>'; return; }
   const {cdata, totals, clients} = data;
 
   const CFGG_RUBROS = [
@@ -3156,8 +3321,8 @@ function renderCFGG() {
   });
   totRow+='</tr>';
 
-  el.innerHTML = kpiHtml +
-    `<div class="dist-tbl-wrap"><div style="overflow-x:auto;max-height:calc(100vh - 320px);overflow-y:auto;">
+  el.innerHTML = filterBarHtml + kpiHtml +
+    `<div class="dist-tbl-wrap"><div class="dist-tbl-scroll" style="max-height:calc(100vh - 420px);">
     <table class="dist-tbl"><thead>${thead}</thead><tbody>
     ${buildGrp(conIng,'Con Ingresos',cfggC.con,"toggleCFGGGroup('con')")}
     ${buildGrp(sinIng,'Sin Ingresos',cfggC.sin,"toggleCFGGGroup('sin')")}
@@ -3526,20 +3691,7 @@ async function ovLoadFromSP(mk) {
 }
 
 // ── PATCH calcDistribucion and calcDistribucionFromTB to apply overrides ──
-const _origCalcDist = calcDistribucion;
-calcDistribucion = function() {
-  const dist = _origCalcDist.call(this);
-  if (!dist) return dist;
-  const mk = window._currentMesKey || getMesKey();
-  return applyOverrides(dist, window._tbData, mk);
-};
-
-const _origCalcDistFromTB = calcDistribucionFromTB;
-calcDistribucionFromTB = function(mergedTB, mesKeyForLlaves) {
-  const dist = _origCalcDistFromTB.call(this, mergedTB, mesKeyForLlaves);
-  if (!dist) return dist;
-  return applyOverrides(dist, mergedTB, mesKeyForLlaves);
-};
+// Overrides applied directly in getDistData and renderMatrices with correct mk
 
 // Load OV from localStorage on startup
 (function(){
