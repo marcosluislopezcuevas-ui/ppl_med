@@ -3087,11 +3087,15 @@ function renderTop15() {
   const data = getDistData('top15');
   if (!data) { el.innerHTML='<div style="padding:60px;text-align:center;color:var(--gray-m);font-family:var(--fh);font-weight:700;">Carga los datos primero</div>'; return; }
   const {cdata, totals} = data;
-  const clients = Object.keys(cdata).filter(c=>cdata[c].ing>0||cdata[c].ebitda!==0);
+  // Excluir Moderna de todos los rankings
+  const clients = Object.keys(cdata).filter(c => c !== 'Moderna' && (cdata[c].ing>0||cdata[c].ebitda!==0));
+  // Para EBITDA% excluir además los que no tienen ingresos
+  const clientsConIng = clients.filter(c => cdata[c].ing > 0);
   const N = 15;
 
-  const top = (sortFn, label, valFn, color, isFmt) => {
-    const sorted = [...clients].sort(sortFn).slice(0,N);
+  const top = (sortFn, label, valFn, color, isFmt, pool) => {
+    const src = pool || clients;
+    const sorted = [...src].sort(sortFn).slice(0,N);
     const maxVal = Math.abs(valFn(sorted[0]))||1;
     return `<div class="top15-card">
       <div class="top15-title" style="color:${color}">${label}</div>
@@ -3119,7 +3123,7 @@ function renderTop15() {
       ${top((a,b)=>cdata[b].ing-cdata[a].ing,         '🏆 Mayor Ingreso',    cl=>cdata[cl].ing,                           'var(--pos)',      'fmt')}
       ${top((a,b)=>cdata[b].ebitda-cdata[a].ebitda,   '💰 Mayor EBITDA $',   cl=>cdata[cl].ebitda,                        'var(--blue)',     'fmt')}
       ${top((a,b)=>{const em=cl=>cdata[cl].ing?cdata[cl].ebitda/cdata[cl].ing*100:0;return em(b)-em(a);},
-            '📈 Mayor EBITDA %',  cl=>cdata[cl].ing?cdata[cl].ebitda/cdata[cl].ing*100:0, 'var(--lime-deep)', 'pct')}
+            '📈 Mayor EBITDA %',  cl=>cdata[cl].ing?cdata[cl].ebitda/cdata[cl].ing*100:0, 'var(--lime-deep)', 'pct', clientsConIng)}
     </div>`;
 }
 
