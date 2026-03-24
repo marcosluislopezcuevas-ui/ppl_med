@@ -644,7 +644,7 @@ async function processAll(){
     sp(10,'Cargando librer\u00eda...');await loadXLSX();
     sp(35,'Leyendo ingresos...');const ingRows=xlsxRows(fileIng);parseIngresosCliente(ingRows);
     // Detect mesKey from TB filename
-    const tbFileName = fileCos?.name || '';
+    const tbFileName = fileCv?.name || '';
     const fnMatch = tbFileName.match(/TB_(\d{4})_(\d{2})/i);
     const tbMesKey = fnMatch ? parseInt(fnMatch[2]) + '_' + fnMatch[1] : getMesKey();
     window._currentMesKey = tbMesKey;
