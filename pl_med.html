@@ -725,6 +725,17 @@ function parseIngresosCliente(rows) {
     return raw;
   }
 
+  // Log ALL unique raw grupo names for debugging
+  const allRawGrupos = new Set();
+  rows.slice(hdrIdx+1).forEach(r=>{
+    if(!r)return;
+    const g=String(r[colGrupo]||'').trim();
+    const e=String(r[colEsc]||'').trim().toLowerCase();
+    const d=String(r[colDiv]||'').trim();
+    if(e==='real'&&DIVS.includes(d)&&g) allRawGrupos.add(g);
+  });
+  console.log('ALL grupos in file:', [...allRawGrupos].sort());
+
   rows.slice(hdrIdx+1).forEach(r=>{
     if(!r)return;
     const grupoRaw=String(r[colGrupo]||'').trim();
