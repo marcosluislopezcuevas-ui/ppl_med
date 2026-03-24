@@ -1614,8 +1614,11 @@ window.ING_SP_DIV = window.ING_SP_DIV || {};
 // ?? SP READ FUNCTIONS ??
 async function loadTBFromSP() {
   try {
-    const res = await fetch(PA_TB_READ, {method:'POST', headers:{'Content-Type':'application/json'}, body:'{}'});
-    if (!res.ok) return 0;
+    const res = await fetch(PA_TB_READ, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({})});
+    if (!res.ok) {
+      console.warn('loadTBFromSP HTTP error:', res.status, res.statusText);
+      return 0;
+    }
     const items = await res.json();
     if (!Array.isArray(items) || !items.length) return 0;
     window.TB_SP = {};
@@ -1632,8 +1635,13 @@ async function loadTBFromSP() {
 
 async function loadIngFromSP() {
   try {
-    const res = await fetch(PA_ING_READ, {method:'POST', headers:{'Content-Type':'application/json'}, body:'{}'});
-    if (!res.ok) return 0;
+    const res = await fetch(PA_ING_READ, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({})});
+    if (!res.ok) {
+      console.warn('loadIngFromSP HTTP error:', res.status, res.statusText);
+      const txt = await res.text().catch(()=>'');
+      console.warn('loadIngFromSP error body:', txt);
+      return 0;
+    }
     const items = await res.json();
     if (!Array.isArray(items) || !items.length) return 0;
     window.ING_SP = {}; window.ING_SP_DIV = {};
