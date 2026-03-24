@@ -2106,6 +2106,53 @@ function showDiag() {
   el.innerHTML = html;
 }
 
+function toggleUploadPanel() {
+  const panel = document.getElementById('upload-panel');
+  if (!panel) return;
+  const isOpen = panel.style.display !== 'none';
+  panel.style.display = isOpen ? 'none' : 'block';
+  const b2 = document.getElementById('sp-months-badge2');
+  const b1 = document.getElementById('sp-months-badge');
+  if (b2 && b1) b2.textContent = b1.textContent;
+  if (!isOpen) {
+    wireDropZone('drop-ing2', 'f-ing2', 'ing2');
+    wireDropZone('drop-cv2', 'f-cv2', 'cv2');
+  }
+}
+
+function processAll2() {
+  processAll();
+  const panel = document.getElementById('upload-panel');
+  if (panel) panel.style.display = 'none';
+}
+
+function wireDropZone(dropId, inputId, key) {
+  const drop = document.getElementById(dropId);
+  const inp  = document.getElementById(inputId);
+  if (!drop || !inp) return;
+  inp.onchange = e => {
+    const file = e.target.files[0]; if(!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      if(key==='ing'||key==='ing2') fileIng = ev.target.result;
+      else fileCv = ev.target.result;
+      drop.classList.add('loaded');
+      const txt = drop.querySelector('.drop-txt');
+      if(txt) txt.innerHTML = '<strong>' + file.name + '</strong>Listo';
+      document.getElementById(key==='ing'||key==='ing2'?'step1-num':'step2-num')?.classList.add('done');
+    };
+    reader.readAsArrayBuffer(file);
+  };
+  drop.ondragover  = e => { e.preventDefault(); drop.classList.add('over'); };
+  drop.ondragleave = () => drop.classList.remove('over');
+  drop.ondrop      = e => {
+    e.preventDefault(); drop.classList.remove('over');
+    const file = e.dataTransfer.files[0]; if(!file) return;
+    const dt = new DataTransfer(); dt.items.add(file);
+    inp.files = dt.files; inp.dispatchEvent(new Event('change'));
+  };
+}
+
 function toast(msg,type){const el=document.getElementById('toast');el.innerHTML=msg;el.className='toast '+(type||'');el.classList.add('show');setTimeout(()=>el.classList.remove('show'),2800);}
 </script>
 </body>
