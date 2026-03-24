@@ -697,6 +697,7 @@ function parseIngresosCliente(rows) {
     'cargo farma': 'Cargo Farma',
     'irasema gallardo (imprenta londres)': 'Irasema Gallardo',
     'irasema gallardo (imprenta london)': 'Irasema Gallardo',
+    'irasema gallardo (imprenta Londres)'.toLowerCase(): 'Irasema Gallardo',
     'irasema gallardo': 'Irasema Gallardo',
     'kabla comercial': 'Kabla Comercial',
     'varios': 'Varios',
@@ -706,10 +707,22 @@ function parseIngresosCliente(rows) {
 
   const UNMATCHED = new Set();
   function normalizeCliente(raw) {
-    const lower = raw.toLowerCase().trim();
+    // Normalize: lowercase, trim, collapse multiple spaces
+    const lower = raw.toLowerCase().trim().replace(/\s+/g,' ');
     if (ALIASES[lower]) return ALIASES[lower];
     if (clienteLookup[lower]) return clienteLookup[lower];
-    UNMATCHED.add(raw);
+    // Try stripping parenthetical suffixes: "Patia / Patican" -> "Patia"
+    const slash = lower.split('/')[0].trim();
+    if (slash !== lower && clienteLookup[slash]) return clienteLookup[slash];
+    if (slash !== lower && ALIASES[slash]) return ALIASES[slash];
+    // Try matching start of string against all aliases
+    for (const [k,v] of Object.entries(ALIASES)) {
+      if (lower.startsWith(k) || k.startsWith(lower)) return v;
+    }
+    for (const [k,v] of Object.entries(clienteLookup)) {
+      if (lower.startsWith(k) || k.startsWith(lower)) return v;
+    }
+    UNMATCHED.add(raw + ' [lower:' + lower + ']');
     return raw;
   }
 
