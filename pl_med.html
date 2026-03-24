@@ -597,7 +597,7 @@ const PPTO_COSTOS = {"Enero":{"ing_total":61984928,"salarios":6560872,"fletes":0
 const PPTO_ING    = {"Enero":{"Almacen":{"Negocios Existentes":40098087,"Carry Over":1251182,"Nuevos Negocios":923953,"Moderna":0,"Otros":515906,"total":42789127},"Transporte":{"Negocios Existentes":17817015,"Carry Over":537896,"Nuevos Negocios":840890,"Moderna":0,"Otros":0,"total":19195801}},"Febrero":{"Almacen":{"Negocios Existentes":41790069,"Carry Over":1299513,"Nuevos Negocios":1458840,"Moderna":0,"Otros":270407,"total":44818829},"Transporte":{"Negocios Existentes":18370212,"Carry Over":558674,"Nuevos Negocios":1484267,"Moderna":0,"Otros":0,"total":20413152}},"Marzo":{"Almacen":{"Negocios Existentes":43049207,"Carry Over":1337754,"Nuevos Negocios":2006885,"Moderna":0,"Otros":208310,"total":46602155},"Transporte":{"Negocios Existentes":18864169,"Carry Over":575114,"Nuevos Negocios":2134323,"Moderna":0,"Otros":0,"total":21573607}},"Abril":{"Almacen":{"Negocios Existentes":44352052,"Carry Over":1384503,"Nuevos Negocios":2587694,"Moderna":0,"Otros":317541,"total":48641789},"Transporte":{"Negocios Existentes":19662290,"Carry Over":595212,"Nuevos Negocios":2801013,"Moderna":0,"Otros":0,"total":23058515}},"Mayo":{"Almacen":{"Negocios Existentes":44014377,"Carry Over":1373901,"Nuevos Negocios":5724716,"Moderna":0,"Otros":288739,"total":51401733},"Transporte":{"Negocios Existentes":19521340,"Carry Over":590654,"Nuevos Negocios":6624569,"Moderna":0,"Otros":0,"total":26736563}},"Junio":{"Almacen":{"Negocios Existentes":44675624,"Carry Over":1391337,"Nuevos Negocios":5664153,"Moderna":0,"Otros":166855,"total":51897971},"Transporte":{"Negocios Existentes":19768452,"Carry Over":598150,"Nuevos Negocios":6593824,"Moderna":0,"Otros":0,"total":26960425}},"Julio":{"Almacen":{"Negocios Existentes":47651348,"Carry Over":1483422,"Nuevos Negocios":5686416,"Moderna":0,"Otros":267336,"total":55088522},"Transporte":{"Negocios Existentes":21066074,"Carry Over":637738,"Nuevos Negocios":6605126,"Moderna":0,"Otros":0,"total":28308938}},"Agosto":{"Almacen":{"Negocios Existentes":44976465,"Carry Over":1399778,"Nuevos Negocios":5698587,"Moderna":0,"Otros":148784,"total":52223613},"Transporte":{"Negocios Existentes":19809716,"Carry Over":601779,"Nuevos Negocios":6611304,"Moderna":0,"Otros":0,"total":27022799}},"Septiembre":{"Almacen":{"Negocios Existentes":47463231,"Carry Over":1477765,"Nuevos Negocios":8271155,"Moderna":0,"Otros":202640,"total":57414790},"Transporte":{"Negocios Existentes":21049166,"Carry Over":635306,"Nuevos Negocios":9776473,"Moderna":0,"Otros":0,"total":31460946}},"Octubre":{"Almacen":{"Negocios Existentes":46846647,"Carry Over":1458320,"Nuevos Negocios":8291861,"Moderna":0,"Otros":167162,"total":56763989},"Transporte":{"Negocios Existentes":20724428,"Carry Over":626947,"Nuevos Negocios":9786985,"Moderna":0,"Otros":0,"total":31138360}},"Noviembre":{"Almacen":{"Negocios Existentes":48037476,"Carry Over":1497072,"Nuevos Negocios":8285093,"Moderna":0,"Otros":233085,"total":58052726},"Transporte":{"Negocios Existentes":21356670,"Carry Over":643607,"Nuevos Negocios":9783550,"Moderna":0,"Otros":0,"total":31783826}},"Diciembre":{"Almacen":{"Negocios Existentes":46772094,"Carry Over":1461954,"Nuevos Negocios":3144017,"Moderna":0,"Otros":196343,"total":51574408},"Transporte":{"Negocios Existentes":20816797,"Carry Over":628509,"Nuevos Negocios":3455272,"Moderna":0,"Otros":0,"total":24900578}}};
 
 let FMT='K';
-let fileCv=null, fileIng=null;
+let fileCv=null, fileIng=null, fileCvName='';
 // Multi-period storage: key = "Enero 2026"
 const PERIODOS = {};   // key -> PL data
 let activePeriodo = null;
@@ -619,7 +619,7 @@ function readMem(file,key,dropId,step){
   fr.onerror=()=>toast('Error: '+file.name,'');
   fr.onload=e=>{
     if(key==='ing'||key==='ing2')fileIng=e.target.result; 
-    else fileCv=e.target.result;
+    else { fileCv=e.target.result; fileCvName=file.name; }
     drop.classList.add('loaded');
     drop.querySelector('.drop-txt').innerHTML='<strong>\u2713 '+file.name+'</strong>';
     document.getElementById('step'+step+'-num').classList.add('done');
@@ -644,7 +644,7 @@ async function processAll(){
     sp(10,'Cargando librer\u00eda...');await loadXLSX();
     sp(35,'Leyendo ingresos...');const ingRows=xlsxRows(fileIng);parseIngresosCliente(ingRows);
     // Detect mesKey from TB filename
-    const tbFileName = fileCos?.name || '';
+    const tbFileName = fileCvName || '';
     const fnMatch = tbFileName.match(/TB_(\d{4})_(\d{2})/i);
     const tbMesKey = fnMatch ? parseInt(fnMatch[2]) + '_' + fnMatch[1] : getMesKey();
     window._currentMesKey = tbMesKey;
@@ -2135,7 +2135,7 @@ function wireDropZone(dropId, inputId, key) {
     const reader = new FileReader();
     reader.onload = ev => {
       if(key==='ing'||key==='ing2') fileIng = ev.target.result;
-      else fileCv = ev.target.result;
+      else { fileCv = ev.target.result; fileCvName = file.name; }
       drop.classList.add('loaded');
       const txt = drop.querySelector('.drop-txt');
       if(txt) txt.innerHTML = '<strong>' + file.name + '</strong>Listo';
