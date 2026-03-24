@@ -2629,6 +2629,9 @@ function renderMatrices() {
     ingRaw = window.ING_SP?.[mk] && Object.keys(window.ING_SP[mk]).length
              ? window.ING_SP[mk]
              : (window._ingByCliente?.[mesNom] || {});
+    const ingSource = (window.ING_SP?.[mk] && Object.keys(window.ING_SP[mk]).length) ? 'ING_SP' : '_ingByCliente';
+    const ingTotal  = Object.values(ingRaw).reduce((s,v)=>s+v,0);
+    console.log('Matrix ingRaw source:', ingSource, 'mk:', mk, 'total:', ingTotal, 'clients:', Object.keys(ingRaw).length);
   }
   // Build lowercase lookup for fuzzy matching
   const ingLookup = {};
