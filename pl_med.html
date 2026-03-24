@@ -1478,9 +1478,25 @@ function showTab(tab) {
   });
   if (tab==='llaves')  initLlaves();
   if (tab==='mapeo')   initMapeo();
-  if (tab==='mmontos') { initMatrixFilters(); renderMatrices(); }
-  if (tab==='cv')      renderCV();
-  if (tab==='cfgg')    renderCFGG();
+  if (tab==='mmontos') {
+    const mxSel = document.getElementById('mx-mes-sel');
+    const curMk3 = window._currentMesKey || getMesKey();
+    if (mxSel && curMk3) mxSel.value = curMk3;
+    initMatrixFilters(); renderMatrices();
+  }
+  if (tab==='cv') {
+    // Sync cv-mes-sel to current loaded month if not yet changed
+    const cvSel = document.getElementById('cv-mes-sel');
+    const curMk = window._currentMesKey || getMesKey();
+    if (cvSel && curMk) cvSel.value = curMk;
+    renderCV();
+  }
+  if (tab==='cfgg') {
+    const cfggSel = document.getElementById('cfgg-mes-sel');
+    const curMk2  = window._currentMesKey || getMesKey();
+    if (cfggSel && curMk2) cfggSel.value = curMk2;
+    renderCFGG();
+  }
   if (tab==='top15')   renderTop15();
 }
 
@@ -2692,8 +2708,11 @@ function renderMatrices() {
     ${totCells}
   </tr>`;
 
-  // Matrix comprobacion
-  const _plMX = window._pl;
+  // Matrix comprobacion — get PL for the displayed month
+  const _mxMk = mxVista === 'acum'
+    ? (document.getElementById('mx-acum-hasta')?.value || getMesKey())
+    : (document.getElementById('mx-mes-sel')?.value || getMesKey());
+  const _plMX = getPLForMk(_mxMk);
   const PL_MAP_MX = {
     ing:_plMX?.ing_total||0, salarios:_plMX?.salarios||0, fletes:_plMX?.fletes||0,
     mat_empaque:_plMX?.mat_empaque||0, cargo_farma:_plMX?.cargo_farma||0,
@@ -3017,7 +3036,7 @@ function getDistData(tabId) {
   const totals={};
   keys.forEach(k=>{ totals[k]=clients.reduce((s,c)=>s+(cdata[c][k]||0),0); });
 
-  return {cdata, totals, clients};
+  return {cdata, totals, clients, activeMk};
 }
 
 // Sort helper for dist tables
@@ -3057,6 +3076,19 @@ function sortDistTab(tabId, col) {
 // ══════════════════════════════════════════════════════════════
 // COSTOS VARIABLES TAB
 // ══════════════════════════════════════════════════════════════
+
+// Get P&L totals for a specific mesKey (from SP or session)
+function getPLForMk(mk) {
+  if (!mk) return window._pl || {};
+  // If this is the currently loaded month, use _pl directly
+  if (window._pl && (window._currentMesKey === mk || getMesKey() === mk)) return window._pl;
+  // Try to build from SP data
+  if (window.TB_SP?.[mk] && Object.keys(window.TB_SP[mk]).length) {
+    return buildPLFromSP(mk);
+  }
+  return window._pl || {};
+}
+
 function renderCV() {
   const el = document.getElementById('cv-inner'); if (!el) return;
   // Filter bar
@@ -3210,7 +3242,7 @@ function renderCV() {
   totRow += '</tr>';
 
   // Comprobacion rows for CV
-  const _plCV = window._pl;
+  const _plCV = getPLForMk(data.activeMk);
   const buildComprobRows = (rubros, plMap) => {
     const RUBS_LABELS = {ing:'Ingresos',salarios:'Salarios',fletes:'Fletes',mat_empaque:'Mat. Empaque',
       cargo_farma:'Cargo Farma',costo_insumos:'Costo Insumos',otros_cv:'Otros CV',cv:'CV Total',
@@ -3245,7 +3277,8 @@ function renderCV() {
   const PL_MAP_CV = {
     ing:_plCV?.ing_total||0, salarios:_plCV?.salarios||0, fletes:_plCV?.fletes||0,
     mat_empaque:_plCV?.mat_empaque||0, cargo_farma:_plCV?.cargo_farma||0,
-    costo_insumos:_plCV?.costo_insumos||0, otros_cv:_plCV?.otros_cv||0, cv:_plCV?.cv_total||0
+    costo_insumos:_plCV?.costo_insumos||0, otros_cv:_plCV?.otros_cv||0, cv:_plCV?.cv_total||0,
+    cm:_plCV?.cm||0
   };
   const comprobCV = buildComprobRows(['ing','salarios','fletes','mat_empaque','cargo_farma','costo_insumos','otros_cv','cv'], PL_MAP_CV);
 
@@ -3388,7 +3421,7 @@ function renderCFGG() {
   });
   totRow+='</tr>';
 
-  const _plCFGG = window._pl;
+  const _plCFGG = getPLForMk(data.activeMk);
   const buildComprobRowsCFGG = (rubros, plMap) => {
     let plCells = `<td style="position:sticky;left:0;background:#FFF8E8;font-family:var(--fh);font-weight:800;font-size:11px;color:var(--warn-color);">✔ Comprobación vs P&L</td>`;
     rubros.forEach(r => {
@@ -3880,9 +3913,12 @@ async function exportToExcel(tabId) {
   });
   rows.push(totRow);
 
-  // Comprobacion vs P&L row
+  // Comprobacion vs P&L row — use mk of the exported tab
+  const exportMk = document.getElementById(
+    tabId === 'cv' ? 'cv-mes-sel' : tabId === 'cfgg' ? 'cfgg-mes-sel' : 'mx-mes-sel'
+  )?.value || getMesKey();
   const plRow = ['Comprobación vs P&L'];
-  const pl = window._pl;
+  const pl = getPLForMk(exportMk);
   const PL_MAP = {
     ing: pl?.ing_total, salarios: pl?.salarios, fletes: pl?.fletes,
     mat_empaque: pl?.mat_empaque, cargo_farma: pl?.cargo_farma,
