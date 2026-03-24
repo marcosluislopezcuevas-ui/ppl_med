@@ -256,10 +256,10 @@ body{background:var(--white);color:var(--gray);font-family:var(--fb);font-size:1
 .mtbl td:first-child{text-align:left;font-weight:500;position:sticky;left:0;background:var(--white);}
 .mtbl tr:hover td{background:var(--lime-bg);}
 .mtbl tr:hover td:first-child{background:var(--lime-bg);}
-.mtbl tr.total-row td{background:var(--lime-pale);font-weight:700;border-top:2px solid var(--lime-dark);
-  position:sticky;bottom:0;z-index:3;}
+.mtbl tr.total-row td{background:var(--lime-pale);font-weight:700;border-top:2px solid var(--lime-dark);}
 .mtbl tr.total-row td:first-child{font-family:var(--fh);font-weight:800;font-size:12px;background:var(--lime-pale);
-  position:sticky;left:0;bottom:0;z-index:5;}
+  position:sticky;left:0;z-index:2;}
+.mtbl tfoot{position:sticky;bottom:0;z-index:4;}
 .mtbl td.total-col{background:var(--lime-bg) !important;font-weight:700;border-left:2px solid var(--lime-dark);}
 .pct-bar{display:flex;align-items:center;gap:4px;}
 .pct-bar-inner{flex:1;height:4px;background:var(--border);border-radius:2px;overflow:hidden;min-width:30px;}
@@ -337,6 +337,7 @@ body{background:var(--white);color:var(--gray);font-family:var(--fb);font-size:1
 
 /* ── DIST TABLE (CV / CFGG) ── */
 .dist-tbl-wrap{background:var(--white);border:1px solid var(--border);border-radius:var(--rl);overflow:hidden;}
+.dist-tbl-scroll{overflow-x:auto;overflow-y:auto;}
 .dist-tbl{width:100%;border-collapse:separate;border-spacing:0;font-size:12px;}
 .dist-tbl th{font-family:var(--fh);font-weight:700;font-size:10px;letter-spacing:.07em;text-transform:uppercase;
   color:var(--gray-m);background:var(--surface2);border-bottom:2px solid var(--border);
@@ -356,10 +357,10 @@ body{background:var(--white);color:var(--gray);font-family:var(--fb);font-size:1
 .dist-tbl td:first-child{text-align:left;font-weight:500;position:sticky;left:0;background:var(--white);z-index:1;padding-left:10px;}
 .dist-tbl tr:hover td{background:var(--lime-bg);}
 .dist-tbl tr:hover td:first-child{background:var(--lime-bg);}
-.dist-tbl tr.total-row td{background:var(--lime-pale);font-weight:700;border-top:2px solid var(--lime-dark);
-  position:sticky;bottom:0;z-index:3;}
+.dist-tbl tr.total-row td{background:var(--lime-pale);font-weight:700;border-top:2px solid var(--lime-dark);}
 .dist-tbl tr.total-row td:first-child{font-family:var(--fh);font-weight:800;background:var(--lime-pale);
-  position:sticky;left:0;bottom:0;z-index:5;}
+  position:sticky;left:0;z-index:2;}
+.dist-tbl tfoot{position:sticky;bottom:0;z-index:4;}
 .dist-tbl td.grp-col{border-left:2px solid var(--lime-dark);background:var(--lime-bg)!important;font-weight:700;}
 .dist-tbl tr.group-hdr-row td{background:var(--surface2);font-family:var(--fh);font-weight:800;font-size:11px;
   letter-spacing:.1em;text-transform:uppercase;color:var(--gray-m);cursor:pointer;border-top:2px solid var(--border-m);}
@@ -2537,8 +2538,17 @@ function renderMatrices() {
     const mesNum = parseInt(mk.split('_')[0]) || 1;
     const mesNombre = MES_NAMES[mesNum] || 'Enero';
     mesLabel = mesNombre;
-    const rawDist = calcDistribucion(); if (!rawDist) { noData('Sin datos de distribucion'); return; }
-    dist = applyOverrides(rawDist, window.TB_SP?.[mk] || window._tbData, mk);
+    // Force TB to use selected month's data
+    const tbForMk = (window.TB_SP?.[mk] && Object.keys(window.TB_SP[mk]).length > 0)
+      ? window.TB_SP[mk] : window._tbData;
+    if (!tbForMk) { noData('Sin datos de TB para este mes'); return; }
+    // Temporarily set _currentMesKey so calcDistribucion uses right month
+    const _prevMk = window._currentMesKey;
+    window._currentMesKey = mk;
+    const rawDist = calcDistribucion(); 
+    window._currentMesKey = _prevMk;
+    if (!rawDist) { noData('Sin datos de distribucion'); return; }
+    dist = applyOverrides(rawDist, tbForMk, mk);
     ingRaw = (window.ING_SP && window.ING_SP[mk] && Object.keys(window.ING_SP[mk]).length > 0)
              ? window.ING_SP[mk]
              : (window._ingByCliente?.[mesNombre] || {});
@@ -2701,7 +2711,7 @@ function renderMatrices() {
     ${totCells}
   </tr>`;
 
-  el.innerHTML = thead + '<tbody>' + rows + totRow + '</tbody>';
+  el.innerHTML = thead + '<tbody>' + rows + '</tbody><tfoot>' + totRow + '</tfoot>';
   const meta = document.getElementById('mmontos-meta');
   if (meta) meta.textContent = sorted.length + ' clientes — ' + mesLabel;
 }
@@ -3187,8 +3197,7 @@ function renderCV() {
     <table class="dist-tbl"><thead>${thead}</thead><tbody>
     ${buildGroupRows(conIng,'Con Ingresos',cvCollapsed.con,"toggleCVGroup('con')")}
     ${buildGroupRows(sinIng,'Sin Ingresos',cvCollapsed.sin,"toggleCVGroup('sin')")}
-    ${totRow}
-    </tbody></table></div></div>`;
+    </tbody><tfoot>${totRow}</tfoot></table></div></div>`;
 }
 
 function toggleCVGroup(g) {
@@ -3326,8 +3335,7 @@ function renderCFGG() {
     <table class="dist-tbl"><thead>${thead}</thead><tbody>
     ${buildGrp(conIng,'Con Ingresos',cfggC.con,"toggleCFGGGroup('con')")}
     ${buildGrp(sinIng,'Sin Ingresos',cfggC.sin,"toggleCFGGGroup('sin')")}
-    ${totRow}
-    </tbody></table></div></div>`;
+    </tbody><tfoot>${totRow}</tfoot></table></div></div>`;
 }
 
 function toggleCFGGGroup(g){
