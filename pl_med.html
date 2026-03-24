@@ -1572,8 +1572,21 @@ let mxSortDir = 'desc';
 
 function initMatrixFilters() {
   const dist = calcDistribucion();
-  const allClients = dist ? Object.keys(dist).sort() : CLIENTES_BASE.slice().sort();
+  // Get mes name for ingByCliente lookup
+  const mesSel2 = document.getElementById('mx-mes-sel');
+  const mk2 = mesSel2 ? mesSel2.value : getMesKey();
+  const MN2 = {1:'Enero',2:'Febrero',3:'Marzo',4:'Abril',5:'Mayo',6:'Junio',7:'Julio',8:'Agosto',9:'Septiembre',10:'Octubre',11:'Noviembre',12:'Diciembre'};
+  const mesN2 = MN2[parseInt(mk2.split('_')[0])||1] || 'Enero';
+  const ingRaw2 = window._ingByCliente?.[mesN2] || {};
+  // Merge all clients: from dist + from ingresos
+  const allClientsSet = new Set([
+    ...(dist ? Object.keys(dist) : []),
+    ...Object.keys(ingRaw2).filter(c => ingRaw2[c] > 0)
+  ]);
+  const allClients = [...allClientsSet].sort();
   if (mxSelectedClients.size === 0) allClients.forEach(c => mxSelectedClients.add(c));
+  // Add any new clients not yet in mxSelectedClients
+  allClients.forEach(c => mxSelectedClients.add(c));
   const el = document.getElementById('mx-client-chips');
   if (el) el.innerHTML = allClients.map(c =>
     `<span class="mx-chip${mxSelectedClients.has(c)?' sel':''}" onclick="mxToggleClient('${c.replace(/'/g,"&#39;")}')">${c}</span>`
