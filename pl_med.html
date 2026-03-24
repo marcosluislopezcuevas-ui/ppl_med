@@ -1599,7 +1599,7 @@ async function buildIngRows(mesKey) {
   return rows;
 }
 
-function loadLlavesFromSharePoint(mesKey) {
+async function loadLlavesFromSharePoint(mesKey) {
   try {
     const res = await fetch(PA_LLAVES_READ, {
       method: 'POST',
