@@ -823,12 +823,92 @@ body{background:var(--white);color:var(--gray);font-family:var(--fb);font-size:1
 
 <!-- COSTOS VARIABLES PAGE -->
 <div class="page" id="page-cv">
-  <div class="dist-page" id="cv-inner"></div>
+  <div class="dist-page">
+    <!-- Static filter bar - never re-rendered -->
+    <div id="cv-filter-bar" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--border);">
+      <div style="display:flex;background:var(--surface2);border:1.5px solid var(--border-m);border-radius:var(--r);overflow:hidden;padding:1px;gap:1px;">
+        <button class="fmt-btn on" id="cv-btn-mes"  onclick="setTabVista('cv','mes')">Por mes</button>
+        <button class="fmt-btn"   id="cv-btn-acum" onclick="setTabVista('cv','acum')">Acumulado</button>
+      </div>
+      <select class="dist-sel" id="cv-mes-sel" onchange="renderCV()" style="min-width:120px;">
+        <option value="1_2026">Enero 2026</option><option value="2_2026">Febrero 2026</option>
+        <option value="3_2026">Marzo 2026</option><option value="4_2026">Abril 2026</option>
+        <option value="5_2026">Mayo 2026</option><option value="6_2026">Junio 2026</option>
+        <option value="7_2026">Julio 2026</option><option value="8_2026">Agosto 2026</option>
+        <option value="9_2026">Septiembre 2026</option><option value="10_2026">Octubre 2026</option>
+        <option value="11_2026">Noviembre 2026</option><option value="12_2026">Diciembre 2026</option>
+      </select>
+      <div id="cv-acum-range" style="display:none;align-items:center;gap:6px;">
+        <span style="font-family:var(--fh);font-weight:700;font-size:12px;color:var(--gray-m);">De</span>
+        <select class="dist-sel" id="cv-acum-desde" onchange="renderCV()" style="min-width:110px;">
+          <option value="1_2026">Enero 2026</option><option value="2_2026">Febrero 2026</option>
+          <option value="3_2026">Marzo 2026</option><option value="4_2026">Abril 2026</option>
+          <option value="5_2026">Mayo 2026</option><option value="6_2026">Junio 2026</option>
+          <option value="7_2026">Julio 2026</option><option value="8_2026">Agosto 2026</option>
+          <option value="9_2026">Septiembre 2026</option><option value="10_2026">Octubre 2026</option>
+          <option value="11_2026">Noviembre 2026</option><option value="12_2026">Diciembre 2026</option>
+        </select>
+        <span style="font-family:var(--fh);font-weight:700;font-size:12px;color:var(--gray-m);">A</span>
+        <select class="dist-sel" id="cv-acum-hasta" onchange="renderCV()" style="min-width:110px;">
+          <option value="1_2026">Enero 2026</option><option value="2_2026" selected>Febrero 2026</option>
+          <option value="3_2026">Marzo 2026</option><option value="4_2026">Abril 2026</option>
+          <option value="5_2026">Mayo 2026</option><option value="6_2026">Junio 2026</option>
+          <option value="7_2026">Julio 2026</option><option value="8_2026">Agosto 2026</option>
+          <option value="9_2026">Septiembre 2026</option><option value="10_2026">Octubre 2026</option>
+          <option value="11_2026">Noviembre 2026</option><option value="12_2026">Diciembre 2026</option>
+        </select>
+      </div>
+      <div style="margin-left:auto;">
+        <button class="btn-ghost" onclick="exportToExcel('cv')" style="font-size:12px;padding:5px 12px;">↓ Excel</button>
+      </div>
+    </div>
+    <!-- Dynamic content only -->
+    <div id="cv-inner"></div>
+  </div>
 </div>
 
 <!-- CF Y GG PAGE -->
 <div class="page" id="page-cfgg">
-  <div class="dist-page" id="cfgg-inner"></div>
+  <div class="dist-page">
+    <div id="cfgg-filter-bar" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--border);">
+      <div style="display:flex;background:var(--surface2);border:1.5px solid var(--border-m);border-radius:var(--r);overflow:hidden;padding:1px;gap:1px;">
+        <button class="fmt-btn on" id="cfgg-btn-mes"  onclick="setTabVista('cfgg','mes')">Por mes</button>
+        <button class="fmt-btn"   id="cfgg-btn-acum" onclick="setTabVista('cfgg','acum')">Acumulado</button>
+      </div>
+      <select class="dist-sel" id="cfgg-mes-sel" onchange="renderCFGG()" style="min-width:120px;">
+        <option value="1_2026">Enero 2026</option><option value="2_2026">Febrero 2026</option>
+        <option value="3_2026">Marzo 2026</option><option value="4_2026">Abril 2026</option>
+        <option value="5_2026">Mayo 2026</option><option value="6_2026">Junio 2026</option>
+        <option value="7_2026">Julio 2026</option><option value="8_2026">Agosto 2026</option>
+        <option value="9_2026">Septiembre 2026</option><option value="10_2026">Octubre 2026</option>
+        <option value="11_2026">Noviembre 2026</option><option value="12_2026">Diciembre 2026</option>
+      </select>
+      <div id="cfgg-acum-range" style="display:none;align-items:center;gap:6px;">
+        <span style="font-family:var(--fh);font-weight:700;font-size:12px;color:var(--gray-m);">De</span>
+        <select class="dist-sel" id="cfgg-acum-desde" onchange="renderCFGG()" style="min-width:110px;">
+          <option value="1_2026">Enero 2026</option><option value="2_2026">Febrero 2026</option>
+          <option value="3_2026">Marzo 2026</option><option value="4_2026">Abril 2026</option>
+          <option value="5_2026">Mayo 2026</option><option value="6_2026">Junio 2026</option>
+          <option value="7_2026">Julio 2026</option><option value="8_2026">Agosto 2026</option>
+          <option value="9_2026">Septiembre 2026</option><option value="10_2026">Octubre 2026</option>
+          <option value="11_2026">Noviembre 2026</option><option value="12_2026">Diciembre 2026</option>
+        </select>
+        <span style="font-family:var(--fh);font-weight:700;font-size:12px;color:var(--gray-m);">A</span>
+        <select class="dist-sel" id="cfgg-acum-hasta" onchange="renderCFGG()" style="min-width:110px;">
+          <option value="1_2026">Enero 2026</option><option value="2_2026" selected>Febrero 2026</option>
+          <option value="3_2026">Marzo 2026</option><option value="4_2026">Abril 2026</option>
+          <option value="5_2026">Mayo 2026</option><option value="6_2026">Junio 2026</option>
+          <option value="7_2026">Julio 2026</option><option value="8_2026">Agosto 2026</option>
+          <option value="9_2026">Septiembre 2026</option><option value="10_2026">Octubre 2026</option>
+          <option value="11_2026">Noviembre 2026</option><option value="12_2026">Diciembre 2026</option>
+        </select>
+      </div>
+      <div style="margin-left:auto;">
+        <button class="btn-ghost" onclick="exportToExcel('cfgg')" style="font-size:12px;padding:5px 12px;">↓ Excel</button>
+      </div>
+    </div>
+    <div id="cfgg-inner"></div>
+  </div>
 </div>
 
 <!-- TOP 15 PAGE -->
@@ -3091,45 +3171,8 @@ function getPLForMk(mk) {
 
 function renderCV() {
   const el = document.getElementById('cv-inner'); if (!el) return;
-  // Filter bar
-  const filterBarHtml = `<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--border);">
-    <div style="display:flex;background:var(--surface2);border:1.5px solid var(--border-m);border-radius:var(--r);overflow:hidden;padding:1px;gap:1px;">
-      <button class="fmt-btn${getTabVista('cv')==='mes'?' on':''}" id="cv-btn-mes" onclick="setTabVista('cv','mes')">Por mes</button>
-      <button class="fmt-btn${getTabVista('cv')==='acum'?' on':''}" id="cv-btn-acum" onclick="setTabVista('cv','acum')">Acumulado</button>
-    </div>
-    <select class="dist-sel" id="cv-mes-sel" onchange="renderCV()"
-      style="min-width:120px;${getTabVista('cv')==='acum'?'display:none;':''}">
-      <option value="1_2026">Enero 2026</option><option value="2_2026">Febrero 2026</option>
-          <option value="3_2026">Marzo 2026</option><option value="4_2026">Abril 2026</option>
-          <option value="5_2026">Mayo 2026</option><option value="6_2026">Junio 2026</option>
-          <option value="7_2026">Julio 2026</option><option value="8_2026">Agosto 2026</option>
-          <option value="9_2026">Septiembre 2026</option><option value="10_2026">Octubre 2026</option>
-          <option value="11_2026">Noviembre 2026</option><option value="12_2026">Diciembre 2026</option>
-    </select>
-    <div id="cv-acum-range" style="display:${getTabVista('cv')==='acum'?'flex':'none'};align-items:center;gap:6px;">
-      <span style="font-family:var(--fh);font-weight:700;font-size:12px;color:var(--gray-m);">De</span>
-      <select class="dist-sel" id="cv-acum-desde" onchange="renderCV()" style="min-width:110px;">
-        <option value="1_2026">Enero 2026</option><option value="2_2026">Febrero 2026</option>
-          <option value="3_2026">Marzo 2026</option><option value="4_2026">Abril 2026</option>
-          <option value="5_2026">Mayo 2026</option><option value="6_2026">Junio 2026</option>
-          <option value="7_2026">Julio 2026</option><option value="8_2026">Agosto 2026</option>
-          <option value="9_2026">Septiembre 2026</option><option value="10_2026">Octubre 2026</option>
-          <option value="11_2026">Noviembre 2026</option><option value="12_2026">Diciembre 2026</option>
-      </select>
-      <span style="font-family:var(--fh);font-weight:700;font-size:12px;color:var(--gray-m);">A</span>
-      <select class="dist-sel" id="cv-acum-hasta" onchange="renderCV()" style="min-width:110px;">
-        <option value="1_2026">Enero 2026</option><option value="2_2026" selected>Febrero 2026</option>
-        <option value="3_2026">Marzo 2026</option><option value="4_2026">Abril 2026</option>
-        <option value="5_2026">Mayo 2026</option><option value="6_2026">Junio 2026</option>
-        <option value="7_2026">Julio 2026</option><option value="8_2026">Agosto 2026</option>
-        <option value="9_2026">Septiembre 2026</option><option value="10_2026">Octubre 2026</option>
-        <option value="11_2026">Noviembre 2026</option><option value="12_2026">Diciembre 2026</option>
-      </select>
-    </div>
-    <div style="margin-left:auto;"><button class="btn-ghost" onclick="exportToExcel('cv')" style="font-size:12px;padding:5px 12px;">↓ Excel</button></div>
-  </div>`;
   const data = getDistData('cv');
-  if (!data) { el.innerHTML = filterBarHtml + '<div style="padding:60px;text-align:center;color:var(--gray-m);font-family:var(--fh);font-weight:700;">Carga los datos primero en la pestaña P&L y Matriz</div>'; return; }
+  if (!data) { el.innerHTML = '<div style="padding:60px;text-align:center;color:var(--gray-m);font-family:var(--fh);font-weight:700;">Carga los datos primero en la pestaña P&L y Matriz</div>'; return; }
   const {cdata, totals, clients} = data;
 
   const CV_RUBROS = [
@@ -3282,7 +3325,7 @@ function renderCV() {
   };
   const comprobCV = buildComprobRows(['ing','salarios','fletes','mat_empaque','cargo_farma','costo_insumos','otros_cv','cv'], PL_MAP_CV);
 
-  el.innerHTML = filterBarHtml + kpiHtml +
+  el.innerHTML = kpiHtml +
     `<div class="dist-tbl-wrap"><div class="dist-tbl-scroll" style="max-height:calc(100vh - 420px);">
     <table class="dist-tbl"><thead>${thead}</thead><tbody>
     ${buildGroupRows(conIng,'Con Ingresos',cvCollapsed.con,"toggleCVGroup('con')")}
@@ -3301,45 +3344,8 @@ function toggleCVGroup(g) {
 // ══════════════════════════════════════════════════════════════
 function renderCFGG() {
   const el = document.getElementById('cfgg-inner'); if (!el) return;
-  // Filter bar
-  const filterBarHtml = `<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--border);">
-    <div style="display:flex;background:var(--surface2);border:1.5px solid var(--border-m);border-radius:var(--r);overflow:hidden;padding:1px;gap:1px;">
-      <button class="fmt-btn${getTabVista('cfgg')==='mes'?' on':''}" id="cfgg-btn-mes" onclick="setTabVista('cfgg','mes')">Por mes</button>
-      <button class="fmt-btn${getTabVista('cfgg')==='acum'?' on':''}" id="cfgg-btn-acum" onclick="setTabVista('cfgg','acum')">Acumulado</button>
-    </div>
-    <select class="dist-sel" id="cfgg-mes-sel" onchange="renderCFGG()"
-      style="min-width:120px;${getTabVista('cfgg')==='acum'?'display:none;':''}">
-      <option value="1_2026">Enero 2026</option><option value="2_2026">Febrero 2026</option>
-          <option value="3_2026">Marzo 2026</option><option value="4_2026">Abril 2026</option>
-          <option value="5_2026">Mayo 2026</option><option value="6_2026">Junio 2026</option>
-          <option value="7_2026">Julio 2026</option><option value="8_2026">Agosto 2026</option>
-          <option value="9_2026">Septiembre 2026</option><option value="10_2026">Octubre 2026</option>
-          <option value="11_2026">Noviembre 2026</option><option value="12_2026">Diciembre 2026</option>
-    </select>
-    <div id="cfgg-acum-range" style="display:${getTabVista('cfgg')==='acum'?'flex':'none'};align-items:center;gap:6px;">
-      <span style="font-family:var(--fh);font-weight:700;font-size:12px;color:var(--gray-m);">De</span>
-      <select class="dist-sel" id="cfgg-acum-desde" onchange="renderCFGG()" style="min-width:110px;">
-        <option value="1_2026">Enero 2026</option><option value="2_2026">Febrero 2026</option>
-          <option value="3_2026">Marzo 2026</option><option value="4_2026">Abril 2026</option>
-          <option value="5_2026">Mayo 2026</option><option value="6_2026">Junio 2026</option>
-          <option value="7_2026">Julio 2026</option><option value="8_2026">Agosto 2026</option>
-          <option value="9_2026">Septiembre 2026</option><option value="10_2026">Octubre 2026</option>
-          <option value="11_2026">Noviembre 2026</option><option value="12_2026">Diciembre 2026</option>
-      </select>
-      <span style="font-family:var(--fh);font-weight:700;font-size:12px;color:var(--gray-m);">A</span>
-      <select class="dist-sel" id="cfgg-acum-hasta" onchange="renderCFGG()" style="min-width:110px;">
-        <option value="1_2026">Enero 2026</option><option value="2_2026" selected>Febrero 2026</option>
-        <option value="3_2026">Marzo 2026</option><option value="4_2026">Abril 2026</option>
-        <option value="5_2026">Mayo 2026</option><option value="6_2026">Junio 2026</option>
-        <option value="7_2026">Julio 2026</option><option value="8_2026">Agosto 2026</option>
-        <option value="9_2026">Septiembre 2026</option><option value="10_2026">Octubre 2026</option>
-        <option value="11_2026">Noviembre 2026</option><option value="12_2026">Diciembre 2026</option>
-      </select>
-    </div>
-    <div style="margin-left:auto;"><button class="btn-ghost" onclick="exportToExcel('cfgg')" style="font-size:12px;padding:5px 12px;">↓ Excel</button></div>
-  </div>`;
   const data = getDistData('cfgg');
-  if (!data) { el.innerHTML = filterBarHtml + '<div style="padding:60px;text-align:center;color:var(--gray-m);font-family:var(--fh);font-weight:700;">Carga los datos primero</div>'; return; }
+  if (!data) { el.innerHTML = '<div style="padding:60px;text-align:center;color:var(--gray-m);font-family:var(--fh);font-weight:700;">Carga los datos primero</div>'; return; }
   const {cdata, totals, clients} = data;
 
   const CFGG_RUBROS = [
@@ -3451,7 +3457,7 @@ function renderCFGG() {
   };
   const comprobCFGG = buildComprobRowsCFGG(['ing','costos_fijos','gtos_grales'], PL_MAP_CFGG);
 
-  el.innerHTML = filterBarHtml + kpiHtml +
+  el.innerHTML = kpiHtml +
     `<div class="dist-tbl-wrap"><div class="dist-tbl-scroll" style="max-height:calc(100vh - 420px);">
     <table class="dist-tbl"><thead>${thead}</thead><tbody>
     ${buildGrp(conIng,'Con Ingresos',cfggC.con,"toggleCFGGGroup('con')")}
