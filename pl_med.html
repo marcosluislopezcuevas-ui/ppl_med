@@ -344,8 +344,7 @@ body{background:var(--white);color:var(--gray);font-family:var(--fb);font-size:1
   padding:7px 8px;text-align:right;white-space:nowrap;cursor:pointer;user-select:none;
   position:sticky;top:0;z-index:4;}
 .dist-tbl th:first-child{text-align:left;min-width:160px;position:sticky;left:0;top:0;background:var(--surface2);z-index:6;}
-.dist-tbl thead tr:nth-child(2) th{top:26px;}
-.dist-tbl thead tr:nth-child(2) th:first-child{display:none;}
+.dist-tbl thead tr:nth-child(2) th{top:28px;}
 .dist-tbl th:hover{background:var(--lime-bg);color:var(--lime-deep);}
 .dist-tbl th.sort-asc .sort-icon::after{content:'▲';opacity:1;}
 .dist-tbl th.sort-desc .sort-icon::after{content:'▼';opacity:1;}
@@ -3245,17 +3244,25 @@ function renderCV() {
     const s = DIST_SORT['cv']||{col:'',dir:''};
     return s.col.startsWith(key) ? 'sort-'+s.dir : '';
   };
-  let thead = `<tr><th rowspan="2" style="position:sticky;left:0;z-index:3;background:var(--surface2);" onclick="sortDistTab('cv','cliente')">Cliente <span class="sort-icon"></span></th>`;
-  CV_RUBROS.forEach(r=>{ thead += `<th colspan="3" class="grp-hdr" style="text-align:center;" onclick="sortDistTab('cv','${r.key}_monto')">${r.label}</th>`; });
-  thead += '</tr><tr>';
+  // Row 1: group headers
+  let thead = `<tr>
+    <th style="position:sticky;left:0;z-index:6;background:var(--surface2);min-width:160px;text-align:left;vertical-align:bottom;border-bottom:none;" onclick="sortDistTab('cv','cliente')">Cliente <span class="sort-icon"></span></th>`;
+  CV_RUBROS.forEach(r=>{
+    const bl = `border-left:2px solid var(--lime-dark);`;
+    thead += `<th colspan="3" class="grp-hdr" style="text-align:center;${bl}" onclick="sortDistTab('cv','${r.key}_monto')">${r.label}</th>`;
+  });
+  thead += `</tr>
+  <tr>
+    <th style="position:sticky;left:0;z-index:6;background:var(--surface2);min-width:160px;text-align:left;top:28px;"></th>`;
   CV_RUBROS.forEach(r=>{
     ['monto','pct_vtas','pct_dist'].forEach(sub=>{
       const label = sub==='monto'?'$':sub==='pct_vtas'?'%Vtas':'%Dist';
       const sCls = DIST_SORT['cv']?.col===r.key+'_'+sub ? 'sort-'+(DIST_SORT['cv']?.dir||'desc') : '';
-      thead += `<th class="${sCls}" onclick="sortDistTab('cv','${r.key}_${sub}')" style="border-left:${sub==='monto'?'2px solid var(--lime-dark)':'none'};min-width:52px;">${label}<span class="sort-icon"></span></th>`;
+      const bl   = sub==='monto' ? 'border-left:2px solid var(--lime-dark);' : '';
+      thead += `<th class="${sCls}" onclick="sortDistTab('cv','${r.key}_${sub}')" style="${bl}min-width:52px;top:28px;">${label}<span class="sort-icon"></span></th>`;
     });
   });
-  thead += '</tr>';
+  thead += `</tr>`;
 
   // Sort clients
   const sortedClients = (() => {
@@ -3403,17 +3410,22 @@ function renderCFGG() {
 
   const sort = DIST_SORT['cfgg']||{col:'ing_monto',dir:'desc'};
 
-  let thead = `<tr><th rowspan="2" style="position:sticky;left:0;z-index:3;background:var(--surface2);" onclick="sortDistTab('cfgg','cliente')">Cliente <span class="sort-icon"></span></th>`;
-  CFGG_RUBROS.forEach(r=>{ thead += `<th colspan="3" class="grp-hdr" style="text-align:center;" onclick="sortDistTab('cfgg','${r.key}_monto')">${r.label}</th>`; });
-  thead += '</tr><tr>';
+  let thead = `<tr>
+    <th style="position:sticky;left:0;z-index:6;background:var(--surface2);min-width:160px;text-align:left;vertical-align:bottom;border-bottom:none;" onclick="sortDistTab('cfgg','cliente')">Cliente <span class="sort-icon"></span></th>`;
+  CFGG_RUBROS.forEach(r=>{
+    thead += `<th colspan="3" class="grp-hdr" style="text-align:center;border-left:2px solid var(--lime-dark);" onclick="sortDistTab('cfgg','${r.key}_monto')">${r.label}</th>`;
+  });
+  thead += `</tr><tr>
+    <th style="position:sticky;left:0;z-index:6;background:var(--surface2);min-width:160px;text-align:left;top:28px;"></th>`;
   CFGG_RUBROS.forEach(r=>{
     ['monto','pct_vtas','pct_dist'].forEach(sub=>{
       const label = sub==='monto'?'$':sub==='pct_vtas'?'%Vtas':'%Dist';
       const sCls = sort.col===r.key+'_'+sub ? 'sort-'+sort.dir : '';
-      thead += `<th class="${sCls}" onclick="sortDistTab('cfgg','${r.key}_${sub}')" style="border-left:${sub==='monto'?'2px solid var(--lime-dark)':'none'};min-width:52px;">${label}<span class="sort-icon"></span></th>`;
+      const bl   = sub==='monto' ? 'border-left:2px solid var(--lime-dark);' : '';
+      thead += `<th class="${sCls}" onclick="sortDistTab('cfgg','${r.key}_${sub}')" style="${bl}min-width:52px;top:28px;">${label}<span class="sort-icon"></span></th>`;
     });
   });
-  thead += '</tr>';
+  thead += `</tr>`;
 
   const sortedClients = (() => {
     const sc=sort.col,sd=sort.dir;
