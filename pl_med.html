@@ -1517,7 +1517,8 @@ async function saveTBToSP(mesKey, tbData) {
 
 async function saveIngToSP(mesKey, ingRows) {
   // ingRows = [{Cliente, Division, Tipo, Monto}]
-  if (!ingRows.length) return false;
+  console.log('saveIngToSP: mesKey='+mesKey+' rows=', ingRows?.length, ingRows?.[0]);
+  if (!ingRows || !ingRows.length) { console.warn('saveIngToSP: ingRows vacío'); return false; }
   try {
     const res = await fetch(PA_ING_WRITE, {
       method:'POST', headers:{'Content-Type':'application/json'},
@@ -1619,7 +1620,7 @@ const PA_LLAVES_READ  = 'https://default2a21bd09a37a4ec48d88bb8f1dea12.d5.enviro
   } catch(e) {}
 })();
 
-async function buildIngRows(mesKey) {
+function buildIngRows(mesKey) {
   // Build flat array of ingresos rows from _ingByClienteDiv for this mes
   const MESES_NUM_R = {Enero:1,Febrero:2,Marzo:3,Abril:4,Mayo:5,Junio:6,
     Julio:7,Agosto:8,Septiembre:9,Octubre:10,Noviembre:11,Diciembre:12};
