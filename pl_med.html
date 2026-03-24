@@ -322,7 +322,7 @@ body{background:var(--white);color:var(--gray);font-family:var(--fb);font-size:1
   <div class="nav-sep"></div>
   <span class="nav-sub">Medistik &middot; P&amp;L Operativo</span>
   <div class="nav-sep"></div>
-  <div class="nav-tabs" id="nav-tabs" style="display:none;">
+  <div class="nav-tabs" id="nav-tabs">
     <button class="nav-tab active" id="tab-pl"      onclick="showTab('pl')">P&amp;L</button>
     <button class="nav-tab"        id="tab-llaves"  onclick="showTab('llaves')">Llaves de Reparto</button>
     <button class="nav-tab"        id="tab-clpnl"   onclick="showTab('clpnl')">P&amp;L por Cliente</button>
@@ -455,6 +455,7 @@ body{background:var(--white);color:var(--gray);font-family:var(--fb);font-size:1
   </div>
   <div style="display:flex;gap:10px;align-items:center;">
     <button class="btn-clear" onclick="clearAllLlaves()">&#128465; Limpiar todo</button>
+    <button class="btn-ghost" onclick="copiarMesAnterior()" style="font-family:var(--fh);font-weight:700;font-size:13px;padding:7px 14px;border-radius:var(--r);cursor:pointer;border:1.5px solid var(--border-m);background:transparent;color:var(--gray-m);transition:all .15s;">&#128260; Copiar mes anterior</button>
     <span style="font-size:12px;color:var(--gray-m);" id="llaves-saved-status"></span>
   </div>
 </div>
@@ -823,6 +824,8 @@ function renderPL(d){
   document.getElementById('nav-tabs').style.display='flex';
   // Make sure pl tab is active
   ['pl','llaves','clpnl','mmontos','mapeo'].forEach(t=>document.getElementById('tab-'+t)?.classList.toggle('active',t==='pl'));
+  // Llaves tab always visible - load from SP on startup
+  loadLlavesFromSharePoint(llaveMesKey()).then(() => updateLlavesStatus());
   const np=document.getElementById('periodo-badge'); np.style.display=''; np.textContent=d.mesLabel;
   document.getElementById('fmt-wrap').style.display='flex';
   renderPeriodChips();
@@ -1013,6 +1016,42 @@ async function initLlaves() {
   updateLlavesStatus();
   if (n > 0) toast('Llaves cargadas de SharePoint ('+n+' registros)', 'ok');
   else if (Object.keys(LLAVES_DATA).length > 0) toast('Llaves cargadas de cache local', '');
+}
+
+function copiarMesAnterior() {
+  const mesSel = document.getElementById('llave-mes');
+  const anioSel = document.getElementById('llave-anio');
+  const mesActual = parseInt(mesSel?.value || '1');
+  const anio = parseInt(anioSel?.value || '2026');
+  const mesAnterior = mesActual === 1 ? 12 : mesActual - 1;
+  const anioAnterior = mesActual === 1 ? anio - 1 : anio;
+  const keyActual   = mesActual + '_' + anio;
+  const keyAnterior = mesAnterior + '_' + anioAnterior;
+
+  // Check if previous month has data
+  const llavesConData = Object.keys(LLAVES_DATA).filter(l => LLAVES_DATA[l]?.[keyAnterior] && Object.keys(LLAVES_DATA[l][keyAnterior]).length > 0);
+  if (!llavesConData.length) {
+    toast('No hay datos del mes anterior (' + keyAnterior + ') para copiar', '');
+    return;
+  }
+
+  const MESES_NOMBRES = ['','Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  if (!confirm('Copiar todas las llaves de ' + MESES_NOMBRES[mesAnterior] + ' a ' + MESES_NOMBRES[mesActual] + '? Se sobreescribiran los datos actuales de ' + MESES_NOMBRES[mesActual] + '.')) return;
+
+  // Copy all llaves from previous month to current month
+  let copied = 0;
+  llavesConData.forEach(llave => {
+    if (!LLAVES_DATA[llave]) LLAVES_DATA[llave] = {};
+    LLAVES_DATA[llave][keyActual] = {...LLAVES_DATA[llave][keyAnterior]};
+    copied++;
+  });
+
+  // Save to localStorage
+  try { localStorage.setItem('medistik_llaves_v1', JSON.stringify(LLAVES_DATA)); } catch(e) {}
+
+  toast('Copiadas ' + copied + ' llaves de ' + MESES_NOMBRES[mesAnterior] + ' a ' + MESES_NOMBRES[mesActual] + ' - Recuerda guardar en SharePoint', 'ok');
+  renderLlaveTable();
+  updateLlavesStatus();
 }
 
 function clearAllLlaves() {
