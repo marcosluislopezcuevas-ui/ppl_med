@@ -2167,6 +2167,7 @@ const PA_OV_READ  = 'https://default2a21bd09a37a4ec48d88bb8f1dea12.d5.environmen
     const mkForLlaves = mesKeys0.length > 0 ? mesKeys0[mesKeys0.length-1] : getMesKey();
     await loadLlavesFromSharePoint(mkForLlaves);
   } catch(e) { console.warn('Llaves startup load error:', e); }
+  console.log('Startup complete. TB_SP:', Object.keys(window.TB_SP||{}), 'LLAVES:', Object.keys(LLAVES_DATA||{}), 'ING_SP:', Object.keys(window.ING_SP||{}));
   console.log("SP startup: nTB="+nTB+" nIng="+nIng);
   console.log("TB_SP keys:", Object.keys(window.TB_SP||{}));
   console.log("ING_SP_DIV keys:", Object.keys(window.ING_SP_DIV||{}));
@@ -2655,7 +2656,7 @@ function mxSort(col) {
 
 function renderMatrices() {
   const el = document.getElementById('mtbl-montos'); if (!el) return;
-  const noData = msg => { el.innerHTML = '<tr><td colspan="40" style="padding:60px;text-align:center;color:var(--gray-m);font-family:var(--fh);font-weight:700;">' + msg + '</td></tr>'; };
+  const noData = msg => { console.warn('Matrix noData:', msg, '| TB_SP:', Object.keys(window.TB_SP||{}), '| LLAVES keys:', Object.keys(LLAVES_DATA||{}).length); el.innerHTML = '<tr><td colspan="40" style="padding:60px;text-align:center;color:var(--gray-m);font-family:var(--fh);font-weight:700;">' + msg + '</td></tr>'; };
   const hasTB  = window.TB_SP && Object.keys(window.TB_SP).length > 0;
   const hasLlaves = Object.keys(LLAVES_DATA).some(l => Object.keys(LLAVES_DATA[l]).length > 0);
   if (!hasTB && (!window._tbData || !window._pl)) { noData('Carga el CV_014 y los archivos de ingresos primero en la pestaña P&L'); return; }
