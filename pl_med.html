@@ -2051,6 +2051,13 @@ async function saveIngToSP(mesKey, ingRows) {
       body: JSON.stringify({MesKey: mesKey, registros: ingRows.map(r => ({...r, MesKey: mesKey}))})
     });
     if (!res.ok) throw new Error('HTTP ' + res.status);
+    // Rebuild ING_SP[mesKey] from the rows we just saved — don't accumulate from old memory
+    if (!window.ING_SP) window.ING_SP = {};
+    window.ING_SP[mesKey] = {};
+    ingRows.forEach(r => {
+      if (r.Tipo === 'total') return;
+      window.ING_SP[mesKey][r.Cliente] = (window.ING_SP[mesKey][r.Cliente] || 0) + (parseFloat(r.Monto) || 0);
+    });
     try { localStorage.setItem('medistik_ing_v1', JSON.stringify({ing:window.ING_SP, div:window.ING_SP_DIV})); } catch(e) {}
     return true;
   } catch(e) { console.warn('Ing_Write error:', e); return false; }
@@ -2210,6 +2217,25 @@ function buildIngRows(mesKey) {
 }
 
 function buildAllIngRows(anio) {
+  // Rebuild ING_SP from current session data to avoid stale/accumulated values
+  if (window._ingByClienteDiv) {
+    const MESES_NUM_R2 = {Enero:1,Febrero:2,Marzo:3,Abril:4,Mayo:5,Junio:6,
+      Julio:7,Agosto:8,Septiembre:9,Octubre:10,Noviembre:11,Diciembre:12};
+    const yr2 = anio || '2026';
+    Object.entries(window._ingByClienteDiv).forEach(([mes, clientes]) => {
+      const mn = MESES_NUM_R2[mes]; if (!mn) return;
+      const mk2 = mn + '_' + yr2;
+      window.ING_SP[mk2] = {}; // reset this month
+      Object.entries(clientes).forEach(([cl, divs]) => {
+        Object.entries(divs).forEach(([div, tipos]) => {
+          Object.entries(tipos).forEach(([tipo, monto]) => {
+            if (tipo === 'total' || !monto) return;
+            window.ING_SP[mk2][cl] = (window.ING_SP[mk2][cl] || 0) + monto;
+          });
+        });
+      });
+    });
+  }
   // Build rows for ALL months that have data in _ingByClienteDiv
   const MESES_NUM_R = {Enero:1,Febrero:2,Marzo:3,Abril:4,Mayo:5,Junio:6,
     Julio:7,Agosto:8,Septiembre:9,Octubre:10,Noviembre:11,Diciembre:12};
