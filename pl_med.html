@@ -2581,7 +2581,7 @@ function initMatrixFilters() {
   const mk2 = mesSel2 ? mesSel2.value : getMesKey();
   const MN2 = {1:'Enero',2:'Febrero',3:'Marzo',4:'Abril',5:'Mayo',6:'Junio',7:'Julio',8:'Agosto',9:'Septiembre',10:'Octubre',11:'Noviembre',12:'Diciembre'};
   const mesN2 = MN2[parseInt(mk2.split('_')[0])||1] || 'Enero';
-  const ingRaw2 = window._ingByCliente?.[mesN2] || {};
+  const ingRaw2 = window.ING_SP?.[mk2] || window._ingByCliente?.[mesN2] || {};
   // Merge all clients: from dist + from ingresos
   const allClientsSet = new Set([
     ...(dist ? Object.keys(dist) : []),
@@ -2691,7 +2691,9 @@ function renderMatrices() {
     ...Object.keys(dist),
     ...Object.keys(ingRaw).filter(c => ingRaw[c] > 0)
   ]);
-  const clients = [...allClientSet].filter(c => !isExcluded(c) && (mxSelectedClients.size === 0 || mxSelectedClients.has(c)));
+  // Auto-add any new clients not yet in mxSelectedClients (e.g. 'Varios' loaded from ING_SP)
+  allClientSet.forEach(c => { if (!isExcluded(c)) mxSelectedClients.add(c); });
+  const clients = [...allClientSet].filter(c => !isExcluded(c) && mxSelectedClients.has(c));
   // For clients in ingData but not in dist, add empty dist entry
   clients.forEach(cl => { if (!dist[cl]) dist[cl] = {}; });
 
