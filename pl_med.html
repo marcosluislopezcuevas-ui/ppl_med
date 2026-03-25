@@ -3708,7 +3708,7 @@ function renderTop15() {
 
   // Render HTML
   var cards = CDEFS.map(function(ch) {
-    var h = Math.max(200, ch.vals.length * 24 + 50);
+    var h = Math.max(320, ch.vals.length * 28 + 60);
     return '<div class="top15-card" style="padding:12px 14px;">' +
       '<div class="top15-title" style="margin-bottom:8px;font-size:13px;">' + ch.label +
       ' <span style="font-family:var(--fb);font-weight:400;font-size:11px;color:var(--gray-m);">' + periodLabel + '</span></div>' +
@@ -3721,7 +3721,7 @@ function renderTop15() {
     '<div class="dist-title" style="margin-bottom:2px;">Top ' + N + ' Clientes · Análisis</div>' +
     '<div class="dist-sub">' + periodLabel + ' · Excluye Moderna · Gráficas % solo clientes con ingreso</div>' +
     '</div>' +
-    '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;">' + cards + '</div>';
+    '<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:16px;">' + cards + '</div>';
 
   // Destroy old charts AND replace canvas elements (prevents Chart.js resize loop)
   if (!window._top15Charts) window._top15Charts = {};
@@ -3768,7 +3768,7 @@ function renderTop15() {
           },
           options: {
             indexAxis: 'y',
-            responsive: false,
+            responsive: true,
             maintainAspectRatio: false,
             layout: { padding: { right: 56 } },
             plugins: {
