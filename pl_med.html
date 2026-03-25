@@ -3731,6 +3731,9 @@ function renderTop15() {
     {label:'⚖️ Mayor % Distrib. CV',      pool:ALL.filter(function(c){return cdata[c].cv>0;}),            valFn:function(c){return totals.cv>0?cdata[c].cv/totals.cv*100:null;},                               asc:false, fmt:fmtP, color:'#C47B1A'},
     {label:'📊 Mayor % Distrib. CF',      pool:ALL.filter(function(c){return cdata[c].costos_fijos>0;}),  valFn:function(c){return totals.costos_fijos>0?cdata[c].costos_fijos/totals.costos_fijos*100:null;}, asc:false, fmt:fmtP, color:'#7B3FC4'},
     {label:'📊 Mayor % Distrib. GG',      pool:ALL.filter(function(c){return cdata[c].gtos_grales>0;}),   valFn:function(c){return totals.gtos_grales>0?cdata[c].gtos_grales/totals.gtos_grales*100:null;},    asc:false, fmt:fmtP, color:'#9A1A5A'},
+    {label:'💵 Mayor Costo Variable $',   pool:ALL.filter(function(c){return cdata[c].cv>0;}),            valFn:function(c){return cdata[c].cv;},           asc:false, fmt:fmtV, color:'#C47B1A'},
+    {label:'🏗️ Mayor Costo Fijo $',       pool:ALL.filter(function(c){return cdata[c].costos_fijos>0;}),  valFn:function(c){return cdata[c].costos_fijos;}, asc:false, fmt:fmtV, color:'#7B3FC4'},
+    {label:'📋 Mayor Gasto General $',    pool:ALL.filter(function(c){return cdata[c].gtos_grales>0;}),   valFn:function(c){return cdata[c].gtos_grales;},  asc:false, fmt:fmtV, color:'#9A1A5A'},
   ];
 
   // Build sorted data per chart
