@@ -477,6 +477,29 @@ body{background:var(--white);color:var(--gray);font-family:var(--fb);font-size:1
 /* Fine-tune sub-header sticky top offset */
 .dist-tbl thead tr:first-child th  { top: 0;    height: 33px; }
 .dist-tbl thead tr:nth-child(2) th { top: 33px; }
+/* LLAVE ANALYZER */
+.llave-analyzer{margin:0 24px 24px;background:var(--white);border:1px solid var(--border);border-radius:var(--rl);overflow:hidden;}
+.llave-analyzer-hdr{background:var(--surface2);padding:12px 18px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--border);cursor:pointer;}
+.llave-analyzer-hdr:hover{background:var(--lime-bg);}
+.llave-analyzer-title{font-family:var(--fh);font-weight:800;font-size:14px;letter-spacing:.06em;text-transform:uppercase;color:var(--gray);}
+.llave-analyzer-body{padding:16px 18px;display:none;}
+.az-filter-row{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap;}
+.az-chip{font-family:var(--fh);font-weight:700;font-size:12px;padding:3px 9px;border-radius:4px;cursor:pointer;
+  border:1.5px solid var(--border-m);background:var(--white);color:var(--gray-m);transition:all .13s;user-select:none;}
+.az-chip:hover{border-color:var(--lime-dark);color:var(--gray);}
+.az-chip.sel{background:var(--neg);border-color:var(--neg);color:var(--white);}
+.az-tbl{width:100%;border-collapse:collapse;font-size:12px;}
+.az-tbl th{font-family:var(--fh);font-weight:700;font-size:11px;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--gray-m);background:var(--surface2);border-bottom:2px solid var(--neg);padding:6px 10px;text-align:left;}
+.az-tbl td{padding:5px 10px;border-bottom:1px solid var(--border);vertical-align:middle;}
+.az-tbl tr:hover td{background:var(--neg-bg);}
+.az-badge{font-family:var(--fh);font-weight:700;font-size:10px;padding:2px 6px;border-radius:3px;
+  background:var(--neg-bg);color:var(--neg);border:1px solid var(--neg);}
+.az-pct{font-weight:700;color:var(--neg);}
+.az-btn-zero{font-family:var(--fh);font-weight:700;font-size:11px;padding:3px 8px;border-radius:4px;
+  background:var(--neg);color:var(--white);border:none;cursor:pointer;transition:all .13s;}
+.az-btn-zero:hover{background:#8B2A1A;}
+.az-summary{font-family:var(--fh);font-weight:700;font-size:12px;color:var(--gray-m);margin-left:auto;}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 </head>
@@ -710,7 +733,31 @@ body{background:var(--white);color:var(--gray);font-family:var(--fb);font-size:1
   <div style="display:flex;gap:10px;align-items:center;">
     <button class="btn-clear" onclick="clearAllLlaves()">&#128465; Limpiar todo</button>
     <button class="btn-ghost" onclick="copiarMesAnterior()" style="font-family:var(--fh);font-weight:700;font-size:13px;padding:7px 14px;border-radius:var(--r);cursor:pointer;border:1.5px solid var(--border-m);background:transparent;color:var(--gray-m);transition:all .15s;">&#128260; Copiar mes anterior</button>
+    <button onclick="balanceToDesocupado()" style="font-family:var(--fh);font-weight:700;font-size:12px;
+      letter-spacing:.04em;text-transform:uppercase;padding:5px 12px;border-radius:var(--r);cursor:pointer;
+      background:var(--pos-bg);color:var(--pos);border:1.5px solid var(--pos);transition:all .15s;"
+      title="Asigna a Desocupado todo lo que no suma 100% en cada llave y mes">
+      ⚖️ Balancear → Desocupado
+    </button>
     <span style="font-size:12px;color:var(--gray-m);" id="llaves-saved-status"></span>
+  </div>
+</div>
+
+<!-- LLAVE ANALYZER -->
+<div class="llave-analyzer">
+  <div class="llave-analyzer-hdr" onclick="toggleLlaveAnalyzer()">
+    <span class="llave-analyzer-title">🔍 Analizador — Clientes con % en llaves</span>
+    <span id="az-summary" class="az-summary"></span>
+    <span id="az-toggle" style="margin-left:8px;font-size:18px;color:var(--gray-m);">▼</span>
+  </div>
+  <div class="llave-analyzer-body" id="az-body">
+    <div class="az-filter-row">
+      <span style="font-family:var(--fh);font-weight:700;font-size:12px;color:var(--gray-m);">Clientes a investigar:</span>
+      <div id="az-client-chips" style="display:flex;flex-wrap:wrap;gap:5px;"></div>
+      <button class="btn-ghost" onclick="runLlaveAnalyzer()" style="font-size:12px;padding:4px 12px;margin-left:8px;">▶ Analizar</button>
+      <button class="btn-ghost" onclick="zeroAllFound()" style="font-size:12px;padding:4px 12px;color:var(--neg);border-color:var(--neg);">⚡ Poner en 0% todos</button>
+    </div>
+    <div id="az-results"></div>
   </div>
 </div>
 </div>
@@ -4343,6 +4390,190 @@ async function exportMatrixExcel() {
   XLSX.writeFile(wb,`Medistik_Matriz_${mesLabel}.xlsx`);
   toast('✓ Excel exportado','ok');
 }
+
+// ══════════════════════════════════════════════════════════════
+// LLAVE ANALYZER
+// ══════════════════════════════════════════════════════════════
+var AZ_OPEN = false;
+var AZ_SELECTED = new Set();
+var AZ_FOUND = []; // [{cliente, llave, mesKey, pct}]
+
+function toggleLlaveAnalyzer() {
+  AZ_OPEN = !AZ_OPEN;
+  var body = document.getElementById('az-body');
+  var tog  = document.getElementById('az-toggle');
+  if (body) body.style.display = AZ_OPEN ? 'block' : 'none';
+  if (tog)  tog.textContent = AZ_OPEN ? '▲' : '▼';
+  if (AZ_OPEN) initLlaveAnalyzer();
+}
+
+function initLlaveAnalyzer() {
+  // Build client list from LLAVES_DATA
+  var allClients = new Set();
+  Object.values(LLAVES_DATA).forEach(function(mesData) {
+    Object.values(mesData).forEach(function(clPcts) {
+      Object.keys(clPcts).forEach(function(cl) { allClients.add(cl); });
+    });
+  });
+
+  // Pre-select clients that look like "sin ingresos" (not in ING_SP at all)
+  var ingClients = new Set();
+  Object.values(window.ING_SP || {}).forEach(function(mkData) {
+    Object.keys(mkData).forEach(function(cl) { if (mkData[cl] > 0) ingClients.add(cl); });
+  });
+
+  var el = document.getElementById('az-client-chips');
+  if (!el) return;
+
+  var sorted = [...allClients].sort();
+  el.innerHTML = sorted.map(function(cl) {
+    var noIng = !ingClients.has(cl);
+    var sel   = AZ_SELECTED.has(cl) || (AZ_SELECTED.size === 0 && noIng);
+    if (AZ_SELECTED.size === 0 && noIng) AZ_SELECTED.add(cl);
+    return '<div class="az-chip' + (sel ? ' sel' : '') + '" onclick="azToggleClient('' + cl.replace(/'/g,"&#39;") + '')">' + cl + '</div>';
+  }).join('');
+
+  runLlaveAnalyzer();
+}
+
+function azToggleClient(cl) {
+  if (AZ_SELECTED.has(cl)) AZ_SELECTED.delete(cl);
+  else AZ_SELECTED.add(cl);
+  document.querySelectorAll('.az-chip').forEach(function(chip) {
+    var txt = chip.textContent.trim();
+    chip.classList.toggle('sel', AZ_SELECTED.has(txt));
+  });
+  runLlaveAnalyzer();
+}
+
+function runLlaveAnalyzer() {
+  var results = document.getElementById('az-results');
+  if (!results) return;
+
+  AZ_FOUND = [];
+  var MES_NAMES = {1:'Enero',2:'Febrero',3:'Marzo',4:'Abril',5:'Mayo',6:'Junio',
+    7:'Julio',8:'Agosto',9:'Septiembre',10:'Octubre',11:'Noviembre',12:'Diciembre'};
+
+  Object.entries(LLAVES_DATA).forEach(function(entry) {
+    var llave = entry[0], mesData = entry[1];
+    Object.entries(mesData).forEach(function(mEntry) {
+      var mesKey = mEntry[0], clPcts = mEntry[1];
+      Object.entries(clPcts).forEach(function(cEntry) {
+        var cl = cEntry[0], pct = cEntry[1];
+        if (AZ_SELECTED.has(cl) && pct > 0) {
+          var mesNum = parseInt(mesKey.split('_')[0]);
+          AZ_FOUND.push({
+            cliente: cl,
+            llave: llave.replace('1225_','').replace(/_/g,' '),
+            llaveKey: llave,
+            mesKey: mesKey,
+            mesLabel: (MES_NAMES[mesNum] || mesKey) + ' ' + (mesKey.split('_')[1] || ''),
+            pct: pct
+          });
+        }
+      });
+    });
+  });
+
+  // Sort by client, then llave, then mes
+  AZ_FOUND.sort(function(a,b) {
+    return a.cliente.localeCompare(b.cliente) || a.llaveKey.localeCompare(b.llaveKey) || a.mesKey.localeCompare(b.mesKey);
+  });
+
+  var sumEl = document.getElementById('az-summary');
+  if (sumEl) sumEl.textContent = AZ_FOUND.length > 0
+    ? AZ_FOUND.length + ' asignaciones encontradas en ' + new Set(AZ_FOUND.map(function(r){return r.cliente;})).size + ' clientes'
+    : 'Sin asignaciones para los clientes seleccionados';
+
+  if (!AZ_FOUND.length) {
+    results.innerHTML = '<div style="padding:20px;text-align:center;color:var(--gray-m);font-family:var(--fh);font-weight:700;">✅ Sin porcentajes asignados para los clientes seleccionados</div>';
+    return;
+  }
+
+  var html = '<table class="az-tbl"><thead><tr>' +
+    '<th>Cliente</th><th>Llave de Reparto</th><th>Mes</th>' +
+    '<th style="text-align:right;">% Asignado</th><th style="text-align:center;">Acción</th>' +
+    '</tr></thead><tbody>';
+
+  AZ_FOUND.forEach(function(r, i) {
+    html += '<tr>' +
+      '<td><span class="az-badge">' + r.cliente + '</span></td>' +
+      '<td style="font-family:var(--fh);font-weight:700;font-size:12px;">' + r.llave + '</td>' +
+      '<td style="color:var(--gray-m);">' + r.mesLabel + '</td>' +
+      '<td style="text-align:right;"><span class="az-pct">' + (r.pct * 100).toFixed(3) + '%</span></td>' +
+      '<td style="text-align:center;"><button class="az-btn-zero" onclick="zeroOne(' + i + ')">→ 0%</button></td>' +
+      '</tr>';
+  });
+  html += '</tbody></table>';
+  results.innerHTML = html;
+}
+
+function zeroOne(idx) {
+  var r = AZ_FOUND[idx];
+  if (!r) return;
+  if (!LLAVES_DATA[r.llaveKey]) return;
+  if (!LLAVES_DATA[r.llaveKey][r.mesKey]) return;
+  delete LLAVES_DATA[r.llaveKey][r.mesKey][r.cliente];
+  runLlaveAnalyzer();
+  renderLlaveTable();
+  toast('✓ ' + r.cliente + ' → 0% en ' + r.llave + ' (' + r.mesLabel + ')', 'ok');
+}
+
+function zeroAllFound() {
+  if (!AZ_FOUND.length) return;
+  var count = 0;
+  AZ_FOUND.forEach(function(r) {
+    if (LLAVES_DATA[r.llaveKey] && LLAVES_DATA[r.llaveKey][r.mesKey]) {
+      delete LLAVES_DATA[r.llaveKey][r.mesKey][r.cliente];
+      count++;
+    }
+  });
+  runLlaveAnalyzer();
+  renderLlaveTable();
+  toast('✓ ' + count + ' asignaciones puestas en 0%', 'ok');
+}
+
+
+// ══════════════════════════════════════════════════════════════
+// BALANCE TO DESOCUPADO
+// ══════════════════════════════════════════════════════════════
+function balanceToDesocupado() {
+  var DESOCUPADO = 'Desocupado';
+  var changes = 0;
+  var llaves  = 0;
+
+  Object.entries(LLAVES_DATA).forEach(function(lEntry) {
+    var llave = lEntry[0], mesData = lEntry[1];
+    Object.entries(mesData).forEach(function(mEntry) {
+      var mesKey = mEntry[0], clPcts = mEntry[1];
+      // Sum all pcts for this llave+mes
+      var total = Object.values(clPcts).reduce(function(s, v) { return s + (v || 0); }, 0);
+      var diff  = Math.round((1 - total) * 1e8) / 1e8; // round to avoid float noise
+      if (Math.abs(diff) > 0.000001) {
+        // Add or update Desocupado
+        var current = clPcts[DESOCUPADO] || 0;
+        var newVal  = Math.max(0, current + diff);
+        if (newVal < 0.000001) {
+          delete clPcts[DESOCUPADO];
+        } else {
+          clPcts[DESOCUPADO] = newVal;
+        }
+        changes++;
+      }
+      llaves++;
+    });
+  });
+
+  renderLlaveTable();
+  if (changes > 0) {
+    toast('✓ ' + changes + ' llaves balanceadas → Desocupado (de ' + llaves + ' totales)', 'ok');
+    // Refresh analyzer if open
+    if (AZ_OPEN) runLlaveAnalyzer();
+  } else {
+    toast('✓ Todas las llaves ya suman 100% — nada que balancear', '');
+  }
+}
+
 </script>
 </body>
 </html>
