@@ -2645,6 +2645,7 @@ function renderMatrices() {
     const lMk    = range[range.length-1] || hasta;
     dist     = applyOverrides(calcDistribucionFromTB(mTB, lMk), mTB, lMk);
     ingRaw   = calcIngRange(range);
+    window._lastDistRange = range;
     mesLabel = 'Acum. ' + (MES_NAMES[parseInt(desde)]||desde) + ' → ' + (MES_NAMES[parseInt(hasta)]||hasta);
     if (!dist || !Object.keys(dist).length) { noData('Sin datos de TB en SP para el rango'); return; }
   } else {
@@ -2657,6 +2658,7 @@ function renderMatrices() {
     if (!tbMk) { noData('Sin datos de TB para ' + mk + ' — carga el mes primero'); return; }
     dist   = applyOverrides(calcDistribucionFromTB(tbMk, mk), tbMk, mk);
     if (!dist || !Object.keys(dist).length) { noData('Sin distribución para ' + mesNom); return; }
+    window._lastDistRange = [mk];
     ingRaw = window.ING_SP?.[mk] && Object.keys(window.ING_SP[mk]).length
              ? window.ING_SP[mk]
              : (window._ingByCliente?.[mesNom] || {});
@@ -2823,10 +2825,13 @@ function renderMatrices() {
   </tr>`;
 
   // Matrix comprobacion — get PL for the displayed month
-  const _mxMk = mxVista === 'acum'
-    ? (document.getElementById('mx-acum-hasta')?.value || getMesKey())
-    : (document.getElementById('mx-mes-sel')?.value || getMesKey());
-  const _plMX = getPLForMk(_mxMk);
+  const _mxRange = mxVista === 'acum'
+    ? getMesKeyRange(
+        document.getElementById('mx-acum-desde')?.value || '1_2026',
+        document.getElementById('mx-acum-hasta')?.value || getMesKey()
+      )
+    : [document.getElementById('mx-mes-sel')?.value || getMesKey()];
+  const _plMX = _mxRange.length > 1 ? getPLRangeAccum(_mxRange) : getPLForMk(_mxRange[0]);
   const PL_MAP_MX = {
     ing:_plMX?.ing_total||0, salarios:_plMX?.salarios||0, fletes:_plMX?.fletes||0,
     mat_empaque:_plMX?.mat_empaque||0, cargo_farma:_plMX?.cargo_farma||0,
@@ -3130,6 +3135,7 @@ function getDistData(tabId) {
     activeMk = range[range.length-1];
     dist = applyOverrides(calcDistribucionFromTB(mergedTB, activeMk), mergedTB, activeMk);
     ingRaw = calcIngRange(range);
+    window._lastDistRange = range; // store for comprobacion
   } else {
     // 'mx' tabId uses matrix selectors
     const selId = tabId === 'mx' ? 'mx-mes-sel' : tabId+'-mes-sel';
@@ -3141,6 +3147,7 @@ function getDistData(tabId) {
       ? applyOverrides(calcDistribucionFromTB(tbForMk, mk), tbForMk, mk)
       : applyOverrides(calcDistribucion(), window._tbData, mk);
     dist = rawDist;
+    window._lastDistRange = [mk];
     ingRaw = window.ING_SP?.[mk] || window._ingByCliente?.[mesNom] || {};
   }
   if (window.EXCL_MODERNA) { ingRaw = Object.fromEntries(Object.entries(ingRaw).filter(([k])=>k!=='Moderna')); }
@@ -3225,13 +3232,24 @@ function sortDistTab(tabId, col) {
 // Get P&L totals for a specific mesKey (from SP or session)
 function getPLForMk(mk) {
   if (!mk) return window._pl || {};
-  // If this is the currently loaded month, use _pl directly
   if (window._pl && (window._currentMesKey === mk || getMesKey() === mk)) return window._pl;
-  // Try to build from SP data
   if (window.TB_SP?.[mk] && Object.keys(window.TB_SP[mk]).length) {
     return buildPLFromSP(mk);
   }
   return window._pl || {};
+}
+
+// Sum PL fields across a range of mesKeys — for acumulado comprobacion
+function getPLRangeAccum(mesKeys) {
+  const PL_FIELDS = ['ing_total','salarios','fletes','mat_empaque','cargo_farma',
+    'costo_insumos','otros_cv','cv_total','cm','costos_fijos','gtos_grales','ebitda'];
+  const acc = {};
+  PL_FIELDS.forEach(f => { acc[f] = 0; });
+  mesKeys.forEach(mk => {
+    const pl = getPLForMk(mk);
+    PL_FIELDS.forEach(f => { acc[f] += (pl?.[f] || 0); });
+  });
+  return acc;
 }
 
 function renderCV() {
@@ -3358,7 +3376,13 @@ function renderCV() {
   totRow += '</tr>';
 
   // Comprobacion rows for CV
-  const _plCV = getPLForMk(data.activeMk);
+  const _cvRange = getTabVista('cv') === 'acum'
+    ? getMesKeyRange(
+        document.getElementById('cv-acum-desde')?.value || '1_2026',
+        document.getElementById('cv-acum-hasta')?.value || getMesKey()
+      )
+    : [data.activeMk];
+  const _plCV = _cvRange.length > 1 ? getPLRangeAccum(_cvRange) : getPLForMk(data.activeMk);
   const buildComprobRows = (rubros, plMap) => {
     const RUBS_LABELS = {ing:'Ingresos',salarios:'Salarios',fletes:'Fletes',mat_empaque:'Mat. Empaque',
       cargo_farma:'Cargo Farma',costo_insumos:'Costo Insumos',otros_cv:'Otros CV',cv:'CV Total',
@@ -3505,7 +3529,13 @@ function renderCFGG() {
   });
   totRow+='</tr>';
 
-  const _plCFGG = getPLForMk(data.activeMk);
+  const _cfggRange = getTabVista('cfgg') === 'acum'
+    ? getMesKeyRange(
+        document.getElementById('cfgg-acum-desde')?.value || '1_2026',
+        document.getElementById('cfgg-acum-hasta')?.value || getMesKey()
+      )
+    : [data.activeMk];
+  const _plCFGG = _cfggRange.length > 1 ? getPLRangeAccum(_cfggRange) : getPLForMk(data.activeMk);
   const buildComprobRowsCFGG = (rubros, plMap) => {
     let plCells = `<td style="position:sticky;left:0;background:#FFF8E8;font-family:var(--fh);font-weight:800;font-size:11px;color:var(--warn-color);">✔ Comprobación vs P&L</td>`;
     rubros.forEach(r => {
