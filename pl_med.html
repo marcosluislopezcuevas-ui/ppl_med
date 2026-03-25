@@ -918,7 +918,25 @@ body{background:var(--white);color:var(--gray);font-family:var(--fb);font-size:1
 
 <!-- TOP 15 PAGE -->
 <div class="page" id="page-top15">
-  <div class="dist-page" id="top15-inner"></div>
+  <div class="dist-page">
+    <div id="top15-filter-bar" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border);">
+      <div style="display:flex;background:var(--surface2);border:1.5px solid var(--border-m);border-radius:var(--r);overflow:hidden;padding:1px;gap:1px;">
+        <button class="fmt-btn on" id="top15-btn-mes"  onclick="setTabVista('top15','mes')">Por mes</button>
+        <button class="fmt-btn"   id="top15-btn-acum" onclick="setTabVista('top15','acum')">Acumulado</button>
+      </div>
+      <select class="dist-sel" id="top15-mes-sel" onchange="renderTop15()" style="min-width:120px;">
+        <option value="1_2026">Enero 2026</option><option value="2_2026">Febrero 2026</option><option value="3_2026">Marzo 2026</option><option value="4_2026">Abril 2026</option><option value="5_2026">Mayo 2026</option><option value="6_2026">Junio 2026</option><option value="7_2026">Julio 2026</option><option value="8_2026">Agosto 2026</option><option value="9_2026">Septiembre 2026</option><option value="10_2026">Octubre 2026</option><option value="11_2026">Noviembre 2026</option><option value="12_2026">Diciembre 2026</option>
+      </select>
+      <div id="top15-acum-range" style="display:none;align-items:center;gap:6px;">
+        <span style="font-family:var(--fh);font-weight:700;font-size:12px;color:var(--gray-m);">De</span>
+        <select class="dist-sel" id="top15-acum-desde" onchange="renderTop15()" style="min-width:110px;"><option value="1_2026">Enero 2026</option><option value="2_2026">Febrero 2026</option><option value="3_2026">Marzo 2026</option><option value="4_2026">Abril 2026</option><option value="5_2026">Mayo 2026</option><option value="6_2026">Junio 2026</option><option value="7_2026">Julio 2026</option><option value="8_2026">Agosto 2026</option><option value="9_2026">Septiembre 2026</option><option value="10_2026">Octubre 2026</option><option value="11_2026">Noviembre 2026</option><option value="12_2026">Diciembre 2026</option></select>
+        <span style="font-family:var(--fh);font-weight:700;font-size:12px;color:var(--gray-m);">A</span>
+        <select class="dist-sel" id="top15-acum-hasta" onchange="renderTop15()" style="min-width:110px;"><option value="1_2026">Enero 2026</option><option value="2_2026" selected>Febrero 2026</option><option value="3_2026">Marzo 2026</option><option value="4_2026">Abril 2026</option><option value="5_2026">Mayo 2026</option><option value="6_2026">Junio 2026</option><option value="7_2026">Julio 2026</option><option value="8_2026">Agosto 2026</option><option value="9_2026">Septiembre 2026</option><option value="10_2026">Octubre 2026</option><option value="11_2026">Noviembre 2026</option><option value="12_2026">Diciembre 2026</option></select>
+      </div>
+      <span id="top15-period-lbl" style="font-family:var(--fh);font-weight:700;font-size:12px;color:var(--gray-m);margin-left:4px;"></span>
+    </div>
+    <div id="top15-inner"></div>
+  </div>
 </div>
 
 
@@ -1570,11 +1588,16 @@ function showTab(tab) {
     initMatrixFilters(); renderMatrices();
   }
   if (tab==='cv') {
-    // Sync cv-mes-sel to current loaded month if not yet changed
     const cvSel = document.getElementById('cv-mes-sel');
     const curMk = window._currentMesKey || getMesKey();
     if (cvSel && curMk) cvSel.value = curMk;
     renderCV();
+  }
+  if (tab==='top15') {
+    const t15Sel = document.getElementById('top15-mes-sel');
+    const curMk4 = window._currentMesKey || getMesKey();
+    if (t15Sel && curMk4) t15Sel.value = curMk4;
+    renderTop15();
   }
   if (tab==='cfgg') {
     const cfggSel = document.getElementById('cfgg-mes-sel');
@@ -3120,8 +3143,9 @@ function setTabVista(tabId, v) {
   const acumRange = document.getElementById(tabId+'-acum-range');
   if (mesSel)    mesSel.style.display    = v==='mes'  ? '' : 'none';
   if (acumRange) acumRange.style.display = v==='acum' ? 'flex' : 'none';
-  if (tabId==='cv')   renderCV();
-  if (tabId==='cfgg') renderCFGG();
+  if (tabId==='cv')    renderCV();
+  if (tabId==='cfgg')  renderCFGG();
+  if (tabId==='top15') renderTop15();
 }
 
 function getDistData(tabId) {
@@ -3131,8 +3155,8 @@ function getDistData(tabId) {
     7:'Julio',8:'Agosto',9:'Septiembre',10:'Octubre',11:'Noviembre',12:'Diciembre'};
 
   if (vista === 'acum') {
-    const desdeId = tabId === 'mx' ? 'mx-acum-desde' : tabId+'-acum-desde';
-    const hastaId = tabId === 'mx' ? 'mx-acum-hasta' : tabId+'-acum-hasta';
+    const desdeId = tabId+'-acum-desde';
+    const hastaId = tabId+'-acum-hasta';
     const desde = document.getElementById(desdeId)?.value || '1_2026';
     const hasta = document.getElementById(hastaId)?.value || getMesKey();
     const range = getMesKeyRange(desde, hasta);
@@ -3143,7 +3167,7 @@ function getDistData(tabId) {
     window._lastDistRange = range; // store for comprobacion
   } else {
     // 'mx' tabId uses matrix selectors
-    const selId = tabId === 'mx' ? 'mx-mes-sel' : tabId+'-mes-sel';
+    const selId = (tabId === 'mx' || tabId === 'top15') ? tabId+'-mes-sel' : tabId+'-mes-sel';
     const mk = document.getElementById(selId)?.value || getMesKey();
     activeMk = mk;
     const mesNom = MES_NAMES[parseInt(mk.split('_')[0])] || 'Enero';
@@ -3226,8 +3250,9 @@ function distSubThs(key, tabId) {
 function sortDistTab(tabId, col) {
   const cur = DIST_SORT[tabId] || {col:'ing_monto',dir:'desc'};
   DIST_SORT[tabId] = { col, dir: cur.col===col && cur.dir==='desc' ? 'asc' : 'desc' };
-  if (tabId==='cv')   renderCV();
-  if (tabId==='cfgg') renderCFGG();
+  if (tabId==='cv')    renderCV();
+  if (tabId==='cfgg')  renderCFGG();
+  if (tabId==='top15') renderTop15();
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -3592,75 +3617,180 @@ function toggleCFGGGroup(g){
 function renderTop15() {
   const el = document.getElementById('top15-inner'); if (!el) return;
   const data = getDistData('top15');
-  if (!data) { el.innerHTML='<div style="padding:60px;text-align:center;color:var(--gray-m);font-family:var(--fh);font-weight:700;">Carga los datos primero</div>'; return; }
-  const {cdata, totals} = data;
-  // Excluir Moderna si toggle activo, y siempre del Top15
-  const clients = Object.keys(cdata).filter(c => c !== 'Moderna' && !isExcluded(c) && (cdata[c].ing>0||cdata[c].ebitda!==0));
-  // Para EBITDA% excluir además los que no tienen ingresos
-  const clientsConIng = clients.filter(c => cdata[c].ing > 0);
+  if (!data) {
+    el.innerHTML = '<div style="padding:60px;text-align:center;color:var(--gray-m);font-family:var(--fh);font-weight:700;">Carga los datos primero</div>';
+    return;
+  }
+  const {cdata, totals, activeMk} = data;
+
+  // Period label
+  const vista = getTabVista('top15');
+  const MES_NAMES = {1:'Enero',2:'Febrero',3:'Marzo',4:'Abril',5:'Mayo',6:'Junio',
+    7:'Julio',8:'Agosto',9:'Septiembre',10:'Octubre',11:'Noviembre',12:'Diciembre'};
+  let periodLabel = '';
+  if (vista === 'acum') {
+    const desde = document.getElementById('top15-acum-desde')?.value || '1_2026';
+    const hasta  = document.getElementById('top15-acum-hasta')?.value || getMesKey();
+    periodLabel = 'Acum. ' + (MES_NAMES[parseInt(desde)]||desde) + ' → ' + (MES_NAMES[parseInt(hasta)]||hasta);
+  } else {
+    periodLabel = MES_NAMES[parseInt(activeMk?.split('_')[0])] || activeMk || '';
+  }
+  const lbl = document.getElementById('top15-period-lbl');
+  if (lbl) lbl.textContent = periodLabel;
+
+  // Exclude Moderna always from Top15, also apply toggle
+  const ALL = Object.keys(cdata).filter(c => c !== 'Moderna' && !isExcluded(c));
+  const withIng  = ALL.filter(c => cdata[c].ing > 0);
+  const withCost = ALL.filter(c => cdata[c].cv > 0 || cdata[c].costos_fijos > 0 || cdata[c].gtos_grales > 0);
+  // For % charts: exclude clients with neither ing nor costs (avoids inf% artifacts)
+  const validPct = withIng; // must have ingreso to show meaningful %
   const N = 15;
 
-  const top = (sortFn, label, valFn, color, isFmt, pool) => {
-    const src = pool || clients;
-    const sorted = [...src].sort(sortFn).slice(0,N);
-    const maxVal = Math.abs(valFn(sorted[0]))||1;
-    return `<div class="top15-card">
-      <div class="top15-title" style="color:${color}">${label}</div>
-      ${sorted.map((cl,i)=>{
-        const v = valFn(cl);
-        const pct = Math.min(100, Math.abs(v)/maxVal*100);
-        const barColor = v>=0 ? color : 'var(--neg)';
-        const vStr = isFmt==='pct' ? (v>=0?'+':'')+v.toFixed(1)+'%' : fmt(v);
-        return `<div class="top15-bar-row">
-          <span class="top15-rank">${i+1}</span>
-          <span class="top15-name" title="${cl}">${cl}</span>
-          <div class="top15-bar-wrap"><div class="top15-bar-fill" style="width:${pct}%;background:${barColor};"></div></div>
-          <span class="top15-val" style="color:${v>=0?color:'var(--neg)'};">${vStr}</span>
-        </div>`;
-      }).join('')}
-    </div>`;
+  // ── Chart.js horizontal bar helper ──
+  const chartId = (i) => 'top15-chart-' + i;
+  let chartIdx = 0;
+  const charts = {};
+
+  const CHART_COLORS = {
+    pos:    '#2A8A1A', neg:    '#B53B2A', blue:   '#185A82',
+    lime:   '#8F8F00', purple: '#7B3FC4', orange: '#C47B1A',
+    teal:   '#1A7A6A', pink:   '#9A1A5A',
   };
+
+  const makeChart = (label, pool, valFn, colorFn, fmtFn, ascending=false) => {
+    const sorted = [...pool].sort((a,b) => ascending ? valFn(a)-valFn(b) : valFn(b)-valFn(a)).slice(0,N);
+    const id = chartId(chartIdx++);
+    const vals  = sorted.map(c => Math.round(valFn(c)*100)/100);
+    const labels = sorted.map(c => c.length > 16 ? c.slice(0,14)+'…' : c);
+    const colors = vals.map(v => colorFn(v));
+    return { id, label, sorted, vals, labels, colors, fmtFn };
+  };
+
+  const fmtM = v => {
+    const abs = Math.abs(v);
+    const s = abs>=1e6 ? (abs/1e6).toFixed(2)+'M' : abs>=1e3 ? (abs/1e3).toFixed(1)+'K' : Math.round(abs).toLocaleString('es-MX');
+    return (v<0?'-':'')+'$'+s;
+  };
+  const fmtPct = v => (v>=0?'+':'')+v.toFixed(1)+'%';
+
+  // ── Define all 11 charts ──
+  const chartDefs = [
+    makeChart('🏆 Mayor Ingreso',          withIng,  c=>cdata[c].ing,    v=>CHART_COLORS.pos,    fmtM),
+    makeChart('📉 Menor Ingreso',           withIng,  c=>cdata[c].ing,    v=>CHART_COLORS.orange, fmtM, true),
+    makeChart('💰 Mayor EBITDA $',          withIng,  c=>cdata[c].ebitda, v=>v>=0?CHART_COLORS.blue:CHART_COLORS.neg, fmtM),
+    makeChart('🔻 Menor EBITDA $',          withIng,  c=>cdata[c].ebitda, v=>v>=0?CHART_COLORS.blue:CHART_COLORS.neg, fmtM, true),
+    makeChart('📈 Mayor EBITDA %',          validPct, c=>cdata[c].ing?cdata[c].ebitda/cdata[c].ing*100:null,
+      v=>v>=0?CHART_COLORS.lime:CHART_COLORS.neg, fmtPct),
+    makeChart('📉 Menor EBITDA %',          validPct, c=>cdata[c].ing?cdata[c].ebitda/cdata[c].ing*100:null,
+      v=>v>=0?CHART_COLORS.lime:CHART_COLORS.neg, fmtPct, true),
+    makeChart('🤝 Mayor Contribución Marginal $', withIng, c=>cdata[c].cm, v=>v>=0?CHART_COLORS.teal:CHART_COLORS.neg, fmtM),
+    makeChart('📉 Menor Contribución Marginal $', withIng, c=>cdata[c].cm, v=>v>=0?CHART_COLORS.teal:CHART_COLORS.neg, fmtM, true),
+    makeChart('⚖️ Mayor peso % CV s/Ventas', validPct, c=>cdata[c].ing?cdata[c].cv/cdata[c].ing*100:null,
+      v=>CHART_COLORS.orange, fmtPct),
+    makeChart('📊 Mayor peso % CF s/Ventas', validPct, c=>cdata[c].ing?cdata[c].costos_fijos/cdata[c].ing*100:null,
+      v=>CHART_COLORS.purple, fmtPct),
+    makeChart('📊 Mayor peso % GG s/Ventas', validPct, c=>cdata[c].ing?cdata[c].gtos_grales/cdata[c].ing*100:null,
+      v=>CHART_COLORS.pink, fmtPct),
+  ];
+
+  // ── Render HTML grid ──
+  const cardHtml = chartDefs.map(ch => `
+    <div class="top15-card" style="padding:12px 14px;">
+      <div class="top15-title" style="margin-bottom:10px;font-size:13px;">${ch.label}
+        <span style="font-family:var(--fb);font-weight:400;font-size:11px;color:var(--gray-m);margin-left:6px;">${periodLabel}</span>
+      </div>
+      <canvas id="${ch.id}" style="width:100%;max-height:280px;"></canvas>
+    </div>`).join('');
 
   el.innerHTML = `
     <div style="margin-bottom:14px;">
-      <div class="dist-title" style="margin-bottom:2px;">Top ${N} Clientes</div>
-      <div class="dist-sub">Ranking por Ingresos, EBITDA $ y EBITDA %</div>
+      <div class="dist-title" style="margin-bottom:2px;">Top ${N} Clientes · Análisis</div>
+      <div class="dist-sub">${periodLabel} · Excluye Moderna · Solo clientes con ingreso en gráficas %</div>
     </div>
-    <div class="top15-grid">
-      ${top((a,b)=>cdata[b].ing-cdata[a].ing,         '🏆 Mayor Ingreso',    cl=>cdata[cl].ing,                           'var(--pos)',      'fmt')}
-      ${top((a,b)=>cdata[b].ebitda-cdata[a].ebitda,   '💰 Mayor EBITDA $',   cl=>cdata[cl].ebitda,                        'var(--blue)',     'fmt')}
-      ${top((a,b)=>{const em=cl=>cdata[cl].ing?cdata[cl].ebitda/cdata[cl].ing*100:0;return em(b)-em(a);},
-            '📈 Mayor EBITDA %',  cl=>cdata[cl].ing?cdata[cl].ebitda/cdata[cl].ing*100:0, 'var(--lime-deep)', 'pct', clientsConIng)}
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;">
+      ${cardHtml}
     </div>`;
+
+  // ── Render Chart.js charts after DOM is ready ──
+  requestAnimationFrame(() => {
+    if (typeof Chart === 'undefined') return;
+    chartDefs.forEach(ch => {
+      const canvas = document.getElementById(ch.id);
+      if (!canvas) return;
+      // Filter out nulls (clients with no valid value for % charts)
+      const validIdx = ch.vals.map((v,i) => v !== null && !isNaN(v) ? i : -1).filter(i=>i>=0);
+      const vVals   = validIdx.map(i => ch.vals[i]);
+      const vLabels = validIdx.map(i => ch.labels[i]);
+      const vColors = validIdx.map(i => ch.colors[i]);
+
+      if (window._top15Charts) {
+        if (window._top15Charts[ch.id]) { try{window._top15Charts[ch.id].destroy();}catch(e){} }
+      } else { window._top15Charts = {}; }
+
+      window._top15Charts[ch.id] = new Chart(canvas.getContext('2d'), {
+        type: 'bar',
+        data: {
+          labels: vLabels,
+          datasets: [{
+            data: vVals,
+            backgroundColor: vColors,
+            borderRadius: 3,
+            borderSkipped: false,
+          }]
+        },
+        options: {
+          indexAxis: 'y',
+          responsive: true,
+          maintainAspectRatio: false,
+          layout: { padding: { right: 60 } },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: ctx => ' ' + ch.fmtFn(ctx.parsed.x),
+                title: ctx => ch.sorted[ctx[0].dataIndex] || ctx[0].label
+              }
+            },
+            datalabels: { display: false }
+          },
+          scales: {
+            x: {
+              grid: { color: 'rgba(0,0,0,0.04)' },
+              ticks: { font:{family:'Barlow',size:10}, color:'#97999B',
+                callback: v => ch.fmtFn(v) }
+            },
+            y: {
+              grid: { display: false },
+              ticks: { font:{family:'Barlow Condensed',weight:'700',size:11}, color:'#63666A' }
+            }
+          }
+        },
+        plugins: [{
+          id: 'valueLabels',
+          afterDatasetsDraw(chart) {
+            const ctx2 = chart.ctx;
+            chart.data.datasets.forEach((dataset, i) => {
+              const meta = chart.getDatasetMeta(i);
+              meta.data.forEach((bar, idx) => {
+                const val = dataset.data[idx];
+                if (val === null || val === undefined) return;
+                const x = val >= 0 ? bar.x + 4 : bar.x - 4;
+                ctx2.save();
+                ctx2.font = 'bold 10px Barlow Condensed';
+                ctx2.fillStyle = val >= 0 ? '#63666A' : '#B53B2A';
+                ctx2.textAlign = val >= 0 ? 'left' : 'right';
+                ctx2.textBaseline = 'middle';
+                ctx2.fillText(ch.fmtFn(val), x, bar.y);
+                ctx2.restore();
+              });
+            });
+          }
+        }]
+      });
+      canvas.style.height = Math.max(200, vVals.length * 22 + 40) + 'px';
+    });
+  });
 }
-
-// ══════════════════════════════════════════════════════════════
-// MATRIX FIXES: grouping + EBITDA colors + cost colors
-// ══════════════════════════════════════════════════════════════
-// Override renderMatrices cell renderer to fix colors
-const _origRenderMatrices = renderMatrices;
-// Patch applied inline in renderMatrices via COLS update below
-
-// Update PL client list when PL renders
-const _origRenderPL = renderPL;
-renderPL = function(d) {
-  _origRenderPL.call(this, d);
-  updatePLClientList();
-};
-</script>
-<script>
-// ══════════════════════════════════════════════════════════════
-// OVERRIDES ENGINE
-// ══════════════════════════════════════════════════════════════
-// Structure: OV_DATA[mesKey][rubro][cliente] = {monto, nota}
-window.OV_DATA = window.OV_DATA || {};
-
-const OV_RUBRO_LABELS = {
-  salarios:'Salarios y Prest.', fletes:'Fletes', mat_empaque:'Mat. Empaque',
-  cargo_farma:'Cargo Farma', costo_insumos:'Costo Insumos', otros_cv:'Otros CV',
-  costos_fijos:'Costos Fijos', gtos_grales:'Gastos Generales'
-};
-
 function ovMesKey() {
   // Use same mesKey as current matrix view
   if (mxVista === 'acum') {
