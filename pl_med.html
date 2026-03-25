@@ -4430,7 +4430,8 @@ function initLlaveAnalyzer() {
     var noIng = !ingClients.has(cl);
     var sel   = AZ_SELECTED.has(cl) || (AZ_SELECTED.size === 0 && noIng);
     if (AZ_SELECTED.size === 0 && noIng) AZ_SELECTED.add(cl);
-    return '<div class="az-chip' + (sel ? ' sel' : '') + '" onclick="azToggleClient('' + cl.replace(/'/g,"&#39;") + '')">' + cl + '</div>';
+    var safeCl = cl.replace(/'/g, "&#39;");
+    return '<div class="az-chip' + (sel ? ' sel' : '') + '" onclick="azToggleClient(\'' + safeCl + '\')">' + cl + '</div>';
   }).join('');
 
   runLlaveAnalyzer();
