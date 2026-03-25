@@ -2738,25 +2738,25 @@ function renderMatrices() {
   // Column definitions for matrix
   // Each col: {key, label, color, isDivider}
   const COLS = [
-    {key:'ing',          label:'Ingresos',        color:'var(--in-color)',   divAfter:true},
-    {key:'salarios',     label:'Salarios',         color:'var(--gray)'},
+    {key:'ing',          label:'Ingresos',        color:'var(--in-color)',   divBefore:true},
+    {key:'salarios',     label:'Salarios',         color:'var(--gray)',       divBefore:true},
     {key:'fletes',       label:'Fletes',           color:'var(--gray)'},
     {key:'mat_empaque',  label:'Mat. Empaque',     color:'var(--gray)'},
     {key:'cargo_farma',  label:'Cargo Farma',      color:'var(--gray)'},
     {key:'costo_insumos',label:'Costo Insumos',    color:'var(--gray)'},
     {key:'otros_cv',     label:'Otros CV',         color:'var(--gray)'},
-    {key:'cv',           label:'CV Total',         color:'var(--gray)',       divAfter:true, bold:true},
-    {key:'cm',           label:'CM',               color:'var(--pos-color)', divAfter:true, bold:true},
-    {key:'costos_fijos', label:'Costos Fijos',     color:'var(--gray)'},
-    {key:'gtos_grales',  label:'Gastos Grales',    color:'var(--gray)',       divAfter:true},
-    {key:'ebitda',       label:'EBITDA',           colorFn: v=>v>=0?'var(--pos)':'var(--neg)', bold:true},
+    {key:'cv',           label:'CV Total',         color:'var(--gray)',       divBefore:true, bold:true},
+    {key:'cm',           label:'CM',               color:'var(--pos-color)', divBefore:true, bold:true},
+    {key:'costos_fijos', label:'Costos Fijos',     color:'var(--gray)',       divBefore:true},
+    {key:'gtos_grales',  label:'Gastos Grales',    color:'var(--gray)'},
+    {key:'ebitda',       label:'EBITDA',           colorFn: v=>v>=0?'var(--pos)':'var(--neg)', bold:true, divBefore:true},
   ];
 
   const thCls = col => 'sortable' + (mxSortCol===col?' sort-'+mxSortDir:'');
 
   // Build header: each col has 2 sub-cols (monto, %vtas)
   const colHdrs = COLS.map(col => {
-    const bl = col.divAfter ? 'border-right:2px solid var(--lime-dark);' : '';
+    const bl = col.divBefore ? 'border-left:2px solid var(--lime-dark);' : '';
     return `<th class="${thCls(col.key)}" onclick="mxSort('${col.key}')" colspan="2"
       style="text-align:center;min-width:160px;${bl}">${col.label} <span class="sort-icon"></span></th>`;
   }).join('');
@@ -2776,14 +2776,15 @@ function renderMatrices() {
   </thead>`;
 
   // Cell renderer
-  const cell = (v, ing, color, bold, divAfter, colorFn) => {
+  // Build cell: border-left on MXN col of each group (matches th border-left)
+  const cell = (v, ing, color, bold, divAfter, colorFn, divBefore) => {
     const pct = ing ? v/ing*100 : 0;
     const c   = colorFn ? colorFn(v) : (color || (v>=0?'var(--in-color)':'var(--neg)'));
     const fw  = bold ? '700' : '500';
-    const bl  = divAfter ? 'border-right:2px solid var(--lime-dark);' : '';
-    if (!v && v!==0) return `<td style="${bl}"></td><td></td>`;
+    const blLeft = divBefore ? 'border-left:2px solid var(--lime-dark);' : '';
+    if (!v && v!==0) return `<td style="${blLeft}"></td><td></td>`;
     return `
-      <td style="text-align:right;padding:4px 8px;${bl}">
+      <td style="text-align:right;padding:4px 8px;${blLeft}">
         <span style="font-size:12px;font-weight:${fw};color:${v!==0?c:'var(--gray-d)'};">${v?fmt(v):'-'}</span>
       </td>
       <td style="text-align:right;padding:4px 6px;">
@@ -2799,7 +2800,7 @@ function renderMatrices() {
     if (!collapsed) {
       group.forEach(cl => {
         const d = cdata[cl];
-        const cells = COLS.map(col => cell(d[col.key], d.ing, col.color, col.bold, col.divAfter, col.colorFn)).join('');
+        const cells = COLS.map(col => cell(d[col.key], d.ing, col.color, col.bold, col.divAfter, col.colorFn, col.divBefore)).join('');
         r += `<tr>
           <td style="font-weight:500;position:sticky;left:0;background:var(--white);z-index:1;padding:6px 10px;">${cl}</td>
           ${cells}
@@ -2815,7 +2816,7 @@ function renderMatrices() {
     const v   = totals[col.key]||0;
     const pct = totals.ing ? v/totals.ing*100 : 0;
     const c   = col.colorFn ? col.colorFn(v) : (col.color || 'var(--lime-deep)');
-    const bl  = col.divAfter ? 'border-right:2px solid var(--lime-dark);' : '';
+    const bl  = col.divBefore ? 'border-left:2px solid var(--lime-dark);' : '';
     return `
       <td style="text-align:right;padding:4px 8px;${bl}"><span style="font-size:12px;font-weight:800;color:${c};">${fmt(v)}</span></td>
       <td style="text-align:right;padding:4px 6px;"><span style="font-size:11px;font-weight:700;font-family:var(--fh);color:var(--gray-m);">${totals.ing?pct.toFixed(1)+'%':'-'}</span></td>`;
@@ -2838,19 +2839,21 @@ function renderMatrices() {
     ing:_plMX?.ing_total||0, salarios:_plMX?.salarios||0, fletes:_plMX?.fletes||0,
     mat_empaque:_plMX?.mat_empaque||0, cargo_farma:_plMX?.cargo_farma||0,
     costo_insumos:_plMX?.costo_insumos||0, otros_cv:_plMX?.otros_cv||0, cv:_plMX?.cv_total||0,
-    cm:_plMX?.cm||0, costos_fijos:_plMX?.costos_fijos||0, gtos_grales:_plMX?.gtos_grales||0, ebitda:_plMX?.ebitda||0
+    cm:_plMX?.cm||0, costos_fijos:_plMX?.costos_fijos||0, gtos_grales:_plMX?.gtos_grales||0,
+    // ebitda: same formula as cdata (ing - cv - cf - gg), excludes otros_gtos
+    ebitda: (_plMX?.ing_total||0) - (_plMX?.cv_total||0) - (_plMX?.costos_fijos||0) - (_plMX?.gtos_grales||0)
   };
   const mxPlCells = COLS.map(col => {
     const v = PL_MAP_MX[col.key]||0;
     const ing = PL_MAP_MX['ing']||1;
-    const bl = col.divAfter ? 'border-right:2px solid var(--lime-dark);' : '';
+    const bl = col.divBefore ? 'border-left:2px solid var(--lime-dark);' : '';
     return `<td style="text-align:right;padding:4px 8px;${bl};background:#FFF8E8;font-weight:700;color:var(--warn-color);">${v?fmt(v):'—'}</td>
             <td style="text-align:right;padding:4px 6px;background:#FFF8E8;color:var(--gray-m);">${ing?(v/ing*100).toFixed(1)+'%':'—'}</td>`;
   }).join('');
   const mxDiffCells = COLS.map(col => {
     const diff = (totals[col.key]||0) - (PL_MAP_MX[col.key]||0);
     const c = Math.abs(diff)<1?'var(--pos)':'var(--neg)';
-    const bl = col.divAfter ? 'border-right:2px solid var(--lime-dark);' : '';
+    const bl = col.divBefore ? 'border-left:2px solid var(--lime-dark);' : '';
     return `<td style="text-align:right;padding:4px 8px;${bl};background:#FFF0F0;font-weight:700;color:${c};">${fmt(diff)}</td>
             <td style="background:#FFF0F0;"></td>`;
   }).join('');
@@ -3244,13 +3247,15 @@ function getPLForMk(mk) {
 // Sum PL fields across a range of mesKeys — for acumulado comprobacion
 function getPLRangeAccum(mesKeys) {
   const PL_FIELDS = ['ing_total','salarios','fletes','mat_empaque','cargo_farma',
-    'costo_insumos','otros_cv','cv_total','cm','costos_fijos','gtos_grales','ebitda'];
+    'costo_insumos','otros_cv','cv_total','cm','costos_fijos','gtos_grales'];
   const acc = {};
   PL_FIELDS.forEach(f => { acc[f] = 0; });
   mesKeys.forEach(mk => {
     const pl = getPLForMk(mk);
     PL_FIELDS.forEach(f => { acc[f] += (pl?.[f] || 0); });
   });
+  // Recalculate ebitda with same formula as cdata
+  acc.ebitda = acc.ing_total - acc.cv_total - acc.costos_fijos - acc.gtos_grales;
   return acc;
 }
 
