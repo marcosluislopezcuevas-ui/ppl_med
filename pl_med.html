@@ -478,6 +478,7 @@ body{background:var(--white);color:var(--gray);font-family:var(--fb);font-size:1
 .dist-tbl thead tr:first-child th  { top: 0;    height: 33px; }
 .dist-tbl thead tr:nth-child(2) th { top: 33px; }
 </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 </head>
 <body>
 <nav class="nav">
@@ -3731,8 +3732,14 @@ function renderTop15() {
 
   // Render charts after DOM paint
   if (typeof Chart === 'undefined') {
-    console.warn('Chart.js not loaded yet, retrying...');
-    setTimeout(renderTop15, 500);
+    // Load Chart.js dynamically then render
+    const s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js';
+    s.onload = function() { renderTop15(); };
+    s.onerror = function() {
+      el.innerHTML = '<div style="padding:40px;text-align:center;color:var(--gray-m);font-family:var(--fh);">Chart.js no disponible — verifica tu conexión a internet</div>';
+    };
+    document.head.appendChild(s);
     return;
   }
   requestAnimationFrame(function() {
