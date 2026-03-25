@@ -3016,9 +3016,9 @@ function isExcluded(cl) {
 }
 
 </script>
-</body>
-</html><!-- INJECTED JS - new functions -->
+
 <script>
+
 // ══════════════════════════════════════════════════════════════
 // PL ACUM + CLIENT FILTER
 // ══════════════════════════════════════════════════════════════
@@ -4085,8 +4085,8 @@ async function ovLoadFromSP(mk) {
     if (saved) window.OV_DATA = JSON.parse(saved);
   } catch(e){}
 })();
-</script>
-<script>
+
+
 // ══════════════════════════════════════════════════════════════
 // EXPORT TO EXCEL (SheetJS via CDN)
 // ══════════════════════════════════════════════════════════════
@@ -4316,4 +4316,7 @@ async function exportMatrixExcel() {
   XLSX.writeFile(wb,`Medistik_Matriz_${mesLabel}.xlsx`);
   toast('✓ Excel exportado','ok');
 }
+
 </script>
+</body>
+</html>
