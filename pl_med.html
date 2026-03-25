@@ -3835,7 +3835,8 @@ function ovDelEntry(mk, rubro, cliente) {
 // For each rubro that has overrides: subtract direct amounts from total, 
 // redistribute residual proportionally, then add back direct amounts.
 function applyOverrides(dist, tbData, mk) {
-  if (!window.OV_DATA[mk] || !Object.keys(window.OV_DATA[mk]).length) return dist;
+  if (!dist) return dist;
+  if (!window.OV_DATA || !window.OV_DATA[mk] || !Object.keys(window.OV_DATA[mk]).length) return dist;
 
   const result = {};
   // Deep clone dist
@@ -4084,8 +4085,13 @@ async function ovLoadFromSP(mk) {
 (function(){
   try {
     const saved = localStorage.getItem('medistik_ov_v1');
-    if (saved) window.OV_DATA = JSON.parse(saved);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (parsed && typeof parsed === 'object') window.OV_DATA = parsed;
+    }
   } catch(e){}
+  // Always ensure OV_DATA is a valid object
+  if (!window.OV_DATA || typeof window.OV_DATA !== 'object') window.OV_DATA = {};
 })();
 
 
