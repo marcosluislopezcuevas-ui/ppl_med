@@ -3619,17 +3619,17 @@ function toggleCFGGGroup(g){
 function renderTop15() {
   const el = document.getElementById('top15-inner'); if (!el) return;
 
-  // Sync selector on first run
+  // Always sync selector to current month
   const t15Sel = document.getElementById('top15-mes-sel');
   const curMk0 = window._currentMesKey || getMesKey();
-  if (t15Sel && curMk0 && !window._top15SelInit) {
+  if (t15Sel && curMk0 && t15Sel.value !== curMk0) {
     t15Sel.value = curMk0;
-    window._top15SelInit = true;
   }
 
   const data = getDistData('top15');
   if (!data) {
-    el.innerHTML = '<div style="padding:60px;text-align:center;color:var(--gray-m);font-family:var(--fh);font-weight:700;">Carga los datos primero</div>';
+    console.warn('renderTop15: getDistData returned null. TB_SP:', Object.keys(window.TB_SP||{}), 'LLAVES:', Object.keys(LLAVES_DATA||{}).length);
+    el.innerHTML = '<div style="padding:60px;text-align:center;color:var(--gray-m);font-family:var(--fh);font-weight:700;">Carga los datos primero (Top 15)</div>';
     return;
   }
   const cdata = data.cdata, totals = data.totals, activeMk = data.activeMk;
@@ -3730,7 +3730,11 @@ function renderTop15() {
   window._top15Charts = {};
 
   // Render charts after DOM paint
-  if (typeof Chart === 'undefined') return;
+  if (typeof Chart === 'undefined') {
+    console.warn('Chart.js not loaded yet, retrying...');
+    setTimeout(renderTop15, 500);
+    return;
+  }
   requestAnimationFrame(function() {
     CDEFS.forEach(function(ch) {
       try {
