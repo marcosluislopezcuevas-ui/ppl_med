@@ -1605,7 +1605,6 @@ function showTab(tab) {
     if (cfggSel && curMk2) cfggSel.value = curMk2;
     renderCFGG();
   }
-  if (tab==='top15')   renderTop15();
 }
 
 // -- INIT LLAVES --
@@ -2158,10 +2157,16 @@ const PA_LLAVES_READ  = 'https://default2a21bd09a37a4ec48d88bb8f1dea12.d5.enviro
 const PA_OV_WRITE = 'https://default2a21bd09a37a4ec48d88bb8f1dea12.d5.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/bb9460a708ee4953b7ec5abd420b19d4/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=bLDJn4AfeVcdgZNTvnIveuEG6JgiuAO8_57HhrdIHXg';
 const PA_OV_READ  = 'https://default2a21bd09a37a4ec48d88bb8f1dea12.d5.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/baf340d47f3e4f669abf19d33867dd22/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=26fRKl_HqVJm3SCAWvVG6enRvNo_xpb64ePbyNR2YoU';
 
-// Load TB + Ingresos from SharePoint on startup (background)
+// Load TB + Ingresos + Llaves from SharePoint on startup (background)
 (async function() {
   const nTB  = await loadTBFromSP();
   const nIng = await loadIngFromSP();
+  // Load llaves silently so matrices work without opening Llaves tab
+  try {
+    const mesKeys0 = Object.keys(window.TB_SP || {});
+    const mkForLlaves = mesKeys0.length > 0 ? mesKeys0[mesKeys0.length-1] : getMesKey();
+    await loadLlavesFromSharePoint(mkForLlaves);
+  } catch(e) { console.warn('Llaves startup load error:', e); }
   console.log("SP startup: nTB="+nTB+" nIng="+nIng);
   console.log("TB_SP keys:", Object.keys(window.TB_SP||{}));
   console.log("ING_SP_DIV keys:", Object.keys(window.ING_SP_DIV||{}));
