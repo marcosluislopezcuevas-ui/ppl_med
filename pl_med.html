@@ -3616,178 +3616,183 @@ function toggleCFGGGroup(g){
 // ══════════════════════════════════════════════════════════════
 function renderTop15() {
   const el = document.getElementById('top15-inner'); if (!el) return;
+
+  // Sync selector on first run
+  const t15Sel = document.getElementById('top15-mes-sel');
+  const curMk0 = window._currentMesKey || getMesKey();
+  if (t15Sel && curMk0 && !window._top15SelInit) {
+    t15Sel.value = curMk0;
+    window._top15SelInit = true;
+  }
+
   const data = getDistData('top15');
   if (!data) {
     el.innerHTML = '<div style="padding:60px;text-align:center;color:var(--gray-m);font-family:var(--fh);font-weight:700;">Carga los datos primero</div>';
     return;
   }
-  const {cdata, totals, activeMk} = data;
+  const cdata = data.cdata, totals = data.totals, activeMk = data.activeMk;
 
   // Period label
-  const vista = getTabVista('top15');
-  const MES_NAMES = {1:'Enero',2:'Febrero',3:'Marzo',4:'Abril',5:'Mayo',6:'Junio',
+  const MN = {1:'Enero',2:'Febrero',3:'Marzo',4:'Abril',5:'Mayo',6:'Junio',
     7:'Julio',8:'Agosto',9:'Septiembre',10:'Octubre',11:'Noviembre',12:'Diciembre'};
+  const vista = getTabVista('top15');
   let periodLabel = '';
   if (vista === 'acum') {
     const desde = document.getElementById('top15-acum-desde')?.value || '1_2026';
     const hasta  = document.getElementById('top15-acum-hasta')?.value || getMesKey();
-    periodLabel = 'Acum. ' + (MES_NAMES[parseInt(desde)]||desde) + ' → ' + (MES_NAMES[parseInt(hasta)]||hasta);
+    periodLabel = 'Acum. ' + (MN[parseInt(desde)]||desde) + ' → ' + (MN[parseInt(hasta)]||hasta);
   } else {
-    periodLabel = MES_NAMES[parseInt(activeMk?.split('_')[0])] || activeMk || '';
+    periodLabel = MN[parseInt((activeMk||'').split('_')[0])] || activeMk || '';
   }
   const lbl = document.getElementById('top15-period-lbl');
   if (lbl) lbl.textContent = periodLabel;
 
-  // Exclude Moderna always from Top15, also apply toggle
-  const ALL = Object.keys(cdata).filter(c => c !== 'Moderna' && !isExcluded(c));
-  const withIng  = ALL.filter(c => cdata[c].ing > 0);
-  const withCost = ALL.filter(c => cdata[c].cv > 0 || cdata[c].costos_fijos > 0 || cdata[c].gtos_grales > 0);
-  // For % charts: exclude clients with neither ing nor costs (avoids inf% artifacts)
-  const validPct = withIng; // must have ingreso to show meaningful %
+  // Client pools
+  const ALL       = Object.keys(cdata).filter(c => c !== 'Moderna' && !isExcluded(c));
+  const withIng   = ALL.filter(c => cdata[c].ing > 0);
+  // For % charts: only clients with ingreso > 0 (avoids 100%/infinite artifacts)
+  const validPct  = withIng.filter(c => cdata[c].ing > 0);
   const N = 15;
 
-  // ── Chart.js horizontal bar helper ──
-  const chartId = (i) => 'top15-chart-' + i;
-  let chartIdx = 0;
-  const charts = {};
-
-  const CHART_COLORS = {
-    pos:    '#2A8A1A', neg:    '#B53B2A', blue:   '#185A82',
-    lime:   '#8F8F00', purple: '#7B3FC4', orange: '#C47B1A',
-    teal:   '#1A7A6A', pink:   '#9A1A5A',
-  };
-
-  const makeChart = (label, pool, valFn, colorFn, fmtFn, ascending=false) => {
-    const sorted = [...pool].sort((a,b) => ascending ? valFn(a)-valFn(b) : valFn(b)-valFn(a)).slice(0,N);
-    const id = chartId(chartIdx++);
-    const vals  = sorted.map(c => Math.round(valFn(c)*100)/100);
-    const labels = sorted.map(c => c.length > 16 ? c.slice(0,14)+'…' : c);
-    const colors = vals.map(v => colorFn(v));
-    return { id, label, sorted, vals, labels, colors, fmtFn };
-  };
-
-  const fmtM = v => {
-    const abs = Math.abs(v);
-    const s = abs>=1e6 ? (abs/1e6).toFixed(2)+'M' : abs>=1e3 ? (abs/1e3).toFixed(1)+'K' : Math.round(abs).toLocaleString('es-MX');
+  const fmtV = function(v) {
+    if (v === null || v === undefined || isNaN(v)) return '—';
+    var abs = Math.abs(v);
+    var s = abs>=1e6 ? (abs/1e6).toFixed(2)+'M' : abs>=1e3 ? (abs/1e3).toFixed(1)+'K' : Math.round(abs).toLocaleString('es-MX');
     return (v<0?'-':'')+'$'+s;
   };
-  const fmtPct = v => (v>=0?'+':'')+v.toFixed(1)+'%';
+  const fmtP = function(v) {
+    if (v === null || v === undefined || isNaN(v)) return '—';
+    return (v>=0?'+':'')+v.toFixed(1)+'%';
+  };
 
-  // ── Define all 11 charts ──
-  const chartDefs = [
-    makeChart('🏆 Mayor Ingreso',          withIng,  c=>cdata[c].ing,    v=>CHART_COLORS.pos,    fmtM),
-    makeChart('📉 Menor Ingreso',           withIng,  c=>cdata[c].ing,    v=>CHART_COLORS.orange, fmtM, true),
-    makeChart('💰 Mayor EBITDA $',          withIng,  c=>cdata[c].ebitda, v=>v>=0?CHART_COLORS.blue:CHART_COLORS.neg, fmtM),
-    makeChart('🔻 Menor EBITDA $',          withIng,  c=>cdata[c].ebitda, v=>v>=0?CHART_COLORS.blue:CHART_COLORS.neg, fmtM, true),
-    makeChart('📈 Mayor EBITDA %',          validPct, c=>cdata[c].ing?cdata[c].ebitda/cdata[c].ing*100:null,
-      v=>v>=0?CHART_COLORS.lime:CHART_COLORS.neg, fmtPct),
-    makeChart('📉 Menor EBITDA %',          validPct, c=>cdata[c].ing?cdata[c].ebitda/cdata[c].ing*100:null,
-      v=>v>=0?CHART_COLORS.lime:CHART_COLORS.neg, fmtPct, true),
-    makeChart('🤝 Mayor Contribución Marginal $', withIng, c=>cdata[c].cm, v=>v>=0?CHART_COLORS.teal:CHART_COLORS.neg, fmtM),
-    makeChart('📉 Menor Contribución Marginal $', withIng, c=>cdata[c].cm, v=>v>=0?CHART_COLORS.teal:CHART_COLORS.neg, fmtM, true),
-    makeChart('⚖️ Mayor peso % CV s/Ventas', validPct, c=>cdata[c].ing?cdata[c].cv/cdata[c].ing*100:null,
-      v=>CHART_COLORS.orange, fmtPct),
-    makeChart('📊 Mayor peso % CF s/Ventas', validPct, c=>cdata[c].ing?cdata[c].costos_fijos/cdata[c].ing*100:null,
-      v=>CHART_COLORS.purple, fmtPct),
-    makeChart('📊 Mayor peso % GG s/Ventas', validPct, c=>cdata[c].ing?cdata[c].gtos_grales/cdata[c].ing*100:null,
-      v=>CHART_COLORS.pink, fmtPct),
+  // Chart definitions
+  var CDEFS = [
+    {label:'🏆 Mayor Ingreso',            pool:withIng,  valFn:function(c){return cdata[c].ing;},                              asc:false, fmt:fmtV, color:'#2A8A1A'},
+    {label:'📉 Menor Ingreso',             pool:withIng,  valFn:function(c){return cdata[c].ing;},                              asc:true,  fmt:fmtV, color:'#C47B1A'},
+    {label:'💰 Mayor EBITDA $',            pool:withIng,  valFn:function(c){return cdata[c].ebitda;},                           asc:false, fmt:fmtV, color:'#185A82'},
+    {label:'🔻 Menor EBITDA $',            pool:withIng,  valFn:function(c){return cdata[c].ebitda;},                           asc:true,  fmt:fmtV, color:'#B53B2A'},
+    {label:'📈 Mayor EBITDA %',            pool:validPct, valFn:function(c){return cdata[c].ing?cdata[c].ebitda/cdata[c].ing*100:null;}, asc:false, fmt:fmtP, color:'#8F8F00'},
+    {label:'📉 Menor EBITDA %',            pool:validPct, valFn:function(c){return cdata[c].ing?cdata[c].ebitda/cdata[c].ing*100:null;}, asc:true,  fmt:fmtP, color:'#B53B2A'},
+    {label:'🤝 Mayor CM $',               pool:withIng,  valFn:function(c){return cdata[c].cm;},                               asc:false, fmt:fmtV, color:'#1A7A6A'},
+    {label:'📉 Menor CM $',               pool:withIng,  valFn:function(c){return cdata[c].cm;},                               asc:true,  fmt:fmtV, color:'#9A1A5A'},
+    {label:'⚖️ Mayor % CV / Ventas',      pool:validPct, valFn:function(c){return cdata[c].ing?cdata[c].cv/cdata[c].ing*100:null;},       asc:false, fmt:fmtP, color:'#C47B1A'},
+    {label:'📊 Mayor % CF / Ventas',      pool:validPct, valFn:function(c){return cdata[c].ing?cdata[c].costos_fijos/cdata[c].ing*100:null;}, asc:false, fmt:fmtP, color:'#7B3FC4'},
+    {label:'📊 Mayor % GG / Ventas',      pool:validPct, valFn:function(c){return cdata[c].ing?cdata[c].gtos_grales/cdata[c].ing*100:null;}, asc:false, fmt:fmtP, color:'#9A1A5A'},
   ];
 
-  // ── Render HTML grid ──
-  const cardHtml = chartDefs.map(ch => `
-    <div class="top15-card" style="padding:12px 14px;">
-      <div class="top15-title" style="margin-bottom:10px;font-size:13px;">${ch.label}
-        <span style="font-family:var(--fb);font-weight:400;font-size:11px;color:var(--gray-m);margin-left:6px;">${periodLabel}</span>
-      </div>
-      <canvas id="${ch.id}" style="width:100%;max-height:280px;"></canvas>
-    </div>`).join('');
+  // Build sorted data per chart
+  CDEFS.forEach(function(ch) {
+    // Filter nulls first
+    var validPool = ch.pool.filter(function(c) {
+      var v = ch.valFn(c);
+      return v !== null && !isNaN(v);
+    });
+    var sorted = validPool.slice().sort(function(a, b) {
+      var va = ch.valFn(a), vb = ch.valFn(b);
+      return ch.asc ? va - vb : vb - va;
+    }).slice(0, N);
+    ch.sorted  = sorted;
+    ch.vals    = sorted.map(function(c) { return Math.round(ch.valFn(c)*100)/100; });
+    ch.labels  = sorted.map(function(c) { return c.length > 18 ? c.slice(0,16)+'…' : c; });
+    ch.colors  = ch.vals.map(function(v) {
+      if (ch.label.indexOf('%') !== -1 || ch.label.indexOf('EBITDA $') !== -1 || ch.label.indexOf('CM') !== -1) {
+        return v >= 0 ? ch.color : '#B53B2A';
+      }
+      return ch.color;
+    });
+    ch.id = 'top15c' + CDEFS.indexOf(ch);
+  });
 
-  el.innerHTML = `
-    <div style="margin-bottom:14px;">
-      <div class="dist-title" style="margin-bottom:2px;">Top ${N} Clientes · Análisis</div>
-      <div class="dist-sub">${periodLabel} · Excluye Moderna · Solo clientes con ingreso en gráficas %</div>
-    </div>
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;">
-      ${cardHtml}
-    </div>`;
+  // Render HTML
+  var cards = CDEFS.map(function(ch) {
+    var h = Math.max(200, ch.vals.length * 24 + 50);
+    return '<div class="top15-card" style="padding:12px 14px;">' +
+      '<div class="top15-title" style="margin-bottom:8px;font-size:13px;">' + ch.label +
+      ' <span style="font-family:var(--fb);font-weight:400;font-size:11px;color:var(--gray-m);">' + periodLabel + '</span></div>' +
+      '<canvas id="' + ch.id + '" style="width:100%;height:' + h + 'px;"></canvas>' +
+      '</div>';
+  }).join('');
 
-  // ── Render Chart.js charts after DOM is ready ──
-  requestAnimationFrame(() => {
-    if (typeof Chart === 'undefined') return;
-    chartDefs.forEach(ch => {
-      const canvas = document.getElementById(ch.id);
-      if (!canvas) return;
-      // Filter out nulls (clients with no valid value for % charts)
-      const validIdx = ch.vals.map((v,i) => v !== null && !isNaN(v) ? i : -1).filter(i=>i>=0);
-      const vVals   = validIdx.map(i => ch.vals[i]);
-      const vLabels = validIdx.map(i => ch.labels[i]);
-      const vColors = validIdx.map(i => ch.colors[i]);
+  el.innerHTML =
+    '<div style="margin-bottom:14px;">' +
+    '<div class="dist-title" style="margin-bottom:2px;">Top ' + N + ' Clientes · Análisis</div>' +
+    '<div class="dist-sub">' + periodLabel + ' · Excluye Moderna · Gráficas % solo clientes con ingreso</div>' +
+    '</div>' +
+    '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;">' + cards + '</div>';
 
-      if (window._top15Charts) {
-        if (window._top15Charts[ch.id]) { try{window._top15Charts[ch.id].destroy();}catch(e){} }
-      } else { window._top15Charts = {}; }
+  // Destroy old charts
+  if (!window._top15Charts) window._top15Charts = {};
+  Object.keys(window._top15Charts).forEach(function(id) {
+    try { window._top15Charts[id].destroy(); } catch(e) {}
+  });
+  window._top15Charts = {};
 
-      window._top15Charts[ch.id] = new Chart(canvas.getContext('2d'), {
-        type: 'bar',
-        data: {
-          labels: vLabels,
-          datasets: [{
-            data: vVals,
-            backgroundColor: vColors,
-            borderRadius: 3,
-            borderSkipped: false,
-          }]
-        },
-        options: {
-          indexAxis: 'y',
-          responsive: true,
-          maintainAspectRatio: false,
-          layout: { padding: { right: 60 } },
-          plugins: {
-            legend: { display: false },
-            tooltip: {
-              callbacks: {
-                label: ctx => ' ' + ch.fmtFn(ctx.parsed.x),
-                title: ctx => ch.sorted[ctx[0].dataIndex] || ctx[0].label
+  // Render charts after DOM paint
+  if (typeof Chart === 'undefined') return;
+  requestAnimationFrame(function() {
+    CDEFS.forEach(function(ch) {
+      try {
+        var canvas = document.getElementById(ch.id);
+        if (!canvas || !ch.vals.length) return;
+        window._top15Charts[ch.id] = new Chart(canvas.getContext('2d'), {
+          type: 'bar',
+          data: {
+            labels: ch.labels,
+            datasets: [{
+              data: ch.vals,
+              backgroundColor: ch.colors,
+              borderRadius: 3,
+              borderSkipped: false,
+            }]
+          },
+          options: {
+            indexAxis: 'y',
+            responsive: true,
+            maintainAspectRatio: false,
+            layout: { padding: { right: 56 } },
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                callbacks: {
+                  label: function(ctx) { return ' ' + ch.fmt(ctx.parsed.x); },
+                  title: function(ctx) { return ch.sorted[ctx[0].dataIndex] || ctx[0].label; }
+                }
               }
             },
-            datalabels: { display: false }
-          },
-          scales: {
-            x: {
-              grid: { color: 'rgba(0,0,0,0.04)' },
-              ticks: { font:{family:'Barlow',size:10}, color:'#97999B',
-                callback: v => ch.fmtFn(v) }
-            },
-            y: {
-              grid: { display: false },
-              ticks: { font:{family:'Barlow Condensed',weight:'700',size:11}, color:'#63666A' }
+            scales: {
+              x: {
+                grid: { color: 'rgba(0,0,0,0.04)' },
+                ticks: { font:{family:'Barlow',size:10}, color:'#97999B',
+                  callback: function(v) { return ch.fmt(v); } }
+              },
+              y: {
+                grid: { display: false },
+                ticks: { font:{family:'Barlow Condensed',weight:'700',size:11}, color:'#63666A' }
+              }
             }
-          }
-        },
-        plugins: [{
-          id: 'valueLabels',
-          afterDatasetsDraw(chart) {
-            const ctx2 = chart.ctx;
-            chart.data.datasets.forEach((dataset, i) => {
-              const meta = chart.getDatasetMeta(i);
-              meta.data.forEach((bar, idx) => {
-                const val = dataset.data[idx];
-                if (val === null || val === undefined) return;
-                const x = val >= 0 ? bar.x + 4 : bar.x - 4;
-                ctx2.save();
-                ctx2.font = 'bold 10px Barlow Condensed';
-                ctx2.fillStyle = val >= 0 ? '#63666A' : '#B53B2A';
-                ctx2.textAlign = val >= 0 ? 'left' : 'right';
-                ctx2.textBaseline = 'middle';
-                ctx2.fillText(ch.fmtFn(val), x, bar.y);
-                ctx2.restore();
+          },
+          plugins: [{
+            id: 'valLbls',
+            afterDatasetsDraw: function(chart) {
+              var ctx2 = chart.ctx;
+              chart.data.datasets.forEach(function(dataset, i) {
+                var meta = chart.getDatasetMeta(i);
+                meta.data.forEach(function(bar, idx) {
+                  var val = dataset.data[idx];
+                  if (val === null || val === undefined) return;
+                  ctx2.save();
+                  ctx2.font = 'bold 10px Barlow Condensed';
+                  ctx2.fillStyle = val >= 0 ? '#63666A' : '#B53B2A';
+                  ctx2.textAlign = val >= 0 ? 'left' : 'right';
+                  ctx2.textBaseline = 'middle';
+                  ctx2.fillText(ch.fmt(val), val >= 0 ? bar.x + 4 : bar.x - 4, bar.y);
+                  ctx2.restore();
+                });
               });
-            });
-          }
-        }]
-      });
-      canvas.style.height = Math.max(200, vVals.length * 22 + 40) + 'px';
+            }
+          }]
+        });
+      } catch(e) { console.warn('Chart error for', ch.id, e); }
     });
   });
 }
