@@ -3725,9 +3725,12 @@ function renderTop15() {
     {label:'📉 Menor EBITDA %',            pool:validPct, valFn:function(c){return cdata[c].ing?cdata[c].ebitda/cdata[c].ing*100:null;}, asc:true,  fmt:fmtP, color:'#B53B2A'},
     {label:'🤝 Mayor CM $',               pool:withIng,  valFn:function(c){return cdata[c].cm;},                               asc:false, fmt:fmtV, color:'#1A7A6A'},
     {label:'📉 Menor CM $',               pool:withIng,  valFn:function(c){return cdata[c].cm;},                               asc:true,  fmt:fmtV, color:'#9A1A5A'},
-    {label:'⚖️ Mayor % CV / Ventas',      pool:validPct, valFn:function(c){return cdata[c].ing?cdata[c].cv/cdata[c].ing*100:null;},       asc:false, fmt:fmtP, color:'#C47B1A'},
-    {label:'📊 Mayor % CF / Ventas',      pool:validPct, valFn:function(c){return cdata[c].ing?cdata[c].costos_fijos/cdata[c].ing*100:null;}, asc:false, fmt:fmtP, color:'#7B3FC4'},
-    {label:'📊 Mayor % GG / Ventas',      pool:validPct, valFn:function(c){return cdata[c].ing?cdata[c].gtos_grales/cdata[c].ing*100:null;}, asc:false, fmt:fmtP, color:'#9A1A5A'},
+    {label:'⚖️ Mayor % CV / Ventas',      pool:validPct, valFn:function(c){return cdata[c].ing?cdata[c].cv/cdata[c].ing*100:null;},                           asc:false, fmt:fmtP, color:'#C47B1A'},
+    {label:'📊 Mayor % CF / Ventas',      pool:validPct, valFn:function(c){return cdata[c].ing?cdata[c].costos_fijos/cdata[c].ing*100:null;},           asc:false, fmt:fmtP, color:'#7B3FC4'},
+    {label:'📊 Mayor % GG / Ventas',      pool:validPct, valFn:function(c){return cdata[c].ing?cdata[c].gtos_grales/cdata[c].ing*100:null;},            asc:false, fmt:fmtP, color:'#9A1A5A'},
+    {label:'⚖️ Mayor % Distrib. CV',      pool:ALL.filter(function(c){return cdata[c].cv>0;}),            valFn:function(c){return totals.cv>0?cdata[c].cv/totals.cv*100:null;},                               asc:false, fmt:fmtP, color:'#C47B1A'},
+    {label:'📊 Mayor % Distrib. CF',      pool:ALL.filter(function(c){return cdata[c].costos_fijos>0;}),  valFn:function(c){return totals.costos_fijos>0?cdata[c].costos_fijos/totals.costos_fijos*100:null;}, asc:false, fmt:fmtP, color:'#7B3FC4'},
+    {label:'📊 Mayor % Distrib. GG',      pool:ALL.filter(function(c){return cdata[c].gtos_grales>0;}),   valFn:function(c){return totals.gtos_grales>0?cdata[c].gtos_grales/totals.gtos_grales*100:null;},    asc:false, fmt:fmtP, color:'#9A1A5A'},
   ];
 
   // Build sorted data per chart
