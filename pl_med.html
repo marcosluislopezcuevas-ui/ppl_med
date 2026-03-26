@@ -2791,7 +2791,7 @@ function renderMatrices() {
     const range  = getMesKeyRange(desde, hasta);
     const mTB    = calcTBRange(range);
     const lMk    = range[range.length-1] || hasta;
-    dist     = applyOverrides(calcDistribucionFromTB(mTB, lMk), mTB, lMk);
+    dist     = applyOverridesRange(calcDistribucionFromTB(mTB, lMk), mTB, range);
     ingRaw   = calcIngRange(range);
     window._lastDistRange = range;
     mesLabel = 'Acum. ' + (MES_NAMES[parseInt(desde)]||desde) + ' → ' + (MES_NAMES[parseInt(hasta)]||hasta);
@@ -3283,7 +3283,7 @@ function getDistData(tabId) {
     const range = getMesKeyRange(desde, hasta);
     const mergedTB = calcTBRange(range);
     activeMk = range[range.length-1];
-    dist = applyOverrides(calcDistribucionFromTB(mergedTB, activeMk), mergedTB, activeMk);
+    dist = applyOverridesRange(calcDistribucionFromTB(mergedTB, activeMk), mergedTB, range);
     ingRaw = calcIngRange(range);
     window._lastDistRange = range; // store for comprobacion
   } else {
@@ -3983,6 +3983,60 @@ function ovDelEntry(mk, rubro, cliente) {
 // Apply overrides to distribution result
 // For each rubro that has overrides: subtract direct amounts from total, 
 // redistribute residual proportionally, then add back direct amounts.
+// Apply overrides for a RANGE of mesKeys (acumulado mode)
+// Sums override montos across all months before applying
+function applyOverridesRange(dist, tbData, mesKeys) {
+  if (!dist || !window.OV_DATA) return dist;
+
+  // Build merged overrides: for each rubro+cliente, sum montos across all mesKeys
+  const merged = {}; // merged[rubro][cliente] = {monto: total, nota: ''}
+  mesKeys.forEach(function(mk) {
+    const ovMk = window.OV_DATA[mk];
+    if (!ovMk) return;
+    Object.entries(ovMk).forEach(([rubro, clientes]) => {
+      if (!merged[rubro]) merged[rubro] = {};
+      Object.entries(clientes).forEach(([cl, entry]) => {
+        if (!merged[rubro][cl]) merged[rubro][cl] = { monto: 0, nota: entry.nota || '' };
+        merged[rubro][cl].monto += (entry.monto || 0);
+      });
+    });
+  });
+
+  if (!Object.keys(merged).length) return dist;
+
+  // Apply merged overrides using same logic as applyOverrides
+  const result = {};
+  Object.entries(dist).forEach(([cl, vals]) => { result[cl] = { ...vals }; });
+
+  Object.entries(merged).forEach(([rubro, overrides]) => {
+    const directTotal = Object.values(overrides).reduce((s, e) => s + (e.monto || 0), 0);
+    const origTotal   = Object.values(result).reduce((s, c) => s + (c[rubro] || 0), 0);
+    const residual    = Math.max(0, origTotal - directTotal);
+    const overrideClients = new Set(Object.keys(overrides));
+    const propBase    = Object.entries(result)
+      .filter(([cl]) => !overrideClients.has(cl))
+      .reduce((s, [, v]) => s + (v[rubro] || 0), 0);
+
+    Object.entries(result).forEach(([cl, vals]) => {
+      if (overrideClients.has(cl)) {
+        result[cl][rubro] = overrides[cl]?.monto || 0;
+      } else {
+        result[cl][rubro] = propBase > 0 ? (vals[rubro] || 0) / propBase * residual : 0;
+      }
+    });
+
+    Object.entries(overrides).forEach(([cl, entry]) => {
+      if (!result[cl]) {
+        result[cl] = {};
+        Object.keys(OV_RUBRO_LABELS).forEach(k => { result[cl][k] = 0; });
+      }
+      result[cl][rubro] = entry.monto || 0;
+    });
+  });
+
+  return result;
+}
+
 function applyOverrides(dist, tbData, mk) {
   if (!dist) return dist;
   if (!window.OV_DATA || !window.OV_DATA[mk] || !Object.keys(window.OV_DATA[mk]).length) return dist;
@@ -4422,7 +4476,8 @@ async function exportMatrixExcel() {
     const range = getMesKeyRange(desde, hasta);
     const mergedTB = calcTBRange(range);
     mk = range[range.length-1];
-    dist = applyOverrides(calcDistribucionFromTB(mergedTB, mk), mergedTB, mk);
+    const expRange = getMesKeyRange(desde, hasta);
+    dist = applyOverridesRange(calcDistribucionFromTB(mergedTB, mk), mergedTB, expRange);
     ingRaw = calcIngRange(range);
     mesLabel = 'Acum_' + (MES_NAMES[parseInt(desde.split('_')[0])]||desde) + '_a_' + (MES_NAMES[parseInt(hasta.split('_')[0])]||hasta);
   } else {
@@ -4834,54 +4889,73 @@ async function runAIAnalysis() {
   const bot10ebit = [...clients].filter(c=>cdata[c].ing>0).sort((a,b) => cdata[a].ebitda - cdata[b].ebitda).slice(0,10);
   const top10ebitPct = [...clients].filter(c=>cdata[c].ing>100000).sort((a,b) => (cdata[b].ebitda/cdata[b].ing) - (cdata[a].ebitda/cdata[a].ing)).slice(0,10);
 
+  // Totals without Moderna
+  const clientsSinMod = clients.filter(c => c !== 'Moderna');
+  const totSM = {
+    ing:    clientsSinMod.reduce((s,c) => s + (cdata[c].ing||0), 0),
+    cv:     clientsSinMod.reduce((s,c) => s + (cdata[c].cv||0), 0),
+    cf:     clientsSinMod.reduce((s,c) => s + (cdata[c].costos_fijos||0), 0),
+    gg:     clientsSinMod.reduce((s,c) => s + (cdata[c].gtos_grales||0), 0),
+    cm:     clientsSinMod.reduce((s,c) => s + (cdata[c].cm||0), 0),
+    ebitda: clientsSinMod.reduce((s,c) => s + (cdata[c].ebitda||0), 0),
+  };
+
+  // ROI = EBITDA / CostoTotal per client (ing > 500K)
+  const roiList = [...clients]
+    .filter(c => (cdata[c].ing||0) > 500000)
+    .map(c => {
+      const d = cdata[c];
+      const ct = (d.cv||0) + (d.costos_fijos||0) + (d.gtos_grales||0);
+      return { c, roi: ct > 0 ? d.ebitda / ct * 100 : 0 };
+    })
+    .sort((a,b) => b.roi - a.roi);
+
   const clientSummary = top15ing.map(c => {
     const d = cdata[c];
-    return `${c}: Ing=${fm(d.ing)}, CV=${fm(d.cv)} (${fp(d.cv,d.ing)} vtas), CF=${fm(d.costos_fijos)} (${fp(d.costos_fijos,d.ing)} vtas), GG=${fm(d.gtos_grales)} (${fp(d.gtos_grales,d.ing)} vtas), EBITDA=${fm(d.ebitda)} (${fp(d.ebitda,d.ing)} vtas)`;
+    const ct = (d.cv||0) + (d.costos_fijos||0) + (d.gtos_grales||0);
+    const roi = ct > 0 ? (d.ebitda/ct*100).toFixed(1) + '%' : 'N/A';
+    return c + ': Ing=' + fm(d.ing) + ', CV=' + fp(d.cv,d.ing) + ' vtas, CF=' + fp(d.costos_fijos,d.ing) + ' vtas, GG=' + fp(d.gtos_grales,d.ing) + ' vtas, EBITDA=' + fm(d.ebitda) + ' (' + fp(d.ebitda,d.ing) + ' vtas), ROI=' + roi;
   }).join('\n');
 
   const anomalies = clients.filter(c => {
     const d = cdata[c];
     if (!d.ing || d.ing < 100000) return false;
-    const cvPct = d.cv / d.ing;
-    const cfPct = d.costos_fijos / d.ing;
-    const ggPct = d.gtos_grales / d.ing;
-    return cvPct > 1.5 || cfPct > 0.8 || ggPct > 0.8 || d.ebitda < -d.ing * 0.5;
+    return (d.cv/d.ing > 1.5) || (d.costos_fijos/d.ing > 0.5) || (d.gtos_grales/d.ing > 0.5) || (d.ebitda < -d.ing * 0.3);
   }).map(c => {
     const d = cdata[c];
-    return `${c}: CV=${fp(d.cv,d.ing)} vtas, CF=${fp(d.costos_fijos,d.ing)} vtas, GG=${fp(d.gtos_grales,d.ing)} vtas, EBITDA=${fp(d.ebitda,d.ing)} vtas`;
+    return c + ': Ing=' + fm(d.ing) + ', CV=' + fp(d.cv,d.ing) + ' vtas, CF=' + fp(d.costos_fijos,d.ing) + ' vtas, GG=' + fp(d.gtos_grales,d.ing) + ' vtas, EBITDA=' + fp(d.ebitda,d.ing) + ' vtas';
   }).join('\n');
 
-  const prompt = `Eres el analista financiero senior de Medistik, empresa de distribución médica en México (división de Traxion).
+  const modIng = cdata['Moderna'] ? (cdata['Moderna'].ing||0) : 0;
 
-Analiza los siguientes datos de la Matriz de Distribución de Costos para ${mesLabel} y genera insights accionables para el CFO.
-
-TOTALES GENERALES:
-- Ingresos totales: ${fm(totals.ing)}
-- CV Total: ${fm(totals.cv)} (${fp(totals.cv, totals.ing)} de ventas)
-- Costos Fijos: ${fm(totals.costos_fijos)} (${fp(totals.costos_fijos, totals.ing)} de ventas)
-- Gastos Generales: ${fm(totals.gtos_grales)} (${fp(totals.gtos_grales, totals.ing)} de ventas)
-- CM Total: ${fm(totals.cm)} (${fp(totals.cm, totals.ing)} de ventas)
-- EBITDA Total: ${fm(totals.ebitda)} (${fp(totals.ebitda, totals.ing)} de ventas)
-- Total clientes activos: ${clients.filter(c=>cdata[c].ing>0).length}
-
-TOP 15 CLIENTES POR INGRESO:
-${clientSummary}
-
-CLIENTES CON POSIBLES ANOMALÍAS (CV>150% ventas, CF>80% ventas, GG>80% ventas, o EBITDA negativo mayor a -50% ventas):
-${anomalies || 'Ninguno detectado con los criterios definidos'}
-
-TOP 10 EBITDA $ POSITIVO: ${top10ebit.map(c=>`${c}=${fm(cdata[c].ebitda)}`).join(', ')}
-TOP 10 EBITDA $ NEGATIVO: ${bot10ebit.map(c=>`${c}=${fm(cdata[c].ebitda)}`).join(', ')}
-TOP 10 EBITDA % (con ing>$100K): ${top10ebitPct.map(c=>`${c}=${fp(cdata[c].ebitda,cdata[c].ing)}`).join(', ')}
-
-Por favor proporciona:
-1. **Diagnóstico general** de la rentabilidad del periodo
-2. **Top 3 insights más relevantes** con números específicos
-3. **Clientes que merecen atención urgente** (pérdidas significativas o costos desproporcionados) con posibles causas
-4. **Clientes estrella** que están traccionando la rentabilidad
-5. **Una recomendación concreta** para el CFO
-
-Responde en español. Sé directo, específico con números y usa el contexto de distribución médica. Máximo 600 palabras.`;
+  const prompt = 'Eres el analista financiero senior de Medistik, empresa de distribucion medica en Mexico (division de Traxion Logistica y Tecnologia).\n\n'
+    + 'Analiza los datos de la Matriz de Distribucion de Costos para ' + mesLabel + ' y genera insights ejecutivos para el CFO.\n\n'
+    + '=== TOTALES CONSOLIDADOS (incluye Moderna) ===\n'
+    + 'Ingresos: ' + fm(totals.ing) + ' | CV: ' + fm(totals.cv) + ' (' + fp(totals.cv,totals.ing) + ' vtas) | CM: ' + fm(totals.cm) + ' (' + fp(totals.cm,totals.ing) + ' vtas)\n'
+    + 'Costos Fijos: ' + fm(totals.costos_fijos) + ' (' + fp(totals.costos_fijos,totals.ing) + ' vtas) | GG: ' + fm(totals.gtos_grales) + ' (' + fp(totals.gtos_grales,totals.ing) + ' vtas)\n'
+    + 'EBITDA: ' + fm(totals.ebitda) + ' (' + fp(totals.ebitda,totals.ing) + ' vtas) | Clientes activos: ' + clients.filter(c=>cdata[c].ing>0).length + '\n\n'
+    + '=== TOTALES SIN MODERNA (operacion regular) ===\n'
+    + 'Ingresos: ' + fm(totSM.ing) + ' | CV: ' + fm(totSM.cv) + ' (' + fp(totSM.cv,totSM.ing) + ' vtas) | CM: ' + fm(totSM.cm) + ' (' + fp(totSM.cm,totSM.ing) + ' vtas)\n'
+    + 'Costos Fijos: ' + fm(totSM.cf) + ' (' + fp(totSM.cf,totSM.ing) + ' vtas) | GG: ' + fm(totSM.gg) + ' (' + fp(totSM.gg,totSM.ing) + ' vtas)\n'
+    + 'EBITDA sin Moderna: ' + fm(totSM.ebitda) + ' (' + fp(totSM.ebitda,totSM.ing) + ' vtas)\n'
+    + 'Moderna representa: ' + fp(modIng,totals.ing) + ' de ingresos totales\n\n'
+    + '=== TOP 15 CLIENTES POR INGRESO ===\n'
+    + clientSummary + '\n\n'
+    + '=== ALERTAS (CF>50% vtas, GG>50% vtas, CV>150% vtas, EBITDA<-30% vtas) ===\n'
+    + (anomalies || 'Sin alertas') + '\n\n'
+    + '=== RANKINGS ===\n'
+    + 'Mejor EBITDA $: ' + top10ebit.slice(0,6).map(c=>c+'='+fm(cdata[c].ebitda)).join(', ') + '\n'
+    + 'Peor EBITDA $: ' + bot10ebit.slice(0,6).map(c=>c+'='+fm(cdata[c].ebitda)).join(', ') + '\n'
+    + 'Mejor EBITDA %: ' + top10ebitPct.slice(0,6).map(c=>c+'='+fp(cdata[c].ebitda,cdata[c].ing)).join(', ') + '\n'
+    + 'Mejor ROI: ' + roiList.slice(0,6).map(r=>r.c+'='+r.roi.toFixed(1)+'%').join(', ') + '\n'
+    + 'Peor ROI: ' + roiList.slice(-5).reverse().map(r=>r.c+'='+r.roi.toFixed(1)+'%').join(', ') + '\n\n'
+    + 'Proporciona en formato ejecutivo para CFO y reporte corporativo:\n'
+    + '1. Vista consolidada vs sin Moderna: diferencia en margenes y que representa la operacion regular\n'
+    + '2. Concentracion de riesgo: dependencia en clientes clave con numeros\n'
+    + '3. Top 3 alertas urgentes: clientes destruyendo valor, causas probables en distribucion medica\n'
+    + '4. Clientes con mejor ROI: que los hace eficientes\n'
+    + '5. Recomendacion ejecutiva: una accion concreta de alto impacto para el proximo mes\n\n'
+    + 'Responde en español. Directo y ejecutivo, con numeros especificos. Maximo 700 palabras.';
 
   // Show loading
   body.innerHTML = `
@@ -4900,39 +4974,28 @@ Responde en español. Sé directo, específico con números y usa el contexto de
       <div class="ai-context-kpi"><span>Clientes activos</span><span>${clients.filter(c=>cdata[c].ing>0).length}</span></div>
     </div>`;
 
+  // Copy prompt to clipboard + show in panel for pasting into Claude.ai
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1000,
-        messages: [{ role: 'user', content: prompt }]
-      })
-    });
-
-    const json = await res.json();
-    const text = json.content?.[0]?.text || 'Sin respuesta';
-
-    // Parse markdown-ish response into styled HTML
-    const html = text
-      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-      .replace(/^#{1,3} (.+)$/gm, '<h3 style="font-family:var(--fh);font-weight:800;font-size:14px;color:var(--gray);margin:16px 0 6px;">$1</h3>')
-      .replace(/^\d+\.\s+\*\*(.+?)\*\*/gm, '<div style="margin:12px 0 4px;font-family:var(--fh);font-weight:800;font-size:13px;color:var(--lime-deep);">$1</div>')
-      .replace(/\n\n/g, '</p><p style="margin-bottom:8px;">')
-      .replace(/\n/g, '<br>');
-
-    body.innerHTML = ctxBar + '<div class="ai-msg"><p style="margin-bottom:8px;">' + html + '</p></div>';
-
-  } catch(e) {
+    await navigator.clipboard.writeText(prompt);
     body.innerHTML = ctxBar + `
-      <div class="ai-section ai-alert">
-        <h3>Error de conexión</h3>
-        <p>No se pudo conectar con la API. Verifica tu conexión a internet.</p>
-        <p style="font-size:11px;color:var(--gray-m);">${e.message}</p>
+      <div class="ai-section ai-good">
+        <h3>✓ Prompt copiado al clipboard</h3>
+        <p>Pega el texto (Ctrl+V) directamente en <strong>Claude.ai</strong> para obtener el análisis.</p>
+      </div>
+      <div class="ai-section" style="border-left-color:var(--lime-dark);">
+        <h3>Vista previa del prompt</h3>
+        <pre style="font-size:11px;color:var(--gray-m);white-space:pre-wrap;line-height:1.5;max-height:300px;overflow-y:auto;">${prompt.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</pre>
+      </div>`;
+  } catch(e) {
+    // Fallback: show prompt in textarea for manual copy
+    body.innerHTML = ctxBar + `
+      <div class="ai-section">
+        <h3>📋 Copia este prompt a Claude.ai</h3>
+        <p style="margin-bottom:8px;">Selecciona todo el texto abajo (Ctrl+A), cópialo (Ctrl+C) y pégalo en Claude.ai</p>
+        <textarea style="width:100%;height:280px;font-size:11px;border:1px solid var(--border);border-radius:var(--r);padding:10px;font-family:var(--fb);line-height:1.5;resize:vertical;">${prompt.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</textarea>
       </div>`;
   } finally {
-    if (btn) { btn.textContent = '✦ Analizar de nuevo'; btn.disabled = false; }
+    if (btn) { btn.textContent = '✦ Copiar prompt de nuevo'; btn.disabled = false; }
   }
 }
 
