@@ -5627,6 +5627,12 @@ function renderAnalisis() {
   var varPct   = pptoIng > 0 ? (totalVar/pptoIng*100).toFixed(1) : '0';
   var varColor = totalVar >= 0 ? 'var(--pos)' : 'var(--neg)';
 
+  // Destroy existing chart first
+  if (window._analisisChart) {
+    try { window._analisisChart.destroy(); } catch(e) {}
+    window._analisisChart = null;
+  }
+
   el.innerHTML = '<div class="chart-card" style="margin-bottom:16px;">'
     + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">'
     + '<div><div class="chart-title">Waterfall · Presupuesto vs Real de Ingresos · ' + periodLabel + '</div>'
@@ -5634,7 +5640,7 @@ function renderAnalisis() {
     + '<div style="text-align:right;"><div style="font-family:var(--fh);font-weight:800;font-size:22px;color:'+varColor+';">' + fmt(totalVar) + '</div>'
     + '<div style="font-size:11px;color:var(--gray-m);">' + (totalVar>=0?'+':'') + varPct + '% vs Ppto</div></div>'
     + '</div>'
-    + '<canvas id="analisis-wf-canvas" style="width:100%;height:320px;"></canvas>'
+    + '<div style="position:relative;height:300px;"><canvas id="analisis-wf-canvas"></canvas></div>'
     + '</div>'
     + '<div class="chart-card">'
     + '<div class="chart-title" style="margin-bottom:12px;">Detalle por cliente</div>'
@@ -5705,7 +5711,9 @@ function renderAnalisis() {
       }]
     },
     options: {
-      responsive: true, maintainAspectRatio: false,
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: { duration: 300 },
       plugins: {
         legend: { display: false },
         tooltip: { callbacks: {
