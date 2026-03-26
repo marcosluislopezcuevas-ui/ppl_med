@@ -1804,6 +1804,16 @@ function showTab(tab) {
     if (cfggSel && curMk2) cfggSel.value = curMk2;
     renderCFGG();
   }
+  if (tab==='analisis') {
+    const sel = document.getElementById('analisis-mes-sel');
+    const curMk = window._currentMesKey || getMesKey();
+    if (sel && curMk) sel.value = curMk;
+    renderAnalisis();
+  }
+  if (tab==='tendencia') {
+    initTendenciaClients();
+    renderTendencia();
+  }
 }
 
 // -- INIT LLAVES --
@@ -5533,9 +5543,17 @@ function renderAnalisis() {
   if (analisisVista === 'mes') {
     var mk = document.getElementById('analisis-mes-sel')?.value || getMesKey();
     var tbMk = window.TB_SP?.[mk] && Object.keys(window.TB_SP[mk]).length ? window.TB_SP[mk] : window._tbData;
-    if (!tbMk) { el.innerHTML = '<div style="padding:40px;text-align:center;color:var(--gray-m);font-family:var(--fh);">Carga los datos primero</div>'; return; }
+    if (!tbMk || !Object.keys(tbMk).length) { el.innerHTML = `<div style="padding:60px;text-align:center;color:var(--gray-m);">
+  <div style="font-size:40px;margin-bottom:12px;">📊</div>
+  <div style="font-family:var(--fh);font-weight:700;font-size:16px;color:var(--gray);margin-bottom:8px;">Sin datos cargados</div>
+  <div style="font-size:13px;">Carga el Trial Balance en la pestaña <strong>P&amp;L</strong> o espera que se carguen desde SharePoint</div>
+</div>`; return; }
     var dist = applyOverrides(calcDistribucionFromTB(tbMk, mk), tbMk, mk);
-    if (!dist) { el.innerHTML = '<div style="padding:40px;text-align:center;color:var(--gray-m);font-family:var(--fh);">Sin distribución disponible</div>'; return; }
+    if (!dist || !Object.keys(dist).length) { el.innerHTML = `<div style="padding:60px;text-align:center;color:var(--gray-m);">
+  <div style="font-size:40px;margin-bottom:12px;">📊</div>
+  <div style="font-family:var(--fh);font-weight:700;font-size:16px;color:var(--gray);margin-bottom:8px;">Sin datos cargados</div>
+  <div style="font-size:13px;">Carga el Trial Balance en la pestaña <strong>P&amp;L</strong> o espera que se carguen desde SharePoint</div>
+</div>`; return; }
     var ingRaw = window.ING_SP?.[mk] || {};
     data = buildCdataFromDist(dist, ingRaw);
   } else {
@@ -5797,7 +5815,7 @@ function renderTendencia() {
   // For each month, calculate filtered totals
   var months = ALL_MES_KEYS.map(function(mk) {
     var tb = window.TB_SP?.[mk];
-    if (!tb || !Object.keys(tb).length) return null;
+    if (!tb || !Object.keys(tb).length) return null; // no data for this month
     var dist = applyOverrides(calcDistribucionFromTB(tb, mk), tb, mk);
     if (!dist) return null;
     var ingRaw = window.ING_SP?.[mk] || {};
@@ -5889,21 +5907,7 @@ function renderTendencia() {
   });
 }
 
-// Hook into showTab for new tabs
-var _origShowTab = showTab;
-showTab = function(tab) {
-  _origShowTab(tab);
-  if (tab === 'analisis') {
-    var sel = document.getElementById('analisis-mes-sel');
-    var curMk = window._currentMesKey || getMesKey();
-    if (sel && curMk) sel.value = curMk;
-    renderAnalisis();
-  }
-  if (tab === 'tendencia') {
-    initTendenciaClients();
-    renderTendencia();
-  }
-};
+// showTab hooks integrated directly into showTab function above
 
 </script>
 </body>
