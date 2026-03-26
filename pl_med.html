@@ -570,6 +570,8 @@ canvas#infog-canvas{display:block;}
     <button class="nav-tab"        id="tab-cv"      onclick="showTab('cv')">Costos Variables</button>
     <button class="nav-tab"        id="tab-cfgg"    onclick="showTab('cfgg')">CF y GG</button>
     <button class="nav-tab"        id="tab-top15"   onclick="showTab('top15')">Top 15</button>
+    <button class="nav-tab"        id="tab-analisis" onclick="showTab('analisis')">Análisis</button>
+    <button class="nav-tab"        id="tab-tendencia" onclick="showTab('tendencia')">Tendencia</button>
     <button class="nav-tab"        id="tab-llaves"  onclick="showTab('llaves')">Llaves de Reparto</button>
     <button class="nav-tab"        id="tab-mapeo"   onclick="showTab('mapeo')">Mapeo de Cuentas</button>
   </div>
@@ -800,6 +802,45 @@ canvas#infog-canvas{display:block;}
       ⚖️ Balancear → Desocupado
     </button>
     <span style="font-size:12px;color:var(--gray-m);" id="llaves-saved-status"></span>
+  </div>
+</div>
+
+
+<!-- ANÁLISIS PAGE -->
+<div class="page" id="page-analisis">
+  <div class="dist-page">
+    <!-- Static filter bar -->
+    <div id="analisis-filter-bar" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border);">
+      <div style="display:flex;background:var(--surface2);border:1.5px solid var(--border-m);border-radius:var(--r);overflow:hidden;padding:1px;gap:1px;">
+        <button class="fmt-btn on" id="analisis-btn-mes"  onclick="setAnalisisVista('mes')">Por mes</button>
+        <button class="fmt-btn"   id="analisis-btn-acum" onclick="setAnalisisVista('acum')">Acumulado</button>
+      </div>
+      <select class="dist-sel" id="analisis-mes-sel" onchange="renderAnalisis()" style="min-width:120px;">
+        <option value="1_2026">Enero 2026</option><option value="2_2026">Febrero 2026</option><option value="3_2026">Marzo 2026</option><option value="4_2026">Abril 2026</option><option value="5_2026">Mayo 2026</option><option value="6_2026">Junio 2026</option><option value="7_2026">Julio 2026</option><option value="8_2026">Agosto 2026</option><option value="9_2026">Septiembre 2026</option><option value="10_2026">Octubre 2026</option><option value="11_2026">Noviembre 2026</option><option value="12_2026">Diciembre 2026</option>
+      </select>
+      <div id="analisis-acum-range" style="display:none;align-items:center;gap:6px;">
+        <span style="font-family:var(--fh);font-weight:700;font-size:12px;color:var(--gray-m);">De</span>
+        <select class="dist-sel" id="analisis-acum-desde" onchange="renderAnalisis()" style="min-width:110px;"><option value="1_2026">Enero 2026</option><option value="2_2026">Febrero 2026</option><option value="3_2026">Marzo 2026</option><option value="4_2026">Abril 2026</option><option value="5_2026">Mayo 2026</option><option value="6_2026">Junio 2026</option><option value="7_2026">Julio 2026</option><option value="8_2026">Agosto 2026</option><option value="9_2026">Septiembre 2026</option><option value="10_2026">Octubre 2026</option><option value="11_2026">Noviembre 2026</option><option value="12_2026">Diciembre 2026</option></select>
+        <span style="font-family:var(--fh);font-weight:700;font-size:12px;color:var(--gray-m);">A</span>
+        <select class="dist-sel" id="analisis-acum-hasta" onchange="renderAnalisis()" style="min-width:110px;"><option value="1_2026">Enero 2026</option><option value="2_2026" selected>Febrero 2026</option><option value="3_2026">Marzo 2026</option><option value="4_2026">Abril 2026</option><option value="5_2026">Mayo 2026</option><option value="6_2026">Junio 2026</option><option value="7_2026">Julio 2026</option><option value="8_2026">Agosto 2026</option><option value="9_2026">Septiembre 2026</option><option value="10_2026">Octubre 2026</option><option value="11_2026">Noviembre 2026</option><option value="12_2026">Diciembre 2026</option></select>
+      </div>
+    </div>
+    <div id="analisis-inner"></div>
+  </div>
+</div>
+
+<!-- TENDENCIA PAGE -->
+<div class="page" id="page-tendencia">
+  <div class="dist-page">
+    <div id="tend-filter-bar" style="margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border);">
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
+        <span style="font-family:var(--fh);font-weight:700;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--gray-d);">Clientes</span>
+        <button class="fmt-btn on" id="tend-all-btn" onclick="tendSelectAll()" style="font-size:11px;padding:3px 10px;">Todos</button>
+        <button class="fmt-btn" id="tend-none-btn" onclick="tendSelectNone()" style="font-size:11px;padding:3px 10px;">Ninguno</button>
+        <div id="tend-client-chips" style="display:flex;flex-wrap:wrap;gap:4px;"></div>
+      </div>
+    </div>
+    <div id="tendencia-inner"></div>
   </div>
 </div>
 
@@ -1732,7 +1773,7 @@ function showTab(tab) {
   const uploadPg = document.getElementById('page-upload');
   if (uploadPg) uploadPg.style.display = 'none';
 
-  ['pl','mmontos','cv','cfgg','top15','llaves','mapeo'].forEach(t => {
+  ['pl','mmontos','cv','cfgg','top15','analisis','tendencia','llaves','mapeo'].forEach(t => {
     const pg = document.getElementById('page-' + t);
     if (pg) pg.style.display = t===tab ? 'block' : 'none';
     document.getElementById('tab-'+t)?.classList.toggle('active', t===tab);
@@ -5452,6 +5493,417 @@ function downloadInfografia() {
   a.click();
   toast('✓ Infografía descargada: ' + filename, 'ok');
 }
+
+
+
+
+// ══════════════════════════════════════════════════════════════
+// ANÁLISIS TAB — Waterfall Ppto vs Real por cliente
+// ══════════════════════════════════════════════════════════════
+var analisisVista = 'mes';
+
+function setAnalisisVista(v) {
+  analisisVista = v;
+  document.getElementById('analisis-btn-mes')?.classList.toggle('on', v==='mes');
+  document.getElementById('analisis-btn-acum')?.classList.toggle('on', v==='acum');
+  var mesSel   = document.getElementById('analisis-mes-sel');
+  var acumRng  = document.getElementById('analisis-acum-range');
+  if (mesSel)  mesSel.style.display   = v==='mes'  ? '' : 'none';
+  if (acumRng) acumRng.style.display  = v==='acum' ? 'flex' : 'none';
+  renderAnalisis();
+}
+
+function getAnalisisMesKeys() {
+  if (analisisVista === 'acum') {
+    var desde = document.getElementById('analisis-acum-desde')?.value || '1_2026';
+    var hasta = document.getElementById('analisis-acum-hasta')?.value || getMesKey();
+    return getMesKeyRange(desde, hasta);
+  }
+  return [document.getElementById('analisis-mes-sel')?.value || getMesKey()];
+}
+
+function renderAnalisis() {
+  var el = document.getElementById('analisis-inner'); if (!el) return;
+  var mesKeys = getAnalisisMesKeys();
+
+  // Build Real data from getDistData
+  var vista0 = analisisVista;
+  // Use getDistData with a virtual tabId by temporarily setting selectors
+  var data = null;
+  if (analisisVista === 'mes') {
+    var mk = document.getElementById('analisis-mes-sel')?.value || getMesKey();
+    var tbMk = window.TB_SP?.[mk] && Object.keys(window.TB_SP[mk]).length ? window.TB_SP[mk] : window._tbData;
+    if (!tbMk) { el.innerHTML = '<div style="padding:40px;text-align:center;color:var(--gray-m);font-family:var(--fh);">Carga los datos primero</div>'; return; }
+    var dist = applyOverrides(calcDistribucionFromTB(tbMk, mk), tbMk, mk);
+    if (!dist) { el.innerHTML = '<div style="padding:40px;text-align:center;color:var(--gray-m);font-family:var(--fh);">Sin distribución disponible</div>'; return; }
+    var ingRaw = window.ING_SP?.[mk] || {};
+    data = buildCdataFromDist(dist, ingRaw);
+  } else {
+    var desde = document.getElementById('analisis-acum-desde')?.value || '1_2026';
+    var hasta  = document.getElementById('analisis-acum-hasta')?.value || getMesKey();
+    var range  = getMesKeyRange(desde, hasta);
+    var mTB    = calcTBRange(range);
+    var lMk    = range[range.length-1];
+    var distA  = applyOverridesRange(calcDistribucionFromTB(mTB, lMk), mTB, range);
+    if (!distA) { el.innerHTML = '<div style="padding:40px;text-align:center;color:var(--gray-m);">Sin datos</div>'; return; }
+    var ingRaw = calcIngRange(range);
+    data = buildCdataFromDist(distA, ingRaw);
+  }
+
+  if (!data) { el.innerHTML = '<div style="padding:40px;text-align:center;color:var(--gray-m);">Sin datos</div>'; return; }
+
+  // Get Ppto totals for the period
+  var MES_NAMES = {1:'Enero',2:'Febrero',3:'Marzo',4:'Abril',5:'Mayo',6:'Junio',
+    7:'Julio',8:'Agosto',9:'Septiembre',10:'Octubre',11:'Noviembre',12:'Diciembre'};
+  var pptoIng = mesKeys.reduce(function(s, mk) {
+    var mn = parseInt(mk.split('_')[0]);
+    var p = PPTO_COSTOS[MES_NAMES[mn]];
+    return s + (p ? p.ing_total||0 : 0);
+  }, 0);
+
+  // Clients excl Moderna
+  var clients = Object.keys(data).filter(function(c){ return c !== 'Moderna' && !isExcluded(c) && (data[c].ing||0) > 0; });
+  var totalReal = clients.reduce(function(s,c){ return s + (data[c].ing||0); }, 0);
+
+  // Each client's ppto = proportional share of total ppto based on real mix
+  // Variance per client = Real - (client share of ppto)
+  var clientVariances = clients.map(function(c) {
+    var real = data[c].ing || 0;
+    var share = totalReal > 0 ? real / totalReal : 0;
+    var ppto = pptoIng * share;
+    return { c: c, real: real, ppto: ppto, var: real - ppto };
+  });
+
+  // Sort by abs variance, take top 6, rest = "Otros"
+  clientVariances.sort(function(a,b){ return Math.abs(b.var) - Math.abs(a.var); });
+  var top6 = clientVariances.slice(0, 6);
+  var otros = clientVariances.slice(6);
+  var otrosVar  = otros.reduce(function(s,x){ return s + x.var; }, 0);
+  var otrosReal = otros.reduce(function(s,x){ return s + x.real; }, 0);
+  var otrosPpto = otros.reduce(function(s,x){ return s + x.ppto; }, 0);
+
+  var fmt = function(v) {
+    var a = Math.abs(v);
+    var s = a>=1e6?(a/1e6).toFixed(2)+'M':a>=1e3?(a/1e3).toFixed(1)+'K':Math.round(a).toLocaleString('es-MX');
+    return (v<0?'-':'')+'$'+s;
+  };
+
+  // Build waterfall steps: Ppto → +/- each client var → Real
+  var steps = [{ label: 'Presupuesto', value: pptoIng, type: 'base', color: '#185A82' }];
+  top6.forEach(function(x) {
+    steps.push({ label: x.c.length>14 ? x.c.slice(0,13)+'…' : x.c, value: x.var, type: x.var>=0?'pos':'neg', color: x.var>=0?'#2A8A1A':'#B53B2A' });
+  });
+  if (Math.abs(otrosVar) > 100) {
+    steps.push({ label: 'Otros', value: otrosVar, type: otrosVar>=0?'pos':'neg', color: otrosVar>=0?'rgba(42,138,26,.6)':'rgba(181,59,42,.6)' });
+  }
+  steps.push({ label: 'Real', value: totalReal, type: 'total', color: '#D0DF00' });
+
+  // Render chart card + summary table
+  var periodLabel = analisisVista==='acum'
+    ? 'Acum. ' + (MES_NAMES[parseInt(document.getElementById('analisis-acum-desde')?.value)]||'') + ' → ' + (MES_NAMES[parseInt(document.getElementById('analisis-acum-hasta')?.value)]||'')
+    : (MES_NAMES[parseInt((document.getElementById('analisis-mes-sel')?.value||'').split('_')[0])]||'');
+
+  var totalVar = totalReal - pptoIng;
+  var varPct   = pptoIng > 0 ? (totalVar/pptoIng*100).toFixed(1) : '0';
+  var varColor = totalVar >= 0 ? 'var(--pos)' : 'var(--neg)';
+
+  el.innerHTML = '<div class="chart-card" style="margin-bottom:16px;">'
+    + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">'
+    + '<div><div class="chart-title">Waterfall · Presupuesto vs Real de Ingresos · ' + periodLabel + '</div>'
+    + '<div style="font-size:12px;color:var(--gray-m);">Top 6 variaciones por cliente · Sin Moderna</div></div>'
+    + '<div style="text-align:right;"><div style="font-family:var(--fh);font-weight:800;font-size:22px;color:'+varColor+';">' + fmt(totalVar) + '</div>'
+    + '<div style="font-size:11px;color:var(--gray-m);">' + (totalVar>=0?'+':'') + varPct + '% vs Ppto</div></div>'
+    + '</div>'
+    + '<canvas id="analisis-wf-canvas" style="width:100%;height:320px;"></canvas>'
+    + '</div>'
+    + '<div class="chart-card">'
+    + '<div class="chart-title" style="margin-bottom:12px;">Detalle por cliente</div>'
+    + '<table style="width:100%;border-collapse:collapse;font-size:13px;">'
+    + '<thead><tr style="background:var(--surface2);">'
+    + '<th style="text-align:left;padding:7px 10px;font-family:var(--fh);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--gray-m);">Cliente</th>'
+    + '<th style="text-align:right;padding:7px 10px;font-family:var(--fh);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--gray-m);">Ppto Proporcional</th>'
+    + '<th style="text-align:right;padding:7px 10px;font-family:var(--fh);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--gray-m);">Real</th>'
+    + '<th style="text-align:right;padding:7px 10px;font-family:var(--fh);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--gray-m);">Variación $</th>'
+    + '<th style="text-align:right;padding:7px 10px;font-family:var(--fh);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--gray-m);">Variación %</th>'
+    + '</tr></thead><tbody>'
+    + top6.map(function(x) {
+        var vPct = x.ppto>0 ? (x.var/x.ppto*100).toFixed(1)+'%' : '—';
+        var vc = x.var>=0?'var(--pos)':'var(--neg)';
+        return '<tr style="border-bottom:1px solid var(--border);">'
+          + '<td style="padding:6px 10px;font-weight:600;">' + x.c + '</td>'
+          + '<td style="padding:6px 10px;text-align:right;color:var(--gray-m);">' + fmt(x.ppto) + '</td>'
+          + '<td style="padding:6px 10px;text-align:right;">' + fmt(x.real) + '</td>'
+          + '<td style="padding:6px 10px;text-align:right;font-weight:700;color:'+vc+';">' + fmt(x.var) + '</td>'
+          + '<td style="padding:6px 10px;text-align:right;font-weight:700;color:'+vc+';">' + (x.var>=0?'+':'') + vPct + '</td>'
+          + '</tr>';
+      }).join('')
+    + (Math.abs(otrosVar)>100 ? '<tr style="background:var(--surface);border-top:2px solid var(--border-m);">'
+        + '<td style="padding:6px 10px;font-family:var(--fh);font-weight:700;">Otros (' + otros.length + ' clientes)</td>'
+        + '<td style="padding:6px 10px;text-align:right;color:var(--gray-m);">' + fmt(otrosPpto) + '</td>'
+        + '<td style="padding:6px 10px;text-align:right;">' + fmt(otrosReal) + '</td>'
+        + '<td style="padding:6px 10px;text-align:right;font-weight:700;color:'+(otrosVar>=0?'var(--pos)':'var(--neg)')+';">' + fmt(otrosVar) + '</td>'
+        + '<td style="padding:6px 10px;text-align:right;font-weight:700;color:'+(otrosVar>=0?'var(--pos)':'var(--neg)')+';">' + (otrosVar>=0?'+':'') + (otrosPpto>0?(otrosVar/otrosPpto*100).toFixed(1)+'%':'—') + '</td>'
+        + '</tr>' : '')
+    + '<tr style="background:var(--lime-bg);border-top:2px solid var(--lime-dark);">'
+    + '<td style="padding:7px 10px;font-family:var(--fh);font-weight:800;">TOTAL</td>'
+    + '<td style="padding:7px 10px;text-align:right;font-weight:700;">' + fmt(pptoIng) + '</td>'
+    + '<td style="padding:7px 10px;text-align:right;font-weight:700;">' + fmt(totalReal) + '</td>'
+    + '<td style="padding:7px 10px;text-align:right;font-weight:800;color:'+varColor+';">' + fmt(totalVar) + '</td>'
+    + '<td style="padding:7px 10px;text-align:right;font-weight:800;color:'+varColor+';">' + (totalVar>=0?'+':'') + varPct + '%</td>'
+    + '</tr>'
+    + '</tbody></table></div>';
+
+  // Draw waterfall chart with Chart.js
+  if (typeof Chart === 'undefined') return;
+  var canvas = document.getElementById('analisis-wf-canvas');
+  if (!canvas) return;
+  if (window._analisisChart) { try { window._analisisChart.destroy(); } catch(e){} }
+
+  // Build floating bar data for waterfall
+  var runVal = 0;
+  var chartData = steps.map(function(s) {
+    var lo, hi;
+    if (s.type === 'base' || s.type === 'total') {
+      lo = 0; hi = s.value; runVal = s.value;
+    } else {
+      lo = s.value >= 0 ? runVal : runVal + s.value;
+      hi = s.value >= 0 ? runVal + s.value : runVal;
+      runVal += s.value;
+    }
+    return { lo: lo, hi: hi, color: s.color };
+  });
+
+  window._analisisChart = new Chart(canvas.getContext('2d'), {
+    type: 'bar',
+    data: {
+      labels: steps.map(function(s){ return s.label; }),
+      datasets: [{
+        data: chartData.map(function(d){ return [d.lo, d.hi]; }),
+        backgroundColor: chartData.map(function(d){ return d.color; }),
+        borderRadius: 3,
+        borderSkipped: false,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: {
+          label: function(ctx) {
+            var s = steps[ctx.dataIndex];
+            if (s.type==='base'||s.type==='total') return ' ' + fmt(s.value);
+            return ' ' + (s.value>=0?'+':'') + fmt(s.value);
+          }
+        }}
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { font: { family:'Barlow Condensed', weight:'700', size:11 }, color:'#63666A' }},
+        y: { grid: { color:'rgba(0,0,0,.04)' }, ticks: { font: { family:'Barlow', size:10 }, color:'#97999B',
+          callback: function(v){ var a=Math.abs(v); return '$'+(a>=1e6?(a/1e6).toFixed(1)+'M':a>=1e3?(a/1e3).toFixed(0)+'K':a); }
+        }}
+      }
+    }
+  });
+}
+
+function buildCdataFromDist(dist, ingRaw) {
+  var ingLookup = {};
+  Object.entries(ingRaw).forEach(function([k,v]){ ingLookup[k.toLowerCase().trim()] = v; });
+  var getIng = function(cl) {
+    if (ingRaw[cl] !== undefined) return ingRaw[cl];
+    var lower = cl.toLowerCase().trim();
+    if (ingLookup[lower] !== undefined) return ingLookup[lower];
+    return 0;
+  };
+  var allCl = new Set([...Object.keys(dist), ...Object.keys(ingRaw).filter(function(c){ return ingRaw[c]>0; })]);
+  var result = {};
+  allCl.forEach(function(cl) {
+    if (!dist[cl]) dist[cl] = {};
+    var ing = getIng(cl);
+    var sal=dist[cl]['salarios']||0, flt=dist[cl]['fletes']||0, mat=dist[cl]['mat_empaque']||0,
+        cfm=dist[cl]['cargo_farma']||0, ins=dist[cl]['costo_insumos']||0, ocv=dist[cl]['otros_cv']||0,
+        cf=dist[cl]['costos_fijos']||0, gg=dist[cl]['gtos_grales']||0;
+    var cv=sal+flt+mat+cfm+ins+ocv, cm=ing-cv, ebitda=ing-cv-cf-gg;
+    result[cl] = { ing:ing, cv:cv, cm:cm, costos_fijos:cf, gtos_grales:gg, ebitda:ebitda,
+                   salarios:sal, fletes:flt, mat_empaque:mat, cargo_farma:cfm, costo_insumos:ins, otros_cv:ocv };
+  });
+  return result;
+}
+
+// ══════════════════════════════════════════════════════════════
+// TENDENCIA TAB — Line charts % sobre ventas por mes
+// ══════════════════════════════════════════════════════════════
+var tendSelectedClients = new Set();
+var tendCharts = {};
+
+function initTendenciaClients() {
+  var allClients = new Set();
+  Object.keys(window.ING_SP || {}).forEach(function(mk) {
+    Object.keys(window.ING_SP[mk]||{}).forEach(function(cl) {
+      if (cl !== 'Moderna' && window.ING_SP[mk][cl] > 0) allClients.add(cl);
+    });
+  });
+  // Also from TB_SP distribution
+  Object.keys(window.TB_SP || {}).forEach(function(mk) {
+    var tb = window.TB_SP[mk];
+    if (!tb || !Object.keys(tb).length) return;
+    var dist = calcDistribucionFromTB(tb, mk);
+    if (dist) Object.keys(dist).forEach(function(cl){ if (cl!=='Moderna') allClients.add(cl); });
+  });
+  if (tendSelectedClients.size === 0) {
+    allClients.forEach(function(cl){ tendSelectedClients.add(cl); });
+  }
+  var el = document.getElementById('tend-client-chips'); if (!el) return;
+  var sorted = [...allClients].sort();
+  el.innerHTML = sorted.map(function(cl) {
+    var sel = tendSelectedClients.has(cl);
+    var safe = cl.replace(/'/g,"&#39;");
+    return '<div class="az-chip' + (sel?' sel':'') + '" onclick="tendToggleClient(\'' + safe + '\')" style="font-size:11px;padding:2px 8px;">' + cl + '</div>';
+  }).join('');
+}
+
+function tendToggleClient(cl) {
+  if (tendSelectedClients.has(cl)) tendSelectedClients.delete(cl);
+  else tendSelectedClients.add(cl);
+  document.querySelectorAll('#tend-client-chips .az-chip').forEach(function(chip) {
+    chip.classList.toggle('sel', tendSelectedClients.has(chip.textContent.trim()));
+  });
+  renderTendencia();
+}
+
+function tendSelectAll() {
+  document.querySelectorAll('#tend-client-chips .az-chip').forEach(function(chip) {
+    tendSelectedClients.add(chip.textContent.trim());
+    chip.classList.add('sel');
+  });
+  renderTendencia();
+}
+
+function tendSelectNone() {
+  tendSelectedClients.clear();
+  document.querySelectorAll('#tend-client-chips .az-chip').forEach(function(chip) {
+    chip.classList.remove('sel');
+  });
+  renderTendencia();
+}
+
+function renderTendencia() {
+  var el = document.getElementById('tendencia-inner'); if (!el) return;
+  var MES_NAMES = {1:'Ene',2:'Feb',3:'Mar',4:'Abr',5:'May',6:'Jun',7:'Jul',8:'Ago',9:'Sep',10:'Oct',11:'Nov',12:'Dic'};
+  var ALL_MES_KEYS = ['1_2026','2_2026','3_2026','4_2026','5_2026','6_2026',
+                      '7_2026','8_2026','9_2026','10_2026','11_2026','12_2026'];
+  var labels = ALL_MES_KEYS.map(function(mk){ return MES_NAMES[parseInt(mk.split('_')[0])]; });
+
+  // For each month, calculate filtered totals
+  var months = ALL_MES_KEYS.map(function(mk) {
+    var tb = window.TB_SP?.[mk];
+    if (!tb || !Object.keys(tb).length) return null;
+    var dist = applyOverrides(calcDistribucionFromTB(tb, mk), tb, mk);
+    if (!dist) return null;
+    var ingRaw = window.ING_SP?.[mk] || {};
+    var cd = buildCdataFromDist(dist, ingRaw);
+    // Sum only selected clients (excl Moderna)
+    var selected = Object.keys(cd).filter(function(c) {
+      return c !== 'Moderna' && tendSelectedClients.has(c);
+    });
+    if (!selected.length) return null;
+    var ing = selected.reduce(function(s,c){ return s+(cd[c].ing||0); }, 0);
+    var cv  = selected.reduce(function(s,c){ return s+(cd[c].cv||0); }, 0);
+    var cm  = selected.reduce(function(s,c){ return s+(cd[c].cm||0); }, 0);
+    var cf  = selected.reduce(function(s,c){ return s+(cd[c].costos_fijos||0); }, 0);
+    var gg  = selected.reduce(function(s,c){ return s+(cd[c].gtos_grales||0); }, 0);
+    var eb  = selected.reduce(function(s,c){ return s+(cd[c].ebitda||0); }, 0);
+    if (!ing) return null;
+    return { ing:ing, cvPct:cv/ing*100, cmPct:cm/ing*100, cfPct:cf/ing*100, ggPct:gg/ing*100, ebPct:eb/ing*100 };
+  });
+
+  var RUBROS = [
+    { key:'cvPct', label:'CV % Ventas',    color:'#C47B1A', fill:'rgba(196,123,26,0.1)' },
+    { key:'cmPct', label:'CM % Ventas',    color:'#1A7A6A', fill:'rgba(26,122,106,0.1)' },
+    { key:'cfPct', label:'CF % Ventas',    color:'#185A82', fill:'rgba(24,90,130,0.1)'  },
+    { key:'ggPct', label:'GG % Ventas',    color:'#9A1A5A', fill:'rgba(154,26,90,0.1)'  },
+    { key:'ebPct', label:'EBITDA % Ventas',color:'#2A8A1A', fill:'rgba(42,138,26,0.15)' },
+  ];
+
+  // Build HTML grid
+  el.innerHTML = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">'
+    + RUBROS.map(function(r) {
+        return '<div class="chart-card" style="padding:14px 16px;">'
+          + '<div class="chart-title" style="font-size:13px;margin-bottom:10px;color:' + r.color + ';">' + r.label + '</div>'
+          + '<div style="position:relative;height:180px;"><canvas id="tend-' + r.key + '"></canvas></div>'
+          + '</div>';
+      }).join('')
+    + '</div>';
+
+  // Destroy old charts
+  Object.keys(tendCharts).forEach(function(id) {
+    try { tendCharts[id].destroy(); } catch(e) {}
+  });
+  tendCharts = {};
+
+  if (typeof Chart === 'undefined') return;
+
+  requestAnimationFrame(function() {
+    RUBROS.forEach(function(r) {
+      var canvas = document.getElementById('tend-' + r.key);
+      if (!canvas) return;
+      var dataPoints = months.map(function(m){ return m ? Math.round(m[r.key]*10)/10 : null; });
+      try {
+        tendCharts[r.key] = new Chart(canvas.getContext('2d'), {
+          type: 'line',
+          data: {
+            labels: labels,
+            datasets: [{
+              label: r.label,
+              data: dataPoints,
+              borderColor: r.color,
+              backgroundColor: r.fill,
+              borderWidth: 2.5,
+              pointRadius: 4,
+              pointBackgroundColor: r.color,
+              tension: 0.3,
+              fill: true,
+              spanGaps: false,
+            }]
+          },
+          options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: {
+              legend: { display: false },
+              tooltip: { callbacks: {
+                label: function(ctx) {
+                  return ctx.parsed.y !== null ? ' ' + ctx.parsed.y.toFixed(1) + '%' : ' Sin datos';
+                }
+              }}
+            },
+            scales: {
+              x: { grid:{display:false}, ticks:{font:{family:'Barlow Condensed',weight:'700',size:11},color:'#97999B'} },
+              y: { grid:{color:'rgba(0,0,0,.04)'}, ticks:{font:{family:'Barlow',size:10},color:'#97999B',
+                callback:function(v){ return v.toFixed(0)+'%'; }
+              }}
+            }
+          }
+        });
+      } catch(e) { console.warn('Tend chart error:', r.key, e); }
+    });
+  });
+}
+
+// Hook into showTab for new tabs
+var _origShowTab = showTab;
+showTab = function(tab) {
+  _origShowTab(tab);
+  if (tab === 'analisis') {
+    var sel = document.getElementById('analisis-mes-sel');
+    var curMk = window._currentMesKey || getMesKey();
+    if (sel && curMk) sel.value = curMk;
+    renderAnalisis();
+  }
+  if (tab === 'tendencia') {
+    initTendenciaClients();
+    renderTendencia();
+  }
+};
 
 </script>
 </body>
