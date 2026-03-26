@@ -500,6 +500,45 @@ body{background:var(--white);color:var(--gray);font-family:var(--fb);font-size:1
   background:var(--neg);color:var(--white);border:none;cursor:pointer;transition:all .13s;}
 .az-btn-zero:hover{background:#8B2A1A;}
 .az-summary{font-family:var(--fh);font-weight:700;font-size:12px;color:var(--gray-m);margin-left:auto;}
+
+/* ── AI ANALYSIS PANEL ── */
+.ai-panel-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:900;display:none;align-items:flex-start;justify-content:flex-end;}
+.ai-panel-backdrop.open{display:flex;}
+.ai-panel{width:520px;height:100vh;background:var(--white);display:flex;flex-direction:column;
+  box-shadow:-8px 0 32px rgba(0,0,0,.15);overflow:hidden;}
+.ai-panel-hdr{padding:18px 20px 14px;border-bottom:3px solid var(--lime);display:flex;align-items:center;gap:10px;flex-shrink:0;}
+.ai-panel-title{font-family:var(--fh);font-weight:800;font-size:18px;color:var(--gray);flex:1;}
+.ai-panel-sub{font-size:12px;color:var(--gray-m);margin-top:2px;}
+.ai-panel-close{background:none;border:none;font-size:22px;cursor:pointer;color:var(--gray-m);padding:0 4px;}
+.ai-panel-close:hover{color:var(--neg);}
+.ai-panel-body{flex:1;overflow-y:auto;padding:20px;}
+.ai-panel-footer{padding:12px 20px;border-top:1px solid var(--border);display:flex;gap:8px;background:var(--surface);flex-shrink:0;}
+.ai-msg{margin-bottom:16px;line-height:1.7;font-size:14px;}
+.ai-msg-thinking{color:var(--gray-m);font-style:italic;font-family:var(--fh);font-size:13px;
+  display:flex;align-items:center;gap:8px;}
+.ai-dot{width:6px;height:6px;border-radius:50%;background:var(--lime-dark);
+  animation:aiPulse 1.2s ease-in-out infinite;}
+.ai-dot:nth-child(2){animation-delay:.2s;}
+.ai-dot:nth-child(3){animation-delay:.4s;}
+@keyframes aiPulse{0%,80%,100%{transform:scale(0);opacity:.3;}40%{transform:scale(1);opacity:1;}}
+.ai-section{background:var(--surface);border-radius:var(--r);padding:14px 16px;margin-bottom:12px;
+  border-left:3px solid var(--lime-dark);}
+.ai-section h3{font-family:var(--fh);font-weight:800;font-size:13px;letter-spacing:.06em;
+  text-transform:uppercase;color:var(--lime-deep);margin-bottom:8px;}
+.ai-section p{font-size:13px;color:var(--gray);line-height:1.7;margin-bottom:6px;}
+.ai-section p:last-child{margin-bottom:0;}
+.ai-highlight{background:var(--lime-pale);border-radius:3px;padding:1px 5px;
+  font-family:var(--fh);font-weight:700;font-size:12px;color:var(--lime-deep);}
+.ai-alert{border-left-color:var(--neg);}
+.ai-alert h3{color:var(--neg);}
+.ai-good{border-left-color:var(--pos);}
+.ai-good h3{color:var(--pos);}
+.ai-context-bar{background:var(--lime-bg);border:1px solid var(--lime);border-radius:var(--r);
+  padding:10px 14px;margin-bottom:16px;font-size:12px;color:var(--gray-m);display:flex;gap:12px;flex-wrap:wrap;}
+.ai-context-kpi{display:flex;flex-direction:column;}
+.ai-context-kpi span:first-child{font-family:var(--fh);font-weight:700;font-size:10px;
+  letter-spacing:.1em;text-transform:uppercase;color:var(--gray-d);}
+.ai-context-kpi span:last-child{font-family:var(--fb);font-weight:700;font-size:14px;color:var(--gray);}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 </head>
@@ -855,6 +894,9 @@ body{background:var(--white);color:var(--gray);font-family:var(--fb);font-size:1
       <button class="btn-ghost" onclick="exportMatrixExcel()" style="font-size:12px;padding:5px 12px;">
         ↓ Excel
       </button>
+      <button class="btn-primary" onclick="openAIPanel()" style="font-size:12px;padding:5px 14px;display:flex;align-items:center;gap:6px;">
+        ✦ Analizar con IA
+      </button>
       <span style="font-size:11px;color:var(--gray-m);" id="mmontos-meta"></span>
     </div>
   </div>
@@ -1036,6 +1078,30 @@ body{background:var(--white);color:var(--gray);font-family:var(--fb);font-size:1
       <span id="ov-save-status" style="font-size:12px;color:var(--gray-m);margin-left:6px;"></span>
       <div style="flex:1;"></div>
       <span style="font-size:11px;color:var(--gray-d);">Los overrides se aplican antes de la distribución proporcional</span>
+    </div>
+  </div>
+</div>
+
+<!-- AI ANALYSIS PANEL -->
+<div class="ai-panel-backdrop" id="ai-panel-backdrop" onclick="aiBackdropClick(event)">
+  <div class="ai-panel">
+    <div class="ai-panel-hdr">
+      <div>
+        <div class="ai-panel-title">✦ Análisis con IA</div>
+        <div class="ai-panel-sub" id="ai-panel-sub">Matriz de distribución · <span id="ai-panel-mes"></span></div>
+      </div>
+      <button class="ai-panel-close" onclick="closeAIPanel()">✕</button>
+    </div>
+    <div class="ai-panel-body" id="ai-panel-body">
+      <div style="padding:60px;text-align:center;color:var(--gray-m);font-family:var(--fh);font-weight:700;">
+        Presiona "Analizar" para generar el análisis
+      </div>
+    </div>
+    <div class="ai-panel-footer">
+      <button class="btn-primary" onclick="runAIAnalysis()" id="ai-run-btn" style="flex:1;">
+        ✦ Analizar
+      </button>
+      <button class="btn-ghost" onclick="closeAIPanel()">Cerrar</button>
     </div>
   </div>
 </div>
@@ -4705,6 +4771,169 @@ async function saveAllLlavesMes() {
   const msg = ok + '/' + llavesConDatos.length + ' llaves guardadas en SP · ' + mesNom;
   if (statusEl) statusEl.innerHTML = '<span style="color:' + (fail?'var(--neg)':'var(--pos)') + ';">● ' + msg + '</span>';
   toast((fail ? '⚠️ ' : '✓ ') + msg, fail ? '' : 'ok');
+}
+
+
+
+
+// ══════════════════════════════════════════════════════════════
+// AI ANALYSIS PANEL
+// ══════════════════════════════════════════════════════════════
+function openAIPanel() {
+  const backdrop = document.getElementById('ai-panel-backdrop');
+  if (backdrop) backdrop.classList.add('open');
+
+  // Show current period
+  const mk = document.getElementById('mx-mes-sel')?.value || getMesKey();
+  const MN = {1:'Enero',2:'Febrero',3:'Marzo',4:'Abril',5:'Mayo',6:'Junio',
+    7:'Julio',8:'Agosto',9:'Septiembre',10:'Octubre',11:'Noviembre',12:'Diciembre'};
+  const mesLabel = mxVista === 'acum'
+    ? 'Acumulado'
+    : (MN[parseInt(mk.split('_')[0])] || mk) + ' ' + (mk.split('_')[1] || '2026');
+  const sub = document.getElementById('ai-panel-mes');
+  if (sub) sub.textContent = mesLabel;
+}
+
+function closeAIPanel() {
+  document.getElementById('ai-panel-backdrop')?.classList.remove('open');
+}
+
+function aiBackdropClick(e) {
+  if (e.target === document.getElementById('ai-panel-backdrop')) closeAIPanel();
+}
+
+async function runAIAnalysis() {
+  const btn  = document.getElementById('ai-run-btn');
+  const body = document.getElementById('ai-panel-body');
+  if (!body) return;
+
+  // Get current matrix data
+  const mk = document.getElementById('mx-mes-sel')?.value || getMesKey();
+  const MN = {1:'Enero',2:'Febrero',3:'Marzo',4:'Abril',5:'Mayo',6:'Junio',
+    7:'Julio',8:'Agosto',9:'Septiembre',10:'Octubre',11:'Noviembre',12:'Diciembre'};
+  const mesLabel = mxVista === 'acum' ? 'Acumulado' : (MN[parseInt(mk.split('_')[0])] || mk) + ' ' + (mk.split('_')[1]||'2026');
+
+  // Build data snapshot from getDistData
+  const data = getDistData('mx');
+  if (!data) { toast('Sin datos en la Matriz para analizar', ''); return; }
+  const { cdata, totals } = data;
+
+  // Format numbers
+  const fm = v => {
+    if (!v || v === 0) return '$0';
+    const abs = Math.abs(v);
+    const s = abs >= 1e6 ? (abs/1e6).toFixed(2)+'M' : abs >= 1e3 ? (abs/1e3).toFixed(1)+'K' : Math.round(abs).toLocaleString('es-MX');
+    return (v < 0 ? '-' : '') + '$' + s;
+  };
+  const fp = (v, base) => base ? (v/base*100).toFixed(1)+'%' : '—';
+
+  // Build top 15 by ingreso
+  const clients = Object.keys(cdata).filter(c => c !== 'Moderna' && !isExcluded(c));
+  const top15ing  = [...clients].sort((a,b) => cdata[b].ing - cdata[a].ing).slice(0,15);
+  const top10ebit = [...clients].filter(c=>cdata[c].ing>0).sort((a,b) => cdata[b].ebitda - cdata[a].ebitda).slice(0,10);
+  const bot10ebit = [...clients].filter(c=>cdata[c].ing>0).sort((a,b) => cdata[a].ebitda - cdata[b].ebitda).slice(0,10);
+  const top10ebitPct = [...clients].filter(c=>cdata[c].ing>100000).sort((a,b) => (cdata[b].ebitda/cdata[b].ing) - (cdata[a].ebitda/cdata[a].ing)).slice(0,10);
+
+  const clientSummary = top15ing.map(c => {
+    const d = cdata[c];
+    return `${c}: Ing=${fm(d.ing)}, CV=${fm(d.cv)} (${fp(d.cv,d.ing)} vtas), CF=${fm(d.costos_fijos)} (${fp(d.costos_fijos,d.ing)} vtas), GG=${fm(d.gtos_grales)} (${fp(d.gtos_grales,d.ing)} vtas), EBITDA=${fm(d.ebitda)} (${fp(d.ebitda,d.ing)} vtas)`;
+  }).join('\n');
+
+  const anomalies = clients.filter(c => {
+    const d = cdata[c];
+    if (!d.ing || d.ing < 100000) return false;
+    const cvPct = d.cv / d.ing;
+    const cfPct = d.costos_fijos / d.ing;
+    const ggPct = d.gtos_grales / d.ing;
+    return cvPct > 1.5 || cfPct > 0.8 || ggPct > 0.8 || d.ebitda < -d.ing * 0.5;
+  }).map(c => {
+    const d = cdata[c];
+    return `${c}: CV=${fp(d.cv,d.ing)} vtas, CF=${fp(d.costos_fijos,d.ing)} vtas, GG=${fp(d.gtos_grales,d.ing)} vtas, EBITDA=${fp(d.ebitda,d.ing)} vtas`;
+  }).join('\n');
+
+  const prompt = `Eres el analista financiero senior de Medistik, empresa de distribución médica en México (división de Traxion).
+
+Analiza los siguientes datos de la Matriz de Distribución de Costos para ${mesLabel} y genera insights accionables para el CFO.
+
+TOTALES GENERALES:
+- Ingresos totales: ${fm(totals.ing)}
+- CV Total: ${fm(totals.cv)} (${fp(totals.cv, totals.ing)} de ventas)
+- Costos Fijos: ${fm(totals.costos_fijos)} (${fp(totals.costos_fijos, totals.ing)} de ventas)
+- Gastos Generales: ${fm(totals.gtos_grales)} (${fp(totals.gtos_grales, totals.ing)} de ventas)
+- CM Total: ${fm(totals.cm)} (${fp(totals.cm, totals.ing)} de ventas)
+- EBITDA Total: ${fm(totals.ebitda)} (${fp(totals.ebitda, totals.ing)} de ventas)
+- Total clientes activos: ${clients.filter(c=>cdata[c].ing>0).length}
+
+TOP 15 CLIENTES POR INGRESO:
+${clientSummary}
+
+CLIENTES CON POSIBLES ANOMALÍAS (CV>150% ventas, CF>80% ventas, GG>80% ventas, o EBITDA negativo mayor a -50% ventas):
+${anomalies || 'Ninguno detectado con los criterios definidos'}
+
+TOP 10 EBITDA $ POSITIVO: ${top10ebit.map(c=>`${c}=${fm(cdata[c].ebitda)}`).join(', ')}
+TOP 10 EBITDA $ NEGATIVO: ${bot10ebit.map(c=>`${c}=${fm(cdata[c].ebitda)}`).join(', ')}
+TOP 10 EBITDA % (con ing>$100K): ${top10ebitPct.map(c=>`${c}=${fp(cdata[c].ebitda,cdata[c].ing)}`).join(', ')}
+
+Por favor proporciona:
+1. **Diagnóstico general** de la rentabilidad del periodo
+2. **Top 3 insights más relevantes** con números específicos
+3. **Clientes que merecen atención urgente** (pérdidas significativas o costos desproporcionados) con posibles causas
+4. **Clientes estrella** que están traccionando la rentabilidad
+5. **Una recomendación concreta** para el CFO
+
+Responde en español. Sé directo, específico con números y usa el contexto de distribución médica. Máximo 600 palabras.`;
+
+  // Show loading
+  body.innerHTML = `
+    <div class="ai-msg ai-msg-thinking">
+      <div class="ai-dot"></div><div class="ai-dot"></div><div class="ai-dot"></div>
+      <span>Analizando ${clients.filter(c=>cdata[c].ing>0).length} clientes activos...</span>
+    </div>`;
+  if (btn) { btn.textContent = '⏳ Analizando...'; btn.disabled = true; }
+
+  // Context bar
+  const ctxBar = `
+    <div class="ai-context-bar">
+      <div class="ai-context-kpi"><span>Periodo</span><span>${mesLabel}</span></div>
+      <div class="ai-context-kpi"><span>Ingresos</span><span>${fm(totals.ing)}</span></div>
+      <div class="ai-context-kpi"><span>EBITDA</span><span style="color:${totals.ebitda>=0?'var(--pos)':'var(--neg)'};">${fm(totals.ebitda)} (${fp(totals.ebitda,totals.ing)} vtas)</span></div>
+      <div class="ai-context-kpi"><span>Clientes activos</span><span>${clients.filter(c=>cdata[c].ing>0).length}</span></div>
+    </div>`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+
+    const json = await res.json();
+    const text = json.content?.[0]?.text || 'Sin respuesta';
+
+    // Parse markdown-ish response into styled HTML
+    const html = text
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      .replace(/^#{1,3} (.+)$/gm, '<h3 style="font-family:var(--fh);font-weight:800;font-size:14px;color:var(--gray);margin:16px 0 6px;">$1</h3>')
+      .replace(/^\d+\.\s+\*\*(.+?)\*\*/gm, '<div style="margin:12px 0 4px;font-family:var(--fh);font-weight:800;font-size:13px;color:var(--lime-deep);">$1</div>')
+      .replace(/\n\n/g, '</p><p style="margin-bottom:8px;">')
+      .replace(/\n/g, '<br>');
+
+    body.innerHTML = ctxBar + '<div class="ai-msg"><p style="margin-bottom:8px;">' + html + '</p></div>';
+
+  } catch(e) {
+    body.innerHTML = ctxBar + `
+      <div class="ai-section ai-alert">
+        <h3>Error de conexión</h3>
+        <p>No se pudo conectar con la API. Verifica tu conexión a internet.</p>
+        <p style="font-size:11px;color:var(--gray-m);">${e.message}</p>
+      </div>`;
+  } finally {
+    if (btn) { btn.textContent = '✦ Analizar de nuevo'; btn.disabled = false; }
+  }
 }
 
 </script>
