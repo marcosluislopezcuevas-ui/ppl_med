@@ -1112,12 +1112,6 @@ canvas#infog-canvas{display:block;}
 </div>
 </div>
 
-
-</div>
-</div>
-
-<!-- MATRIZ UNIFICADA -->
-<div class="page" 
 <!-- OVERRIDES MODAL -->
 
 
@@ -4282,8 +4276,12 @@ async function ovSaveToSP() {
   statusEl.textContent = '⏳ Guardando...'; statusEl.style.color = 'var(--gray-m)';
   try {
     const registros = entries.map(e => ({
-      MesKey: mk, Rubro: e.rubro, Cliente: e.cliente,
-      Monto: e.monto, Nota: e.nota
+      Empresa: e.cliente,   // Title field
+      Semana:  mk,          // MesKey field
+      Rubro:   e.rubro,
+      Cliente: e.cliente,
+      Valor:   e.monto,     // Monto field
+      Nota:    e.nota
     }));
     const res = await fetch(PA_OV_WRITE, {
       method:'POST', headers:{'Content-Type':'application/json'},
