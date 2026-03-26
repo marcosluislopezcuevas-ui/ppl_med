@@ -4418,7 +4418,18 @@ function toggleLlaveAnalyzer() {
   if (AZ_OPEN) initLlaveAnalyzer();
 }
 
+function buildIngClients() {
+  var ingClients = new Set();
+  Object.values(window.ING_SP || {}).forEach(function(mkData) {
+    Object.keys(mkData).forEach(function(cl) { if (mkData[cl] > 0) ingClients.add(cl); });
+  });
+  return ingClients;
+}
+
 function initLlaveAnalyzer() {
+  // Only auto-select on first open (AZ_SELECTED is empty)
+  var ingClients = buildIngClients();
+
   // Build client list from LLAVES_DATA
   var allClients = new Set();
   Object.values(LLAVES_DATA).forEach(function(mesData) {
@@ -4427,25 +4438,43 @@ function initLlaveAnalyzer() {
     });
   });
 
-  // Pre-select clients that look like "sin ingresos" (not in ING_SP at all)
-  var ingClients = new Set();
-  Object.values(window.ING_SP || {}).forEach(function(mkData) {
-    Object.keys(mkData).forEach(function(cl) { if (mkData[cl] > 0) ingClients.add(cl); });
-  });
+  // Auto-select on first open only
+  if (AZ_SELECTED.size === 0) {
+    allClients.forEach(function(cl) {
+      if (!ingClients.has(cl)) AZ_SELECTED.add(cl);
+    });
+  }
 
+  refreshAnalyzerChips(allClients);
+  runLlaveAnalyzer();
+}
+
+function refreshAnalyzerChips(allClientsParam) {
   var el = document.getElementById('az-client-chips');
   if (!el) return;
 
+  // Rebuild from current LLAVES_DATA — don't touch AZ_SELECTED
+  var allClients = allClientsParam;
+  if (!allClients) {
+    allClients = new Set();
+    Object.values(LLAVES_DATA).forEach(function(mesData) {
+      Object.values(mesData).forEach(function(clPcts) {
+        Object.keys(clPcts).forEach(function(cl) { allClients.add(cl); });
+      });
+    });
+  }
+
+  // Remove from AZ_SELECTED clients that no longer exist in LLAVES_DATA
+  AZ_SELECTED.forEach(function(cl) {
+    if (!allClients.has(cl)) AZ_SELECTED.delete(cl);
+  });
+
   var sorted = [...allClients].sort();
   el.innerHTML = sorted.map(function(cl) {
-    var noIng = !ingClients.has(cl);
-    var sel   = AZ_SELECTED.has(cl) || (AZ_SELECTED.size === 0 && noIng);
-    if (AZ_SELECTED.size === 0 && noIng) AZ_SELECTED.add(cl);
+    var sel = AZ_SELECTED.has(cl);
     var safeCl = cl.replace(/'/g, "&#39;");
     return '<div class="az-chip' + (sel ? ' sel' : '') + '" onclick="azToggleClient(\'' + safeCl + '\')">' + cl + '</div>';
   }).join('');
-
-  runLlaveAnalyzer();
 }
 
 function azToggleClient(cl) {
@@ -4497,6 +4526,9 @@ function runLlaveAnalyzer() {
     ? AZ_FOUND.length + ' asignaciones encontradas en ' + new Set(AZ_FOUND.map(function(r){return r.cliente;})).size + ' clientes'
     : 'Sin asignaciones para los clientes seleccionados';
 
+  // Refresh chips to remove clients that no longer have any % in llaves
+  refreshAnalyzerChips();
+
   if (!AZ_FOUND.length) {
     results.innerHTML = '<div style="padding:20px;text-align:center;color:var(--gray-m);font-family:var(--fh);font-weight:700;">✅ Sin porcentajes asignados para los clientes seleccionados</div>';
     return;
@@ -4526,6 +4558,13 @@ function zeroOne(idx) {
   if (!LLAVES_DATA[r.llaveKey]) return;
   if (!LLAVES_DATA[r.llaveKey][r.mesKey]) return;
   delete LLAVES_DATA[r.llaveKey][r.mesKey][r.cliente];
+  // If client has no more % in any llave, remove from selection
+  var stillHasPct = Object.values(LLAVES_DATA).some(function(mesData) {
+    return Object.values(mesData).some(function(clPcts) {
+      return (clPcts[r.cliente] || 0) > 0;
+    });
+  });
+  if (!stillHasPct) AZ_SELECTED.delete(r.cliente);
   runLlaveAnalyzer();
   renderLlaveTable();
   toast('✓ ' + r.cliente + ' → 0% en ' + r.llave + ' (' + r.mesLabel + ')', 'ok');
@@ -4534,12 +4573,16 @@ function zeroOne(idx) {
 function zeroAllFound() {
   if (!AZ_FOUND.length) return;
   var count = 0;
+  // Collect unique clients being removed
+  var removedClients = new Set(AZ_FOUND.map(function(r) { return r.cliente; }));
   AZ_FOUND.forEach(function(r) {
     if (LLAVES_DATA[r.llaveKey] && LLAVES_DATA[r.llaveKey][r.mesKey]) {
       delete LLAVES_DATA[r.llaveKey][r.mesKey][r.cliente];
       count++;
     }
   });
+  // Remove cleaned clients from AZ_SELECTED so they don't reappear
+  removedClients.forEach(function(cl) { AZ_SELECTED.delete(cl); });
   runLlaveAnalyzer();
   renderLlaveTable();
   toast('✓ ' + count + ' asignaciones puestas en 0%', 'ok');
