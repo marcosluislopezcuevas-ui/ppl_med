@@ -711,7 +711,12 @@ body{background:var(--white);color:var(--gray);font-family:var(--fb);font-size:1
     <textarea class="paste-ta" id="paste-ta" placeholder="Pega aqui los datos de Excel&#10;Roche&#9;14.895215%&#10;Terumo&#9;9.756199%&#10;..."></textarea>
     <div class="paste-actions">
       <button class="btn-parse" onclick="parsePaste()">&#8595; Cargar datos</button>
-      <button class="btn-save-llave" onclick="saveLlaveClick()" style="margin-left:4px;">&#128190; Guardar en SharePoint</button>
+      <button class="btn-save-llave" onclick="saveLlaveClick()" style="margin-left:4px;">&#128190; Guardar llave activa</button>
+      <button class="btn-save-llave" onclick="saveAllLlavesMes()" 
+        style="margin-left:4px;background:var(--pos);color:var(--white);border-color:var(--pos);"
+        title="Guarda TODAS las llaves del mes seleccionado de una vez">
+        &#128190; Guardar TODAS las llaves del mes
+      </button>
       <button class="btn-clear" onclick="clearPaste()">Limpiar</button>
       <span class="paste-status" id="paste-status"></span>
     </div>
@@ -4579,6 +4584,50 @@ function balanceToDesocupado() {
   } else {
     toast('✓ Todas las llaves ya suman 100% — nada que balancear', '');
   }
+}
+
+
+// Save ALL llaves for the selected month at once
+async function saveAllLlavesMes() {
+  const mesKey = llaveMesKey();
+  const MES_NAMES = {1:'Enero',2:'Febrero',3:'Marzo',4:'Abril',5:'Mayo',6:'Junio',
+    7:'Julio',8:'Agosto',9:'Septiembre',10:'Octubre',11:'Noviembre',12:'Diciembre'};
+  const mesNum = parseInt(mesKey.split('_')[0]);
+  const mesNom = MES_NAMES[mesNum] || mesKey;
+
+  // Find all llaves that have data for this mesKey
+  const llavesConDatos = Object.keys(LLAVES_DATA).filter(l => 
+    LLAVES_DATA[l][mesKey] && Object.keys(LLAVES_DATA[l][mesKey]).length > 0
+  );
+
+  if (!llavesConDatos.length) {
+    toast('No hay llaves cargadas para ' + mesNom, '');
+    return;
+  }
+
+  const statusEl = document.getElementById('llaves-saved-status');
+  if (statusEl) statusEl.innerHTML = '<span style="color:var(--gray-m);">⏳ Guardando ' + llavesConDatos.length + ' llaves...</span>';
+  toast('⏳ Guardando todas las llaves de ' + mesNom + '...', '');
+
+  let ok = 0, fail = 0;
+  for (const llave of llavesConDatos) {
+    const data = LLAVES_DATA[llave][mesKey];
+    const registros = Object.entries(data).map(([cliente, pct]) => ({
+      Llave: llave, MesKey: mesKey, Cliente: cliente, Pct: pct
+    }));
+    try {
+      const res = await fetch(PA_LLAVES_WRITE, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({Llave: llave, MesKey: mesKey, registros})
+      });
+      if (res.ok) ok++; else fail++;
+    } catch(e) { fail++; }
+  }
+
+  const msg = ok + '/' + llavesConDatos.length + ' llaves guardadas en SP · ' + mesNom;
+  if (statusEl) statusEl.innerHTML = '<span style="color:' + (fail?'var(--neg)':'var(--pos)') + ';">● ' + msg + '</span>';
+  toast((fail ? '⚠️ ' : '✓ ') + msg, fail ? '' : 'ok');
 }
 
 </script>
