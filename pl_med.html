@@ -740,151 +740,7 @@ canvas#infog-canvas{display:block;}
 </div>
 </div>
 
-<!-- LLAVES PAGE -->
-<div class="page" id="page-llaves">
-<div class="llaves-page">
-  <div class="llaves-header">
-    <span class="llaves-title">Llaves de Reparto</span>
-    <select class="llave-sel" id="llave-sel" onchange="renderLlaveTable()"></select>
-    <select class="mes-sel" id="llave-mes">
-      <option value="1">Enero</option><option value="2">Febrero</option>
-      <option value="3">Marzo</option><option value="4">Abril</option>
-      <option value="5">Mayo</option><option value="6">Junio</option>
-      <option value="7">Julio</option><option value="8">Agosto</option>
-      <option value="9">Septiembre</option><option value="10">Octubre</option>
-      <option value="11">Noviembre</option><option value="12">Diciembre</option>
-    </select>
-    <select class="mes-sel" id="llave-anio">
-      <option value="2026">2026</option><option value="2027">2027</option>
-    </select>
-  </div>
-
-  <div class="paste-area-wrap">
-    <div class="paste-area-title">&#128203; Carga r&aacute;pida desde Excel</div>
-    <div class="paste-area-hint">
-      Copia 2 columnas de Excel: <strong>Cliente</strong> y <strong>% de Distribuci&oacute;n</strong> &mdash; luego pega aqu&iacute; y haz clic en Cargar.
-      Los % pueden venir como <em>14.895215%</em> o como <em>0.14895215</em>.
-    </div>
-    <textarea class="paste-ta" id="paste-ta" placeholder="Pega aqui los datos de Excel&#10;Roche&#9;14.895215%&#10;Terumo&#9;9.756199%&#10;..."></textarea>
-    <div class="paste-actions">
-      <button class="btn-parse" onclick="parsePaste()">&#8595; Cargar datos</button>
-      <button class="btn-save-llave" onclick="saveLlaveClick()" style="margin-left:4px;">&#128190; Guardar llave activa</button>
-      <button class="btn-save-llave" onclick="saveAllLlavesMes()" 
-        style="margin-left:4px;background:var(--pos);color:var(--white);border-color:var(--pos);"
-        title="Guarda TODAS las llaves del mes seleccionado de una vez">
-        &#128190; Guardar TODAS las llaves del mes
-      </button>
-      <button class="btn-clear" onclick="clearPaste()">Limpiar</button>
-      <span class="paste-status" id="paste-status"></span>
-    </div>
-  </div>
-
-  <div class="llave-tbl-wrap">
-    <div class="llave-tbl-hdr">
-      <span class="llave-tbl-name" id="llave-tbl-name">Selecciona una llave</span>
-      <div style="display:flex;align-items:center;gap:10px;">
-        <span class="llave-total-badge" id="llave-total-badge">Total: 0.000%</span>
-        <div id="llave-faltante-badge" style="display:none;align-items:center;gap:8px;
-          background:var(--blue-bg);border:1.5px solid var(--blue);border-radius:var(--r);
-          padding:4px 12px;">
-        </div>
-      </div>
-    </div>
-    <div style="overflow-x:auto;"><table class="llave-tbl" id="llave-tbl"></table></div>
-  </div>
-  <div style="display:flex;gap:10px;align-items:center;">
-    <button class="btn-clear" onclick="clearAllLlaves()">&#128465; Limpiar todo</button>
-    <button class="btn-ghost" onclick="copiarMesAnterior()" style="font-family:var(--fh);font-weight:700;font-size:13px;padding:7px 14px;border-radius:var(--r);cursor:pointer;border:1.5px solid var(--border-m);background:transparent;color:var(--gray-m);transition:all .15s;">&#128260; Copiar mes anterior</button>
-    <button onclick="balanceToDesocupado()" style="font-family:var(--fh);font-weight:700;font-size:12px;
-      letter-spacing:.04em;text-transform:uppercase;padding:5px 12px;border-radius:var(--r);cursor:pointer;
-      background:var(--pos-bg);color:var(--pos);border:1.5px solid var(--pos);transition:all .15s;"
-      title="Asigna a Desocupado todo lo que no suma 100% en cada llave y mes">
-      ⚖️ Balancear → Desocupado
-    </button>
-    <span style="font-size:12px;color:var(--gray-m);" id="llaves-saved-status"></span>
-  </div>
-</div>
-
-
-<!-- ANÁLISIS PAGE -->
-<div class="page" id="page-analisis">
-  <div class="dist-page">
-    <!-- Static filter bar -->
-    <div id="analisis-filter-bar" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border);">
-      <div style="display:flex;background:var(--surface2);border:1.5px solid var(--border-m);border-radius:var(--r);overflow:hidden;padding:1px;gap:1px;">
-        <button class="fmt-btn on" id="analisis-btn-mes"  onclick="setAnalisisVista('mes')">Por mes</button>
-        <button class="fmt-btn"   id="analisis-btn-acum" onclick="setAnalisisVista('acum')">Acumulado</button>
-      </div>
-      <select class="dist-sel" id="analisis-mes-sel" onchange="renderAnalisis()" style="min-width:120px;">
-        <option value="1_2026">Enero 2026</option><option value="2_2026">Febrero 2026</option><option value="3_2026">Marzo 2026</option><option value="4_2026">Abril 2026</option><option value="5_2026">Mayo 2026</option><option value="6_2026">Junio 2026</option><option value="7_2026">Julio 2026</option><option value="8_2026">Agosto 2026</option><option value="9_2026">Septiembre 2026</option><option value="10_2026">Octubre 2026</option><option value="11_2026">Noviembre 2026</option><option value="12_2026">Diciembre 2026</option>
-      </select>
-      <div id="analisis-acum-range" style="display:none;align-items:center;gap:6px;">
-        <span style="font-family:var(--fh);font-weight:700;font-size:12px;color:var(--gray-m);">De</span>
-        <select class="dist-sel" id="analisis-acum-desde" onchange="renderAnalisis()" style="min-width:110px;"><option value="1_2026">Enero 2026</option><option value="2_2026">Febrero 2026</option><option value="3_2026">Marzo 2026</option><option value="4_2026">Abril 2026</option><option value="5_2026">Mayo 2026</option><option value="6_2026">Junio 2026</option><option value="7_2026">Julio 2026</option><option value="8_2026">Agosto 2026</option><option value="9_2026">Septiembre 2026</option><option value="10_2026">Octubre 2026</option><option value="11_2026">Noviembre 2026</option><option value="12_2026">Diciembre 2026</option></select>
-        <span style="font-family:var(--fh);font-weight:700;font-size:12px;color:var(--gray-m);">A</span>
-        <select class="dist-sel" id="analisis-acum-hasta" onchange="renderAnalisis()" style="min-width:110px;"><option value="1_2026">Enero 2026</option><option value="2_2026" selected>Febrero 2026</option><option value="3_2026">Marzo 2026</option><option value="4_2026">Abril 2026</option><option value="5_2026">Mayo 2026</option><option value="6_2026">Junio 2026</option><option value="7_2026">Julio 2026</option><option value="8_2026">Agosto 2026</option><option value="9_2026">Septiembre 2026</option><option value="10_2026">Octubre 2026</option><option value="11_2026">Noviembre 2026</option><option value="12_2026">Diciembre 2026</option></select>
-      </div>
-    </div>
-    <div id="analisis-inner"></div>
-  </div>
-</div>
-
-<!-- TENDENCIA PAGE -->
-<div class="page" id="page-tendencia">
-  <div class="dist-page">
-    <div id="tend-filter-bar" style="margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border);">
-      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
-        <span style="font-family:var(--fh);font-weight:700;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--gray-d);">Clientes</span>
-        <button class="fmt-btn on" id="tend-all-btn" onclick="tendSelectAll()" style="font-size:11px;padding:3px 10px;">Todos</button>
-        <button class="fmt-btn" id="tend-none-btn" onclick="tendSelectNone()" style="font-size:11px;padding:3px 10px;">Ninguno</button>
-        <div id="tend-client-chips" style="display:flex;flex-wrap:wrap;gap:4px;"></div>
-      </div>
-    </div>
-    <div id="tendencia-inner"></div>
-  </div>
-</div>
-
-<!-- LLAVE ANALYZER -->
-<div class="llave-analyzer">
-  <div class="llave-analyzer-hdr" onclick="toggleLlaveAnalyzer()">
-    <span class="llave-analyzer-title">🔍 Analizador — Clientes con % en llaves</span>
-    <span id="az-summary" class="az-summary"></span>
-    <span id="az-toggle" style="margin-left:8px;font-size:18px;color:var(--gray-m);">▼</span>
-  </div>
-  <div class="llave-analyzer-body" id="az-body">
-    <div class="az-filter-row">
-      <span style="font-family:var(--fh);font-weight:700;font-size:12px;color:var(--gray-m);">Clientes a investigar:</span>
-      <div id="az-client-chips" style="display:flex;flex-wrap:wrap;gap:5px;"></div>
-      <button class="btn-ghost" onclick="runLlaveAnalyzer()" style="font-size:12px;padding:4px 12px;margin-left:8px;">▶ Analizar</button>
-      <button class="btn-ghost" onclick="zeroAllFound()" style="font-size:12px;padding:4px 12px;color:var(--neg);border-color:var(--neg);">⚡ Poner en 0% todos</button>
-    </div>
-    <div id="az-results"></div>
-  </div>
-</div>
-</div>
-
-<!-- MAPEO PAGE -->
-<div class="page" id="page-mapeo">
-<div class="mapeo-page">
-  <div class="mapeo-header">
-    <div class="mapeo-title">Mapeo de Cuentas</div>
-    <div class="mapeo-sub">Asignaci&oacute;n de cada cuenta contable a su llave de reparto &mdash; hardcodeado del archivo oficial</div>
-  </div>
-  <div class="mapeo-filters" id="mapeo-filters"></div>
-  <div style="background:var(--white);border:1px solid var(--border);border-radius:var(--rl);overflow:hidden;">
-    <div style="overflow-x:auto;max-height:calc(100vh - 280px);overflow-y:auto;">
-      <table class="mapeo-tbl" id="mapeo-tbl"></table>
-    </div>
-  </div>
-</div>
-</div>
-
-
-</div>
-</div>
-
-<!-- MATRIZ UNIFICADA -->
-<div class="page" id="page-mmontos">
+id="page-mmontos">
 <div class="dist-page">
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px;">
     <div>
@@ -1095,6 +951,152 @@ canvas#infog-canvas{display:block;}
 </div>
 
 
+<!-- LLAVES PAGE -->
+<div class="page" id="page-llaves">
+<div class="llaves-page">
+  <div class="llaves-header">
+    <span class="llaves-title">Llaves de Reparto</span>
+    <select class="llave-sel" id="llave-sel" onchange="renderLlaveTable()"></select>
+    <select class="mes-sel" id="llave-mes">
+      <option value="1">Enero</option><option value="2">Febrero</option>
+      <option value="3">Marzo</option><option value="4">Abril</option>
+      <option value="5">Mayo</option><option value="6">Junio</option>
+      <option value="7">Julio</option><option value="8">Agosto</option>
+      <option value="9">Septiembre</option><option value="10">Octubre</option>
+      <option value="11">Noviembre</option><option value="12">Diciembre</option>
+    </select>
+    <select class="mes-sel" id="llave-anio">
+      <option value="2026">2026</option><option value="2027">2027</option>
+    </select>
+  </div>
+
+  <div class="paste-area-wrap">
+    <div class="paste-area-title">&#128203; Carga r&aacute;pida desde Excel</div>
+    <div class="paste-area-hint">
+      Copia 2 columnas de Excel: <strong>Cliente</strong> y <strong>% de Distribuci&oacute;n</strong> &mdash; luego pega aqu&iacute; y haz clic en Cargar.
+      Los % pueden venir como <em>14.895215%</em> o como <em>0.14895215</em>.
+    </div>
+    <textarea class="paste-ta" id="paste-ta" placeholder="Pega aqui los datos de Excel&#10;Roche&#9;14.895215%&#10;Terumo&#9;9.756199%&#10;..."></textarea>
+    <div class="paste-actions">
+      <button class="btn-parse" onclick="parsePaste()">&#8595; Cargar datos</button>
+      <button class="btn-save-llave" onclick="saveLlaveClick()" style="margin-left:4px;">&#128190; Guardar llave activa</button>
+      <button class="btn-save-llave" onclick="saveAllLlavesMes()" 
+        style="margin-left:4px;background:var(--pos);color:var(--white);border-color:var(--pos);"
+        title="Guarda TODAS las llaves del mes seleccionado de una vez">
+        &#128190; Guardar TODAS las llaves del mes
+      </button>
+      <button class="btn-clear" onclick="clearPaste()">Limpiar</button>
+      <span class="paste-status" id="paste-status"></span>
+    </div>
+  </div>
+
+  <div class="llave-tbl-wrap">
+    <div class="llave-tbl-hdr">
+      <span class="llave-tbl-name" id="llave-tbl-name">Selecciona una llave</span>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span class="llave-total-badge" id="llave-total-badge">Total: 0.000%</span>
+        <div id="llave-faltante-badge" style="display:none;align-items:center;gap:8px;
+          background:var(--blue-bg);border:1.5px solid var(--blue);border-radius:var(--r);
+          padding:4px 12px;">
+        </div>
+      </div>
+    </div>
+    <div style="overflow-x:auto;"><table class="llave-tbl" id="llave-tbl"></table></div>
+  </div>
+  <div style="display:flex;gap:10px;align-items:center;">
+    <button class="btn-clear" onclick="clearAllLlaves()">&#128465; Limpiar todo</button>
+    <button class="btn-ghost" onclick="copiarMesAnterior()" style="font-family:var(--fh);font-weight:700;font-size:13px;padding:7px 14px;border-radius:var(--r);cursor:pointer;border:1.5px solid var(--border-m);background:transparent;color:var(--gray-m);transition:all .15s;">&#128260; Copiar mes anterior</button>
+    <button onclick="balanceToDesocupado()" style="font-family:var(--fh);font-weight:700;font-size:12px;
+      letter-spacing:.04em;text-transform:uppercase;padding:5px 12px;border-radius:var(--r);cursor:pointer;
+      background:var(--pos-bg);color:var(--pos);border:1.5px solid var(--pos);transition:all .15s;"
+      title="Asigna a Desocupado todo lo que no suma 100% en cada llave y mes">
+      ⚖️ Balancear → Desocupado
+    </button>
+    <span style="font-size:12px;color:var(--gray-m);" id="llaves-saved-status"></span>
+  </div>
+</div>
+
+
+<!-- LLAVE ANALYZER -->
+<div class="llave-analyzer">
+  <div class="llave-analyzer-hdr" onclick="toggleLlaveAnalyzer()">
+    <span class="llave-analyzer-title">🔍 Analizador — Clientes con % en llaves</span>
+    <span id="az-summary" class="az-summary"></span>
+    <span id="az-toggle" style="margin-left:8px;font-size:18px;color:var(--gray-m);">▼</span>
+  </div>
+  <div class="llave-analyzer-body" id="az-body">
+    <div class="az-filter-row">
+      <span style="font-family:var(--fh);font-weight:700;font-size:12px;color:var(--gray-m);">Clientes a investigar:</span>
+      <div id="az-client-chips" style="display:flex;flex-wrap:wrap;gap:5px;"></div>
+      <button class="btn-ghost" onclick="runLlaveAnalyzer()" style="font-size:12px;padding:4px 12px;margin-left:8px;">▶ Analizar</button>
+      <button class="btn-ghost" onclick="zeroAllFound()" style="font-size:12px;padding:4px 12px;color:var(--neg);border-color:var(--neg);">⚡ Poner en 0% todos</button>
+    </div>
+    <div id="az-results"></div>
+  </div>
+</div>
+</div>
+
+<!-- ANÁLISIS PAGE -->
+<div class="page" id="page-analisis">
+  <div class="dist-page">
+    <!-- Static filter bar -->
+    <div id="analisis-filter-bar" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border);">
+      <div style="display:flex;background:var(--surface2);border:1.5px solid var(--border-m);border-radius:var(--r);overflow:hidden;padding:1px;gap:1px;">
+        <button class="fmt-btn on" id="analisis-btn-mes"  onclick="setAnalisisVista('mes')">Por mes</button>
+        <button class="fmt-btn"   id="analisis-btn-acum" onclick="setAnalisisVista('acum')">Acumulado</button>
+      </div>
+      <select class="dist-sel" id="analisis-mes-sel" onchange="renderAnalisis()" style="min-width:120px;">
+        <option value="1_2026">Enero 2026</option><option value="2_2026">Febrero 2026</option><option value="3_2026">Marzo 2026</option><option value="4_2026">Abril 2026</option><option value="5_2026">Mayo 2026</option><option value="6_2026">Junio 2026</option><option value="7_2026">Julio 2026</option><option value="8_2026">Agosto 2026</option><option value="9_2026">Septiembre 2026</option><option value="10_2026">Octubre 2026</option><option value="11_2026">Noviembre 2026</option><option value="12_2026">Diciembre 2026</option>
+      </select>
+      <div id="analisis-acum-range" style="display:none;align-items:center;gap:6px;">
+        <span style="font-family:var(--fh);font-weight:700;font-size:12px;color:var(--gray-m);">De</span>
+        <select class="dist-sel" id="analisis-acum-desde" onchange="renderAnalisis()" style="min-width:110px;"><option value="1_2026">Enero 2026</option><option value="2_2026">Febrero 2026</option><option value="3_2026">Marzo 2026</option><option value="4_2026">Abril 2026</option><option value="5_2026">Mayo 2026</option><option value="6_2026">Junio 2026</option><option value="7_2026">Julio 2026</option><option value="8_2026">Agosto 2026</option><option value="9_2026">Septiembre 2026</option><option value="10_2026">Octubre 2026</option><option value="11_2026">Noviembre 2026</option><option value="12_2026">Diciembre 2026</option></select>
+        <span style="font-family:var(--fh);font-weight:700;font-size:12px;color:var(--gray-m);">A</span>
+        <select class="dist-sel" id="analisis-acum-hasta" onchange="renderAnalisis()" style="min-width:110px;"><option value="1_2026">Enero 2026</option><option value="2_2026" selected>Febrero 2026</option><option value="3_2026">Marzo 2026</option><option value="4_2026">Abril 2026</option><option value="5_2026">Mayo 2026</option><option value="6_2026">Junio 2026</option><option value="7_2026">Julio 2026</option><option value="8_2026">Agosto 2026</option><option value="9_2026">Septiembre 2026</option><option value="10_2026">Octubre 2026</option><option value="11_2026">Noviembre 2026</option><option value="12_2026">Diciembre 2026</option></select>
+      </div>
+    </div>
+    <div id="analisis-inner"></div>
+  </div>
+</div>
+
+<!-- TENDENCIA PAGE -->
+<div class="page" id="page-tendencia">
+  <div class="dist-page">
+    <div id="tend-filter-bar" style="margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border);">
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
+        <span style="font-family:var(--fh);font-weight:700;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--gray-d);">Clientes</span>
+        <button class="fmt-btn on" id="tend-all-btn" onclick="tendSelectAll()" style="font-size:11px;padding:3px 10px;">Todos</button>
+        <button class="fmt-btn" id="tend-none-btn" onclick="tendSelectNone()" style="font-size:11px;padding:3px 10px;">Ninguno</button>
+        <div id="tend-client-chips" style="display:flex;flex-wrap:wrap;gap:4px;"></div>
+      </div>
+    </div>
+    <div id="tendencia-inner"></div>
+  </div>
+</div>
+
+
+<!-- MAPEO PAGE -->
+<div class="page" id="page-mapeo">
+<div class="mapeo-page">
+  <div class="mapeo-header">
+    <div class="mapeo-title">Mapeo de Cuentas</div>
+    <div class="mapeo-sub">Asignaci&oacute;n de cada cuenta contable a su llave de reparto &mdash; hardcodeado del archivo oficial</div>
+  </div>
+  <div class="mapeo-filters" id="mapeo-filters"></div>
+  <div style="background:var(--white);border:1px solid var(--border);border-radius:var(--rl);overflow:hidden;">
+    <div style="overflow-x:auto;max-height:calc(100vh - 280px);overflow-y:auto;">
+      <table class="mapeo-tbl" id="mapeo-tbl"></table>
+    </div>
+  </div>
+</div>
+</div>
+
+
+</div>
+</div>
+
+<!-- MATRIZ UNIFICADA -->
+<div class="page" 
 <!-- OVERRIDES MODAL -->
 <div class="ov-backdrop" id="ov-backdrop" onclick="ovBackdropClick(event)">
   <div class="ov-modal">
