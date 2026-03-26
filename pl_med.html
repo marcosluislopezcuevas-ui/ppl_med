@@ -573,6 +573,7 @@ canvas#infog-canvas{display:block;}
     <button class="nav-tab"        id="tab-top15"   onclick="showTab('top15')">Top 15</button>
     <button class="nav-tab"        id="tab-analisis" onclick="showTab('analisis')">Análisis</button>
     <button class="nav-tab"        id="tab-tendencia" onclick="showTab('tendencia')">Tendencia</button>
+    <button class="nav-tab"        id="tab-presentacion" onclick="showTab('presentacion')">Presentación</button>
     <button class="nav-tab"        id="tab-llaves"  onclick="showTab('llaves')">Llaves de Reparto</button>
     <button class="nav-tab"        id="tab-mapeo"   onclick="showTab('mapeo')">Mapeo de Cuentas</button>
   </div>
@@ -1077,6 +1078,38 @@ canvas#infog-canvas{display:block;}
       </div>
     </div>
     <div id="analisis-inner"></div>
+  </div>
+</div>
+
+
+<!-- PRESENTACIÓN PAGE -->
+<div class="page" id="page-presentacion" style="height:calc(100vh - 52px);overflow-y:auto;background:#0F1923;">
+  <div style="max-width:1100px;margin:0 auto;padding:28px 32px 60px;">
+
+    <!-- Controls bar -->
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px;flex-wrap:wrap;">
+      <div style="display:flex;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:6px;overflow:hidden;padding:1px;gap:1px;">
+        <button class="pres-vista-btn on" id="pres-btn-mes"  onclick="setPresVista('mes')"  style="font-family:var(--fh);font-weight:700;font-size:12px;letter-spacing:.06em;text-transform:uppercase;padding:5px 14px;border:none;border-radius:4px;cursor:pointer;background:var(--lime);color:var(--gray-10);">Por mes</button>
+        <button class="pres-vista-btn"   id="pres-btn-acum" onclick="setPresVista('acum')" style="font-family:var(--fh);font-weight:700;font-size:12px;letter-spacing:.06em;text-transform:uppercase;padding:5px 14px;border:none;border-radius:4px;cursor:pointer;background:transparent;color:rgba(255,255,255,.5);">Acumulado</button>
+      </div>
+      <select id="pres-mes-sel" style="font-family:var(--fh);font-weight:700;font-size:12px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.15);border-radius:6px;color:rgba(255,255,255,.8);padding:6px 10px;cursor:pointer;"></select>
+      <div id="pres-acum-range" style="display:none;align-items:center;gap:8px;">
+        <span style="font-family:var(--fh);font-weight:700;font-size:11px;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.08em;">De</span>
+        <select id="pres-acum-desde" style="font-family:var(--fh);font-weight:700;font-size:12px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.15);border-radius:6px;color:rgba(255,255,255,.8);padding:6px 10px;"></select>
+        <span style="font-family:var(--fh);font-weight:700;font-size:11px;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.08em;">A</span>
+        <select id="pres-acum-hasta" style="font-family:var(--fh);font-weight:700;font-size:12px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.15);border-radius:6px;color:rgba(255,255,255,.8);padding:6px 10px;"></select>
+      </div>
+      <div style="flex:1;"></div>
+      <button onclick="downloadPresentacion()" style="font-family:var(--fh);font-weight:700;font-size:12px;letter-spacing:.06em;text-transform:uppercase;padding:6px 16px;background:var(--lime);color:var(--gray-10);border:none;border-radius:6px;cursor:pointer;">↓ PNG</button>
+    </div>
+
+    <!-- Slide canvas area -->
+    <div id="pres-slide-wrap" style="border-radius:12px;overflow:hidden;box-shadow:0 8px 48px rgba(0,0,0,.6);">
+      <canvas id="pres-canvas"></canvas>
+    </div>
+    <div style="margin-top:12px;text-align:center;font-family:var(--fh);font-size:11px;color:rgba(255,255,255,.25);letter-spacing:.08em;">
+      VISTA PREVIA · Recomendado: Screenshot o ↓ PNG para insertar en PowerPoint
+    </div>
   </div>
 </div>
 
@@ -1781,7 +1814,7 @@ function showTab(tab) {
   const uploadPg = document.getElementById('page-upload');
   if (uploadPg) uploadPg.style.display = 'none';
 
-  ['pl','mmontos','ingresos','cv','cfgg','top15','analisis','tendencia','llaves','mapeo'].forEach(t => {
+  ['pl','mmontos','ingresos','cv','cfgg','top15','analisis','tendencia','presentacion','llaves','mapeo'].forEach(t => {
     const pg = document.getElementById('page-' + t);
     if (pg) pg.style.display = t===tab ? 'block' : 'none';
     document.getElementById('tab-'+t)?.classList.toggle('active', t===tab);
@@ -1823,6 +1856,7 @@ function showTab(tab) {
     initTendenciaClients();
     renderTendencia();
   }
+  if (tab==='presentacion') renderPresentacion();
 }
 
 // -- INIT LLAVES --
@@ -6167,6 +6201,315 @@ function ingSetSort(col) {
   if (ingSort.col === col) ingSort.dir *= -1;
   else { ingSort.col = col; ingSort.dir = -1; }
   renderIngresosTab();
+}
+
+
+
+
+// ══════════════════════════════════════════════════════════════
+// PRESENTACIÓN TAB — Slide ejecutivo canvas 2D
+// ══════════════════════════════════════════════════════════════
+var presVista = 'mes';
+
+function setPresVista(v) {
+  presVista = v;
+  var btnMes  = document.getElementById('pres-btn-mes');
+  var btnAcum = document.getElementById('pres-btn-acum');
+  var mesSel  = document.getElementById('pres-mes-sel');
+  var acumRng = document.getElementById('pres-acum-range');
+  if (btnMes)  { btnMes.style.background  = v==='mes'  ? 'var(--lime)' : 'transparent'; btnMes.style.color  = v==='mes'  ? 'var(--gray-10)' : 'rgba(255,255,255,.5)'; }
+  if (btnAcum) { btnAcum.style.background = v==='acum' ? 'var(--lime)' : 'transparent'; btnAcum.style.color = v==='acum' ? 'var(--gray-10)' : 'rgba(255,255,255,.5)'; }
+  if (mesSel)  mesSel.style.display  = v==='mes'  ? '' : 'none';
+  if (acumRng) acumRng.style.display = v==='acum' ? 'flex' : 'none';
+  renderPresentacion();
+}
+
+function initPresSelectors() {
+  var MN = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  var opts = MN.map(function(m,i){ return '<option value="'+(i+1)+'_2026">'+m+' 2026</option>'; }).join('');
+  var opts2 = MN.map(function(m,i){ var sel = i===1?' selected':''; return '<option value="'+(i+1)+'_2026"'+sel+'>'+m+' 2026</option>'; }).join('');
+  ['pres-mes-sel','pres-acum-desde','pres-acum-hasta'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el && !el.options.length) {
+      el.innerHTML = id==='pres-acum-hasta' ? opts2 : opts;
+      el.onchange  = renderPresentacion;
+    }
+  });
+  // Set current month
+  var curMk = window._currentMesKey || getMesKey();
+  var sel = document.getElementById('pres-mes-sel');
+  if (sel && curMk) sel.value = curMk;
+}
+
+function getPresData() {
+  var mk, range, ingRaw, dist;
+  var MN = {1:'Ene',2:'Feb',3:'Mar',4:'Abr',5:'May',6:'Jun',7:'Jul',8:'Ago',9:'Sep',10:'Oct',11:'Nov',12:'Dic'};
+  var MNF = {1:'Enero',2:'Febrero',3:'Marzo',4:'Abril',5:'Mayo',6:'Junio',7:'Julio',8:'Agosto',9:'Septiembre',10:'Octubre',11:'Noviembre',12:'Diciembre'};
+
+  if (presVista === 'mes') {
+    mk = document.getElementById('pres-mes-sel')?.value || getMesKey();
+    var tb = (window.TB_SP?.[mk] && Object.keys(window.TB_SP[mk]).length) ? window.TB_SP[mk] : window._tbData;
+    if (!tb || !Object.keys(tb||{}).length) return null;
+    dist = applyOverrides(calcDistribucionFromTB(tb, mk), tb, mk);
+    ingRaw = window.ING_SP?.[mk] || {};
+    var mesNum = parseInt(mk.split('_')[0]);
+    var label = MNF[mesNum] + ' ' + (mk.split('_')[1]||'2026');
+    var cd = buildCdataFromDist(dist, ingRaw);
+    return { cdata: cd, label: label };
+  } else {
+    var desde = document.getElementById('pres-acum-desde')?.value || '1_2026';
+    var hasta  = document.getElementById('pres-acum-hasta')?.value || getMesKey();
+    var rng    = getMesKeyRange(desde, hasta);
+    var mTB    = calcTBRange(rng);
+    var lMk    = rng[rng.length-1];
+    if (!mTB || !Object.keys(mTB).length) return null;
+    dist = applyOverridesRange(calcDistribucionFromTB(mTB, lMk), mTB, rng);
+    ingRaw = calcIngRange(rng);
+    var d1 = parseInt(desde.split('_')[0]), d2 = parseInt(hasta.split('_')[0]);
+    var label = (d1===d2) ? MNF[d1] : MN[d1] + '–' + MN[d2] + ' ' + (desde.split('_')[1]||'2026');
+    var cd = buildCdataFromDist(dist, ingRaw);
+    return { cdata: cd, label: label };
+  }
+}
+
+function renderPresentacion() {
+  initPresSelectors();
+  var canvas = document.getElementById('pres-canvas'); if (!canvas) return;
+
+  // Slide dimensions: 16:9
+  var W = 1200, H = 675;
+  canvas.width = W; canvas.height = H;
+  canvas.style.width = '100%'; canvas.style.height = 'auto';
+  var ctx = canvas.getContext('2d');
+
+  var res = getPresData();
+
+  // ── BACKGROUND ──
+  ctx.fillStyle = '#0F1923';
+  ctx.fillRect(0, 0, W, H);
+
+  // Subtle grid
+  ctx.strokeStyle = 'rgba(255,255,255,0.025)';
+  ctx.lineWidth = 1;
+  for (var gx=0;gx<W;gx+=40){ctx.beginPath();ctx.moveTo(gx,0);ctx.lineTo(gx,H);ctx.stroke();}
+  for (var gy=0;gy<H;gy+=40){ctx.beginPath();ctx.moveTo(0,gy);ctx.lineTo(W,gy);ctx.stroke();}
+
+  // Lime top bar
+  ctx.fillStyle = '#D0DF00';
+  ctx.fillRect(0, 0, W, 5);
+
+  if (!res) {
+    ctx.fillStyle = 'rgba(255,255,255,0.3)';
+    ctx.font = 'bold 18px "Barlow Condensed", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Sin datos — Carga el Trial Balance primero', W/2, H/2);
+    ctx.textAlign = 'left';
+    return;
+  }
+
+  var cdata = res.cdata;
+  var label = res.label;
+
+  // Clients excl Moderna
+  var clients = Object.keys(cdata).filter(function(c){ return c!=='Moderna' && !isExcluded(c) && (cdata[c].ing||0)>0; });
+  var top5    = clients.slice().sort(function(a,b){ return (cdata[b].ing||0)-(cdata[a].ing||0); }).slice(0,5);
+
+  // Totals
+  var totIng  = clients.reduce(function(s,c){ return s+(cdata[c].ing||0); },0);
+  var totCv   = clients.reduce(function(s,c){ return s+(cdata[c].cv||0); },0);
+  var totCm   = clients.reduce(function(s,c){ return s+(cdata[c].cm||0); },0);
+  var totCf   = clients.reduce(function(s,c){ return s+(cdata[c].costos_fijos||0); },0);
+  var totGg   = clients.reduce(function(s,c){ return s+(cdata[c].gtos_grales||0); },0);
+  var totEb   = clients.reduce(function(s,c){ return s+(cdata[c].ebitda||0); },0);
+  var top5Ing = top5.reduce(function(s,c){ return s+(cdata[c].ing||0); },0);
+  var top5Eb  = top5.reduce(function(s,c){ return s+(cdata[c].ebitda||0); },0);
+  var top5Cm  = top5.reduce(function(s,c){ return s+(cdata[c].cm||0); },0);
+
+  var fm = function(v) {
+    var a=Math.abs(v);
+    var s=a>=1e6?(a/1e6).toFixed(1)+'M':a>=1e3?(a/1e3).toFixed(1)+'K':Math.round(a).toLocaleString();
+    return (v<0?'-':'')+'$'+s;
+  };
+  var fp = function(v,b){ return b?(v/b*100).toFixed(1)+'%':'—'; };
+
+  // ── HEADER ──
+  ctx.fillStyle = '#D0DF00';
+  ctx.font = 'bold 15px "Barlow Condensed", sans-serif';
+  ctx.fillText('MEDISTIK · TRAXION LOGÍSTICA Y TECNOLOGÍA', 40, 30);
+  ctx.fillStyle = 'rgba(255,255,255,0.35)';
+  ctx.font = '12px "Barlow", sans-serif';
+  ctx.fillText('Comité de Dirección — ' + label + ' | Cifras en pesos mexicanos | Sin Moderna', 40, 48);
+
+  // Date right
+  ctx.textAlign = 'right';
+  ctx.fillStyle = 'rgba(208,223,0,0.6)';
+  ctx.font = 'bold 11px "Barlow Condensed", sans-serif';
+  ctx.fillText('CONFIDENCIAL · GENERADO ' + new Date().toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'}).toUpperCase(), W-40, 30);
+  ctx.textAlign = 'left';
+
+  // Separator
+  ctx.fillStyle = 'rgba(255,255,255,0.08)';
+  ctx.fillRect(0, 58, W, 1);
+
+  // ── KPI STRIP (3 cards) ──
+  var kpis = [
+    { label: 'INGRESOS TOP 5', val: fm(top5Ing), sub: fp(top5Ing,totIng)+' del total', color: '#185A82', bg: 'rgba(24,90,130,0.25)' },
+    { label: 'EBITDA TOTAL',   val: fm(totEb),   sub: 'Margen EBITDA '+fp(totEb,totIng), color: '#2A8A1A', bg: 'rgba(42,138,26,0.2)'  },
+    { label: 'MARGEN CONTRIB. PROMEDIO', val: fp(totCm,totIng), sub: 'Contribución Marginal '+fm(totCm), color: '#7B3FC4', bg: 'rgba(123,63,196,0.2)' },
+  ];
+  var kpiW = (W-80-20) / 3;
+  kpis.forEach(function(k, i) {
+    var kx = 40 + i*(kpiW+10);
+    var ky = 68;
+    ctx.fillStyle = k.bg;
+    roundRect(ctx, kx, ky, kpiW, 72, 8); ctx.fill();
+    ctx.strokeStyle = k.color; ctx.lineWidth = 1.5;
+    roundRect(ctx, kx, ky, kpiW, 72, 8); ctx.stroke();
+
+    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.font = 'bold 10px "Barlow Condensed", sans-serif';
+    ctx.letterSpacing = '0.12em';
+    ctx.fillText(k.label, kx+14, ky+18);
+    ctx.letterSpacing = '0';
+
+    ctx.fillStyle = '#FFFFFF';
+    ctx.font = 'bold 28px "Barlow Condensed", sans-serif';
+    ctx.fillText(k.val, kx+14, ky+48);
+
+    ctx.fillStyle = 'rgba(255,255,255,0.4)';
+    ctx.font = '11px "Barlow", sans-serif';
+    ctx.fillText(k.sub, kx+14, ky+63);
+  });
+
+  // Divider
+  ctx.fillStyle = 'rgba(255,255,255,0.06)';
+  ctx.fillRect(0, 150, W, 1);
+
+  // ── SECTION TITLES ──
+  var leftW  = Math.round(W * 0.56);
+  var rightX = leftW + 20;
+  var rightW = W - rightX - 40;
+
+  ctx.fillStyle = '#D0DF00';
+  ctx.font = 'bold 12px "Barlow Condensed", sans-serif';
+  ctx.letterSpacing = '0.1em';
+  ctx.fillText('INGRESOS POR CLIENTE', 40, 175);
+  ctx.fillText('DESGLOSE FINANCIERO · TOP 5', rightX, 175);
+  ctx.letterSpacing = '0';
+
+  // Lime underlines
+  ctx.fillStyle = '#D0DF00';
+  ctx.fillRect(40, 178, 180, 2);
+  ctx.fillRect(rightX, 178, 220, 2);
+
+  // ── BAR CHART — top 5 by ingreso ──
+  var barAreaY  = 188;
+  var barAreaH  = H - barAreaY - 60;
+  var rowH      = Math.floor(barAreaH / 5);
+  var barMaxW   = leftW - 200;
+  var maxIng    = cdata[top5[0]] ? (cdata[top5[0]].ing||0) : 1;
+
+  top5.forEach(function(cl, i) {
+    var d   = cdata[cl];
+    var ing = d.ing || 0;
+    var barW = (ing / maxIng) * barMaxW;
+    var ry  = barAreaY + i * rowH;
+    var barY = ry + 14;
+    var barH2 = 28;
+
+    // Client name
+    ctx.fillStyle = 'rgba(255,255,255,0.85)';
+    ctx.font = 'bold 13px "Barlow Condensed", sans-serif';
+    var shortName = cl.length > 16 ? cl.slice(0,15)+'…' : cl;
+    ctx.fillText(shortName, 40, barY+19);
+
+    // Amount
+    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.font = '11px "Barlow", sans-serif';
+    ctx.fillText(fm(ing), 40, barY+33);
+
+    // Bar bg
+    ctx.fillStyle = 'rgba(255,255,255,0.05)';
+    roundRect(ctx, 172, barY, barMaxW, barH2, 4); ctx.fill();
+
+    // Bar fill — gradient by rank
+    var alpha = 1 - i*0.15;
+    ctx.fillStyle = 'rgba(24,90,130,' + alpha + ')';
+    roundRect(ctx, 172, barY, Math.max(6, barW), barH2, 4); ctx.fill();
+
+    // Pct label inside bar
+    var pctStr = fp(ing, totIng);
+    ctx.fillStyle = '#FFFFFF';
+    ctx.font = 'bold 12px "Barlow Condensed", sans-serif';
+    ctx.fillText(pctStr, 172 + Math.max(6,barW) + 8, barY+18);
+  });
+
+  // ── RIGHT PANEL — financial breakdown ──
+  var panelY = 188;
+  var rows_r = [
+    { label:'Ingresos',           val: totIng, sub: '100% base',           color:'rgba(255,255,255,0.9)', bg:'rgba(255,255,255,0.04)' },
+    { label:'Contribución Marginal', val: totCm, sub: fp(totCm,totIng)+' s/ingresos', color:'rgba(208,223,0,0.9)', bg:'rgba(208,223,0,0.06)' },
+    { label:'Costos Fijos',       val: totCf,  sub: fp(totCf,totIng)+' s/ingresos', color:'rgba(151,153,155,0.8)', bg:'rgba(255,255,255,0.03)' },
+    { label:'Gastos Generales',   val: totGg,  sub: fp(totGg,totIng)+' s/ingresos', color:'rgba(151,153,155,0.8)', bg:'rgba(255,255,255,0.03)' },
+    { label:'EBITDA',             val: totEb,  sub: fp(totEb,totIng)+' s/ingresos', color: totEb>=0?'rgba(42,138,26,0.9)':'rgba(181,59,42,0.9)', bg: totEb>=0?'rgba(42,138,26,0.1)':'rgba(181,59,42,0.08)' },
+  ];
+
+  rows_r.forEach(function(row, i) {
+    var ry2 = panelY + i * 86;
+    // Card
+    ctx.fillStyle = row.bg;
+    roundRect(ctx, rightX, ry2, rightW, 78, 6); ctx.fill();
+
+    // Label
+    ctx.fillStyle = 'rgba(255,255,255,0.45)';
+    ctx.font = '10px "Barlow Condensed", sans-serif';
+    ctx.letterSpacing = '0.06em';
+    ctx.fillText(row.label.toUpperCase(), rightX+12, ry2+18);
+    ctx.letterSpacing = '0';
+
+    // Value
+    ctx.fillStyle = row.color;
+    ctx.font = 'bold 24px "Barlow Condensed", sans-serif';
+    ctx.fillText(fm(row.val), rightX+12, ry2+46);
+
+    // Sub
+    ctx.fillStyle = 'rgba(255,255,255,0.35)';
+    ctx.font = '11px "Barlow", sans-serif';
+    ctx.fillText(row.sub, rightX+12, ry2+63);
+
+    // Right align pct bar
+    var pctBar = totIng > 0 ? Math.abs(row.val)/totIng : 0;
+    var bw = Math.min(pctBar, 1) * (rightW - 24);
+    ctx.fillStyle = row.color.replace('0.9','0.2').replace('0.8','0.15');
+    roundRect(ctx, rightX+12, ry2+68, rightW-24, 4, 2); ctx.fill();
+    ctx.fillStyle = row.color;
+    roundRect(ctx, rightX+12, ry2+68, Math.max(4, bw), 4, 2); ctx.fill();
+  });
+
+  // ── FOOTER ──
+  ctx.fillStyle = 'rgba(255,255,255,0.06)';
+  ctx.fillRect(0, H-36, W, 1);
+  ctx.fillStyle = 'rgba(255,255,255,0.2)';
+  ctx.font = '10px "Barlow", sans-serif';
+  ctx.fillText('Medistik · Traxion Logística y Tecnología · Excluye Moderna · ' + label, 40, H-16);
+  ctx.fillStyle = '#D0DF00';
+  ctx.font = 'bold 10px "Barlow Condensed", sans-serif';
+  ctx.textAlign = 'right';
+  ctx.fillText('CONFIDENCIAL', W-40, H-16);
+  ctx.textAlign = 'left';
+}
+
+function downloadPresentacion() {
+  var canvas = document.getElementById('pres-canvas'); if (!canvas) return;
+  var mk = document.getElementById('pres-mes-sel')?.value || getMesKey();
+  var MN = {1:'Ene',2:'Feb',3:'Mar',4:'Abr',5:'May',6:'Jun',7:'Jul',8:'Ago',9:'Sep',10:'Oct',11:'Nov',12:'Dic'};
+  var label = presVista==='acum' ? 'Acum' : (MN[parseInt(mk.split('_')[0])]||mk);
+  var filename = 'Medistik_Presentacion_' + label + '_' + (mk.split('_')[1]||'2026') + '.png';
+  var a = document.createElement('a');
+  a.download = filename;
+  a.href = canvas.toDataURL('image/png');
+  a.click();
+  toast('✓ PNG descargado: ' + filename, 'ok');
 }
 
 </script>
