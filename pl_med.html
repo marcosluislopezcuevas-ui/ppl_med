@@ -567,6 +567,7 @@ canvas#infog-canvas{display:block;}
   <div class="nav-tabs" id="nav-tabs">
     <button class="nav-tab active" id="tab-pl"      onclick="showTab('pl')">P&amp;L</button>
     <button class="nav-tab"        id="tab-mmontos" onclick="showTab('mmontos')">Matriz</button>
+    <button class="nav-tab"        id="tab-ingresos" onclick="showTab('ingresos')">Ingresos por Cliente</button>
     <button class="nav-tab"        id="tab-cv"      onclick="showTab('cv')">Costos Variables</button>
     <button class="nav-tab"        id="tab-cfgg"    onclick="showTab('cfgg')">CF y GG</button>
     <button class="nav-tab"        id="tab-top15"   onclick="showTab('top15')">Top 15</button>
@@ -838,6 +839,25 @@ id="page-mmontos">
 
 
 <!-- COSTOS VARIABLES PAGE -->
+
+<!-- INGRESOS PAGE -->
+<div class="page" id="page-ingresos" style="height:calc(100vh - 52px);overflow:hidden;display:flex;flex-direction:column;">
+  <div style="display:flex;flex-direction:column;height:100%;padding:16px 28px 12px;overflow:hidden;">
+    <!-- KPI bar -->
+    <div id="ing-kpi-bar" style="display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-bottom:12px;flex-shrink:0;"></div>
+    <!-- Table container with sticky header/footer -->
+    <div id="ing-table-wrap" style="flex:1;border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;display:flex;flex-direction:column;min-height:0;">
+      <div style="overflow:auto;flex:1;min-height:0;" id="ing-scroll-wrap">
+        <table id="ing-table" style="width:100%;border-collapse:collapse;font-size:12px;min-width:1200px;">
+          <thead id="ing-thead"></thead>
+          <tbody id="ing-tbody"></tbody>
+          <tfoot id="ing-tfoot"></tfoot>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="page" id="page-cv">
   <div class="dist-page">
     <!-- Static filter bar - never re-rendered -->
@@ -1037,10 +1057,10 @@ id="page-mmontos">
 </div>
 
 <!-- ANÁLISIS PAGE -->
-<div class="page" id="page-analisis">
-  <div class="dist-page">
+<div class="page" id="page-analisis" style="height:calc(100vh - 52px);overflow-y:auto;">
+  <div style="padding:16px 28px 32px;">
     <!-- Static filter bar -->
-    <div id="analisis-filter-bar" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border);">
+    <div id="analisis-filter-bar" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--border);">
       <div style="display:flex;background:var(--surface2);border:1.5px solid var(--border-m);border-radius:var(--r);overflow:hidden;padding:1px;gap:1px;">
         <button class="fmt-btn on" id="analisis-btn-mes"  onclick="setAnalisisVista('mes')">Por mes</button>
         <button class="fmt-btn"   id="analisis-btn-acum" onclick="setAnalisisVista('acum')">Acumulado</button>
@@ -1060,9 +1080,9 @@ id="page-mmontos">
 </div>
 
 <!-- TENDENCIA PAGE -->
-<div class="page" id="page-tendencia">
-  <div class="dist-page">
-    <div id="tend-filter-bar" style="margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border);">
+<div class="page" id="page-tendencia" style="height:calc(100vh - 52px);overflow-y:auto;">
+  <div style="padding:16px 28px 32px;">
+    <div id="tend-filter-bar" style="margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--border);">
       <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
         <span style="font-family:var(--fh);font-weight:700;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--gray-d);">Clientes</span>
         <button class="fmt-btn on" id="tend-all-btn" onclick="tendSelectAll()" style="font-size:11px;padding:3px 10px;">Todos</button>
@@ -1775,7 +1795,7 @@ function showTab(tab) {
   const uploadPg = document.getElementById('page-upload');
   if (uploadPg) uploadPg.style.display = 'none';
 
-  ['pl','mmontos','cv','cfgg','top15','analisis','tendencia','llaves','mapeo'].forEach(t => {
+  ['pl','mmontos','ingresos','cv','cfgg','top15','analisis','tendencia','llaves','mapeo'].forEach(t => {
     const pg = document.getElementById('page-' + t);
     if (pg) pg.style.display = t===tab ? 'block' : 'none';
     document.getElementById('tab-'+t)?.classList.toggle('active', t===tab);
@@ -1806,6 +1826,7 @@ function showTab(tab) {
     if (cfggSel && curMk2) cfggSel.value = curMk2;
     renderCFGG();
   }
+  if (tab==='ingresos') renderIngresosTab();
   if (tab==='analisis') {
     const sel = document.getElementById('analisis-mes-sel');
     const curMk = window._currentMesKey || getMesKey();
@@ -5918,6 +5939,236 @@ function renderTendencia() {
 }
 
 // showTab hooks integrated directly into showTab function above
+
+
+
+
+// ══════════════════════════════════════════════════════════════
+// INGRESOS POR CLIENTE TAB
+// ══════════════════════════════════════════════════════════════
+var ingSort = { col: 'total_real', dir: -1 }; // default: sort by total real desc
+
+function renderIngresosTab() {
+  const MES_NAMES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio',
+                     'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  const MES_KEYS  = MES_NAMES.map((m,i) => (i+1)+'_2026');
+
+  // ── Build client data ──
+  // Collect all real ingresos from ING_SP
+  const clientSet = new Set();
+  MES_KEYS.forEach(mk => {
+    Object.keys(window.ING_SP?.[mk] || {}).forEach(c => {
+      if (c !== 'Moderna' && !isExcluded(c)) clientSet.add(c);
+    });
+  });
+
+  const clients = [...clientSet].sort();
+
+  // Per client per month: real ingreso
+  const realData = {}; // realData[client][mk]
+  clients.forEach(cl => {
+    realData[cl] = {};
+    MES_KEYS.forEach(mk => {
+      realData[cl][mk] = window.ING_SP?.[mk]?.[cl] || 0;
+    });
+  });
+
+  // Ppto per month = PPTO_COSTOS[mes].ing_total (total — no per-client breakdown)
+  // Distribute proportionally by real mix
+  const pptoByMonth = {};
+  MES_KEYS.forEach((mk, i) => {
+    pptoByMonth[mk] = PPTO_COSTOS[MES_NAMES[i]]?.ing_total || 0;
+  });
+
+  // Per client ppto = proportional share of monthly ppto based on real mix
+  const pptoData = {};
+  clients.forEach(cl => {
+    pptoData[cl] = {};
+    MES_KEYS.forEach(mk => {
+      const totalReal = clients.reduce((s,c) => s + (realData[c][mk]||0), 0);
+      const share = totalReal > 0 ? (realData[cl][mk]||0) / totalReal : 0;
+      pptoData[cl][mk] = pptoByMonth[mk] * share;
+    });
+  });
+
+  // Totals per client
+  const totReal  = cl => MES_KEYS.reduce((s,mk) => s + (realData[cl][mk]||0), 0);
+  const totPpto  = cl => MES_KEYS.reduce((s,mk) => s + (pptoData[cl][mk]||0), 0);
+  const totVar   = cl => totReal(cl) - totPpto(cl);
+  const totVarP  = cl => { const p = totPpto(cl); return p ? totVar(cl)/p*100 : 0; };
+
+  // ── KPIs ──
+  const allTotalReal = clients.reduce((s,c) => s + totReal(c), 0);
+  const allTotalPpto = clients.reduce((s,c) => s + totPpto(c), 0);
+  const allTotalVar  = allTotalReal - allTotalPpto;
+
+  const top5 = [...clients].sort((a,b) => totReal(b)-totReal(a)).slice(0,5);
+  const top5Real = top5.reduce((s,c) => s + totReal(c), 0);
+  const top5Pct  = allTotalReal > 0 ? top5Real/allTotalReal*100 : 0;
+
+  const posClients = clients.filter(c => totVar(c) > 0).length;
+  const negClients = clients.filter(c => totVar(c) < 0).length;
+  const bestCl = [...clients].sort((a,b) => totVar(b)-totVar(a))[0];
+  const worstCl = [...clients].sort((a,b) => totVar(a)-totVar(b))[0];
+
+  const fm = v => {
+    if (!v) return '—';
+    const a = Math.abs(v);
+    const s = a>=1e6?(a/1e6).toFixed(2)+'M':a>=1e3?(a/1e3).toFixed(1)+'K':Math.round(a).toLocaleString('es-MX');
+    return (v<0?'-':'')+'$'+s;
+  };
+  const fp = v => (v>=0?'+':'')+v.toFixed(1)+'%';
+  const varColor = v => v >= 0 ? 'var(--pos)' : 'var(--neg)';
+
+  // Render KPIs
+  const kpiEl = document.getElementById('ing-kpi-bar');
+  if (kpiEl) {
+    const kpis = [
+      { lbl:'Ingreso Real Total', val: fm(allTotalReal), sub: 'Acum. Año · sin Moderna', color: 'var(--gray)' },
+      { lbl:'Presupuesto Total',  val: fm(allTotalPpto), sub: 'Proporcional al real',    color: 'var(--gray)' },
+      { lbl:'Variación vs Ppto',  val: fm(allTotalVar),  sub: fp(allTotalPpto?allTotalVar/allTotalPpto*100:0), color: varColor(allTotalVar) },
+      { lbl:'Top 5 Concentración',val: fm(top5Real),     sub: top5Pct.toFixed(1)+'% del total · '+top5.slice(0,3).join(', ')+'…', color: 'var(--blue)' },
+      { lbl:'Clientes sobre Ppto',val: posClients+' clientes', sub: negClients+' por debajo', color: 'var(--pos)' },
+      { lbl:'Mayor Variación +',  val: bestCl  ? bestCl.slice(0,16)  : '—', sub: bestCl  ? fm(totVar(bestCl))  : '', color: 'var(--pos)' },
+    ];
+    kpiEl.innerHTML = kpis.map(k => `
+      <div style="background:var(--white);border:1px solid var(--border);border-radius:var(--r);padding:12px 14px;">
+        <div style="font-family:var(--fh);font-weight:700;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--gray-d);margin-bottom:4px;">${k.lbl}</div>
+        <div style="font-family:var(--fb);font-weight:700;font-size:16px;color:${k.color};line-height:1.1;">${k.val}</div>
+        <div style="font-size:11px;color:var(--gray-m);margin-top:3px;">${k.sub}</div>
+      </div>`).join('');
+  }
+
+  // ── Sort clients ──
+  const sorted = [...clients].sort((a,b) => {
+    let va, vb;
+    const col = ingSort.col;
+    if (col === 'cliente') { va = a.toLowerCase(); vb = b.toLowerCase(); return ingSort.dir*(va<vb?-1:va>vb?1:0); }
+    if (col === 'total_real') { va = totReal(a); vb = totReal(b); }
+    else if (col === 'total_ppto') { va = totPpto(a); vb = totPpto(b); }
+    else if (col === 'total_var')  { va = totVar(a);  vb = totVar(b); }
+    else if (col === 'total_varp') { va = totVarP(a); vb = totVarP(b); }
+    else {
+      // month column: mk_real, mk_ppto, mk_var, mk_varp
+      const parts = col.split('_'); 
+      const mk = parts[0]+'_'+parts[1];
+      const type = parts[2];
+      if (type==='real') { va=realData[a][mk]||0; vb=realData[b][mk]||0; }
+      else if (type==='ppto') { va=pptoData[a][mk]||0; vb=pptoData[b][mk]||0; }
+      else if (type==='var')  { va=(realData[a][mk]||0)-(pptoData[a][mk]||0); vb=(realData[b][mk]||0)-(pptoData[b][mk]||0); }
+      else { va=pptoData[a][mk]?((realData[a][mk]||0)-pptoData[a][mk])/pptoData[a][mk]*100:0; vb=pptoData[b][mk]?((realData[b][mk]||0)-pptoData[b][mk])/pptoData[b][mk]*100:0; }
+    }
+    return ingSort.dir*(va-vb);
+  });
+
+  // ── Render table ──
+  const sortIcon = col => ingSort.col===col ? (ingSort.dir===1?'↑':'↓') : '↕';
+  const thStyle = 'padding:8px 6px;font-family:var(--fh);font-weight:700;font-size:10px;letter-spacing:.08em;text-transform:uppercase;white-space:nowrap;cursor:pointer;user-select:none;background:var(--surface2);border-bottom:2px solid var(--lime);position:sticky;top:0;z-index:10;';
+  const thHover = `onmouseover="this.style.background='var(--lime-bg)'" onmouseout="this.style.background='var(--surface2)'"`;
+
+  // Only show months with any real data
+  const activeMks = MES_KEYS.filter(mk => clients.some(c => (realData[c][mk]||0) > 0));
+
+  // Header — two rows: month groups + sub-cols
+  let thRow1 = `<tr>
+    <th rowspan="2" style="${thStyle}text-align:left;min-width:160px;border-right:2px solid var(--border);" onclick="ingSetSort('cliente')" ${thHover}>
+      Cliente ${sortIcon('cliente')}
+    </th>`;
+
+  activeMks.forEach(mk => {
+    const mn = MES_NAMES[parseInt(mk)-1];
+    thRow1 += `<th colspan="4" style="${thStyle}text-align:center;border-left:1px solid var(--border);color:var(--lime-deep);">${mn.slice(0,3)} ${mk.split('_')[1]}</th>`;
+  });
+  thRow1 += `<th colspan="4" style="${thStyle}text-align:center;border-left:2px solid var(--lime-dark);background:var(--lime-bg);color:var(--lime-deep);">TOTAL AÑO</th></tr>`;
+
+  let thRow2 = '<tr>';
+  const subCols = [
+    {label:'Real $', key:'real', w:'80px'},
+    {label:'Ppto $', key:'ppto', w:'80px'},
+    {label:'Var $',  key:'var',  w:'76px'},
+    {label:'Var %',  key:'varp', w:'60px'},
+  ];
+  activeMks.forEach(mk => {
+    subCols.forEach(sc => {
+      const colId = mk+'_'+sc.key;
+      thRow2 += `<th style="${thStyle}text-align:right;min-width:${sc.w};border-left:1px solid var(--border);" 
+        onclick="ingSetSort('${colId}')" ${thHover}>${sc.label} ${sortIcon(colId)}</th>`;
+    });
+  });
+  subCols.forEach(sc => {
+    const colId = 'total_'+sc.key;
+    thRow2 += `<th style="${thStyle}text-align:right;min-width:${sc.w};border-left:${sc.key==='real'?'2px solid var(--lime-dark)':'1px solid var(--border)'};background:var(--lime-bg);color:var(--lime-deep);" 
+      onclick="ingSetSort('${colId}')" ${thHover}>${sc.label} ${sortIcon(colId)}</th>`;
+  });
+  thRow2 += '</tr>';
+
+  document.getElementById('ing-thead').innerHTML = thRow1 + thRow2;
+
+  // Body rows
+  const tdStyle = 'padding:5px 6px;text-align:right;white-space:nowrap;border-bottom:1px solid var(--border);font-size:12px;';
+  const vCell = (v, isVar) => {
+    if (!v) return `<td style="${tdStyle}color:var(--gray-d);">—</td>`;
+    const col = isVar ? varColor(v) : 'var(--gray)';
+    const prefix = isVar && v > 0 ? '+' : '';
+    return `<td style="${tdStyle}font-weight:${isVar?700:500};color:${col};">${prefix}${fm(v)}</td>`;
+  };
+  const vpCell = (real, ppto) => {
+    if (!ppto || !real) return `<td style="${tdStyle}color:var(--gray-d);">—</td>`;
+    const v = (real-ppto)/ppto*100;
+    return `<td style="${tdStyle}font-weight:700;color:${varColor(v)};">${fp(v)}</td>`;
+  };
+
+  let tbody = '';
+  sorted.forEach((cl, ri) => {
+    const bg = ri%2===0 ? '' : 'background:var(--surface);';
+    let row = `<tr style="${bg}" onmouseover="this.style.background='var(--lime-bg)'" onmouseout="this.style.background='${ri%2===0?'':''}'">
+      <td style="${tdStyle}text-align:left;font-weight:600;padding-left:10px;border-right:2px solid var(--border);min-width:160px;position:sticky;left:0;background:${ri%2===0?'var(--white)':'var(--surface)'};" 
+        onmouseover="this.style.background='var(--lime-bg)'" onmouseout="this.style.background='${ri%2===0?'var(--white)':'var(--surface)'}'">
+        ${cl}
+      </td>`;
+    activeMks.forEach(mk => {
+      const r = realData[cl][mk]||0, p = pptoData[cl][mk]||0, va = r-p;
+      row += `<td style="${tdStyle}border-left:1px solid var(--border);color:var(--gray);">${r?fm(r):'—'}</td>`;
+      row += `<td style="${tdStyle}border-left:1px solid var(--border);color:var(--gray-m);">${p?fm(p):'—'}</td>`;
+      row += vCell(va, true);
+      row += vpCell(r, p);
+    });
+    // Totals
+    const tr = totReal(cl), tp = totPpto(cl), tv = totVar(cl);
+    row += `<td style="${tdStyle}font-weight:700;border-left:2px solid var(--lime-dark);background:var(--lime-bg);">${fm(tr)}</td>`;
+    row += `<td style="${tdStyle}font-weight:600;border-left:1px solid var(--border);background:var(--lime-bg);color:var(--gray-m);">${fm(tp)}</td>`;
+    row += vCell(tv, true);
+    row += vpCell(tr, tp);
+    row += '</tr>';
+    tbody += row;
+  });
+  document.getElementById('ing-tbody').innerHTML = tbody;
+
+  // Footer totals row
+  let tfoot = `<tr style="background:var(--lime-bg);border-top:2px solid var(--lime-dark);position:sticky;bottom:0;">
+    <td style="${tdStyle}text-align:left;font-family:var(--fh);font-weight:800;font-size:12px;padding-left:10px;border-right:2px solid var(--border);position:sticky;left:0;background:var(--lime-bg);">TOTAL</td>`;
+  activeMks.forEach(mk => {
+    const tr = clients.reduce((s,c)=>s+(realData[c][mk]||0),0);
+    const tp = pptoByMonth[mk]||0;
+    const tv = tr-tp;
+    tfoot += `<td style="${tdStyle}font-weight:700;border-left:1px solid var(--border);">${fm(tr)}</td>`;
+    tfoot += `<td style="${tdStyle}font-weight:600;border-left:1px solid var(--border);color:var(--gray-m);">${fm(tp)}</td>`;
+    tfoot += `<td style="${tdStyle}font-weight:700;border-left:1px solid var(--border);color:${varColor(tv)};">${tv>=0?'+':''}${fm(tv)}</td>`;
+    tfoot += `<td style="${tdStyle}font-weight:700;border-left:1px solid var(--border);color:${varColor(tv)};">${tp?fp((tr-tp)/tp*100):'—'}</td>`;
+  });
+  tfoot += `<td style="${tdStyle}font-weight:800;border-left:2px solid var(--lime-dark);">${fm(allTotalReal)}</td>`;
+  tfoot += `<td style="${tdStyle}font-weight:700;border-left:1px solid var(--border);color:var(--gray-m);">${fm(allTotalPpto)}</td>`;
+  tfoot += `<td style="${tdStyle}font-weight:800;color:${varColor(allTotalVar)};">${allTotalVar>=0?'+':''}${fm(allTotalVar)}</td>`;
+  tfoot += `<td style="${tdStyle}font-weight:800;color:${varColor(allTotalVar)};">${allTotalPpto?fp(allTotalVar/allTotalPpto*100):'—'}</td>`;
+  tfoot += '</tr>';
+  document.getElementById('ing-tfoot').innerHTML = tfoot;
+}
+
+function ingSetSort(col) {
+  if (ingSort.col === col) ingSort.dir *= -1;
+  else { ingSort.col = col; ingSort.dir = -1; }
+  renderIngresosTab();
+}
 
 </script>
 </body>
