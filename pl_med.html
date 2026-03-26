@@ -539,6 +539,22 @@ body{background:var(--white);color:var(--gray);font-family:var(--fb);font-size:1
 .ai-context-kpi span:first-child{font-family:var(--fh);font-weight:700;font-size:10px;
   letter-spacing:.1em;text-transform:uppercase;color:var(--gray-d);}
 .ai-context-kpi span:last-child{font-family:var(--fb);font-weight:700;font-size:14px;color:var(--gray);}
+
+/* ── INFOGRAFÍA MODAL ── */
+.infog-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:950;
+  display:none;align-items:center;justify-content:center;}
+.infog-backdrop.open{display:flex;}
+.infog-modal{background:#0F1923;border-radius:16px;width:960px;max-width:97vw;
+  max-height:94vh;display:flex;flex-direction:column;overflow:hidden;
+  box-shadow:0 24px 80px rgba(0,0,0,.5);}
+.infog-modal-hdr{padding:14px 20px;display:flex;align-items:center;gap:12px;
+  border-bottom:1px solid rgba(255,255,255,.08);flex-shrink:0;}
+.infog-modal-title{font-family:var(--fh);font-weight:800;font-size:16px;color:#fff;flex:1;}
+.infog-modal-body{flex:1;overflow-y:auto;padding:0;}
+.infog-modal-footer{padding:12px 20px;border-top:1px solid rgba(255,255,255,.08);
+  display:flex;gap:8px;background:#0F1923;flex-shrink:0;}
+#infog-canvas-wrap{width:100%;overflow:auto;}
+canvas#infog-canvas{display:block;}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 </head>
@@ -897,6 +913,9 @@ body{background:var(--white);color:var(--gray);font-family:var(--fb);font-size:1
       <button class="btn-primary" onclick="openAIPanel()" style="font-size:12px;padding:5px 14px;display:flex;align-items:center;gap:6px;">
         ✦ Analizar con IA
       </button>
+      <button class="btn-ghost" onclick="openInfografia()" style="font-size:12px;padding:5px 12px;">
+        📊 Infografía
+      </button>
       <span style="font-size:11px;color:var(--gray-m);" id="mmontos-meta"></span>
     </div>
   </div>
@@ -1078,6 +1097,26 @@ body{background:var(--white);color:var(--gray);font-family:var(--fb);font-size:1
       <span id="ov-save-status" style="font-size:12px;color:var(--gray-m);margin-left:6px;"></span>
       <div style="flex:1;"></div>
       <span style="font-size:11px;color:var(--gray-d);">Los overrides se aplican antes de la distribución proporcional</span>
+    </div>
+  </div>
+</div>
+
+<!-- INFOGRAFÍA MODAL -->
+<div class="infog-backdrop" id="infog-backdrop" onclick="infogBackdropClick(event)">
+  <div class="infog-modal">
+    <div class="infog-modal-hdr">
+      <div class="infog-modal-title">📊 Infografía Ejecutiva · Medistik</div>
+      <span id="infog-period-lbl" style="font-size:12px;color:rgba(208,223,0,.8);font-family:var(--fh);font-weight:700;"></span>
+      <button onclick="closeInfografia()" style="background:none;border:none;color:rgba(255,255,255,.5);font-size:20px;cursor:pointer;padding:0 4px;">✕</button>
+    </div>
+    <div class="infog-modal-body">
+      <div id="infog-canvas-wrap">
+        <canvas id="infog-canvas"></canvas>
+      </div>
+    </div>
+    <div class="infog-modal-footer">
+      <button class="btn-primary" onclick="downloadInfografia()" style="font-size:12px;">↓ Descargar PNG</button>
+      <button class="btn-ghost" onclick="closeInfografia()" style="font-size:12px;color:rgba(255,255,255,.6);border-color:rgba(255,255,255,.2);">Cerrar</button>
     </div>
   </div>
 </div>
@@ -4997,6 +5036,421 @@ async function runAIAnalysis() {
   } finally {
     if (btn) { btn.textContent = '✦ Copiar prompt de nuevo'; btn.disabled = false; }
   }
+}
+
+
+
+
+// ══════════════════════════════════════════════════════════════
+// INFOGRAFÍA EJECUTIVA — Canvas 2D
+// ══════════════════════════════════════════════════════════════
+function openInfografia() {
+  document.getElementById('infog-backdrop').classList.add('open');
+  buildInfografia();
+}
+function closeInfografia() {
+  document.getElementById('infog-backdrop').classList.remove('open');
+}
+function infogBackdropClick(e) {
+  if (e.target === document.getElementById('infog-backdrop')) closeInfografia();
+}
+
+function buildInfografia() {
+  const data = getDistData('mx');
+  if (!data) { toast('Sin datos para la infografía', ''); return; }
+  const { cdata, totals } = data;
+
+  // Period label
+  const mk = document.getElementById('mx-mes-sel')?.value || getMesKey();
+  const MN = {1:'Enero',2:'Febrero',3:'Marzo',4:'Abril',5:'Mayo',6:'Junio',
+    7:'Julio',8:'Agosto',9:'Septiembre',10:'Octubre',11:'Noviembre',12:'Diciembre'};
+  const mesLabel = mxVista === 'acum'
+    ? 'Acumulado ' + (document.getElementById('mx-acum-desde')?.value||'').split('_').map((v,i)=>i===0?MN[parseInt(v)]||v:v).join(' ') + ' – ' + (document.getElementById('mx-acum-hasta')?.value||'').split('_').map((v,i)=>i===0?MN[parseInt(v)]||v:v).join(' ')
+    : (MN[parseInt(mk.split('_')[0])] || mk) + ' ' + (mk.split('_')[1]||'2026');
+  document.getElementById('infog-period-lbl').textContent = mesLabel;
+
+  // Filter out Moderna and special rows
+  const clients = Object.keys(cdata).filter(c => c !== 'Moderna' && !isExcluded(c));
+
+  // Totals without Moderna
+  const ing  = clients.reduce((s,c) => s + (cdata[c].ing||0), 0);
+  const cv   = clients.reduce((s,c) => s + (cdata[c].cv||0), 0);
+  const cf   = clients.reduce((s,c) => s + (cdata[c].costos_fijos||0), 0);
+  const gg   = clients.reduce((s,c) => s + (cdata[c].gtos_grales||0), 0);
+  const cm   = clients.reduce((s,c) => s + (cdata[c].cm||0), 0);
+  const ebit = clients.reduce((s,c) => s + (cdata[c].ebitda||0), 0);
+
+  // Top 5 by ingreso (excl Moderna)
+  const top5 = clients.filter(c => cdata[c].ing > 0)
+    .sort((a,b) => cdata[b].ing - cdata[a].ing).slice(0,5);
+
+  // Top 5 CF weight
+  const top5cf = clients.filter(c => cdata[c].ing > 100000)
+    .sort((a,b) => (cdata[b].costos_fijos/cdata[b].ing) - (cdata[a].costos_fijos/cdata[a].ing)).slice(0,5);
+
+  // Top 5 GG weight
+  const top5gg = clients.filter(c => cdata[c].ing > 100000)
+    .sort((a,b) => (cdata[b].gtos_grales/cdata[b].ing) - (cdata[a].gtos_grales/cdata[a].ing)).slice(0,5);
+
+  const fmt = v => {
+    const a = Math.abs(v);
+    const s = a>=1e6?(a/1e6).toFixed(1)+'M':a>=1e3?(a/1e3).toFixed(0)+'K':Math.round(a).toLocaleString();
+    return (v<0?'-':'')+'$'+s;
+  };
+  const pct = (v,b) => b ? (v/b*100).toFixed(1)+'%' : '—';
+
+  // Canvas setup
+  const W = 960, H = 1280;
+  const canvas = document.getElementById('infog-canvas');
+  canvas.width = W; canvas.height = H;
+  canvas.style.width  = '100%';
+  canvas.style.height = 'auto';
+  const ctx = canvas.getContext('2d');
+
+  // ── COLORS ──
+  const DARK   = '#0F1923';
+  const LIME   = '#D0DF00';
+  const LIME2  = '#8F8F00';
+  const WHITE  = '#FFFFFF';
+  const GRAY   = '#63666A';
+  const GRAY_L = '#97999B';
+  const POS    = '#2A8A1A';
+  const NEG    = '#B53B2A';
+  const BLUE   = '#185A82';
+  const CARD   = '#1A2535';
+  const CARD2  = '#1E2D40';
+
+  // Background
+  ctx.fillStyle = DARK;
+  ctx.fillRect(0, 0, W, H);
+
+  // Subtle grid pattern
+  ctx.strokeStyle = 'rgba(255,255,255,0.03)';
+  ctx.lineWidth = 1;
+  for (let x = 0; x < W; x += 40) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,H); ctx.stroke(); }
+  for (let y = 0; y < H; y += 40) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke(); }
+
+  // ── HEADER ──
+  // Lime accent bar
+  ctx.fillStyle = LIME;
+  ctx.fillRect(0, 0, W, 6);
+
+  // Logo area
+  ctx.fillStyle = LIME;
+  ctx.font = 'bold 28px "Barlow Condensed", sans-serif';
+  ctx.fillText('MEDISTIK', 40, 52);
+  ctx.fillStyle = 'rgba(255,255,255,0.4)';
+  ctx.font = '14px "Barlow", sans-serif';
+  ctx.fillText('Traxion Logística y Tecnología', 40, 72);
+
+  // Period badge
+  const badgeW = 240;
+  ctx.fillStyle = 'rgba(208,223,0,0.12)';
+  roundRect(ctx, W-badgeW-40, 28, badgeW, 36, 6);
+  ctx.fill();
+  ctx.fillStyle = LIME;
+  ctx.font = 'bold 13px "Barlow Condensed", sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(mesLabel.toUpperCase() + ' · SIN MODERNA', W-40-badgeW/2, 50);
+  ctx.textAlign = 'left';
+
+  ctx.fillStyle = 'rgba(255,255,255,0.08)';
+  ctx.fillRect(0, 88, W, 1);
+
+  // ── SECTION 1: KPI STRIP ──
+  const kpiY = 100;
+  const kpis = [
+    { label: 'INGRESOS',     value: fmt(ing),  sub: '100% base',         color: WHITE  },
+    { label: 'MARGEN BRUTO', value: fmt(cm),   sub: pct(cm,ing)+' vtas', color: LIME   },
+    { label: 'CV TOTAL',     value: fmt(cv),   sub: pct(cv,ing)+' vtas', color: GRAY_L },
+    { label: 'COSTOS FIJOS', value: fmt(cf),   sub: pct(cf,ing)+' vtas', color: GRAY_L },
+    { label: 'GASTOS GRALES',value: fmt(gg),   sub: pct(gg,ing)+' vtas', color: GRAY_L },
+    { label: 'EBITDA',       value: fmt(ebit), sub: pct(ebit,ing)+' vtas',color: ebit>=0?POS:NEG },
+  ];
+  const kpiW = (W-80) / kpis.length;
+  kpis.forEach((k, i) => {
+    const x = 40 + i*kpiW;
+    ctx.fillStyle = i === 0 ? 'rgba(208,223,0,0.08)' : i === kpis.length-1 ? 'rgba(42,138,26,0.1)' : CARD;
+    roundRect(ctx, x+2, kpiY, kpiW-4, 88, 8);
+    ctx.fill();
+    if (i === kpis.length-1) {
+      ctx.strokeStyle = POS;
+      ctx.lineWidth = 1.5;
+      roundRect(ctx, x+2, kpiY, kpiW-4, 88, 8);
+      ctx.stroke();
+    }
+    ctx.fillStyle = 'rgba(255,255,255,0.4)';
+    ctx.font = 'bold 9px "Barlow Condensed", sans-serif';
+    ctx.letterSpacing = '0.1em';
+    ctx.fillText(k.label, x+12, kpiY+20);
+    ctx.letterSpacing = '0';
+    ctx.fillStyle = k.color;
+    ctx.font = 'bold 22px "Barlow Condensed", sans-serif';
+    ctx.fillText(k.value, x+12, kpiY+50);
+    ctx.fillStyle = 'rgba(255,255,255,0.35)';
+    ctx.font = '11px "Barlow", sans-serif';
+    ctx.fillText(k.sub, x+12, kpiY+70);
+  });
+
+  // ── SECTION 2: WATERFALL ──
+  const wfY = 210;
+  drawSectionTitle(ctx, 'WATERFALL · INGRESOS → EBITDA', 40, wfY, LIME);
+
+  const wfSteps = [
+    { label: 'Ingresos',     value: ing,   type: 'base'  },
+    { label: 'Costo Variable', value: -cv, type: 'neg'   },
+    { label: 'Margen Bruto', value: cm,    type: 'sub'   },
+    { label: 'Costos Fijos', value: -cf,   type: 'neg'   },
+    { label: 'Gastos Grales',value: -gg,   type: 'neg'   },
+    { label: 'EBITDA',       value: ebit,  type: 'total' },
+  ];
+  const wfH = 140, wfW = W-80;
+  const wfBarW = wfW / wfSteps.length - 16;
+  const wfMax = ing;
+  let runStart = 0;
+
+  wfSteps.forEach((step, i) => {
+    const x = 40 + i*(wfW/wfSteps.length);
+    let barH, barY, color;
+    if (step.type === 'base') {
+      barH = Math.abs(step.value)/wfMax * wfH;
+      barY = wfY+28 + (wfH-barH);
+      color = BLUE;
+      runStart = step.value;
+    } else if (step.type === 'sub') {
+      barH = Math.abs(step.value)/wfMax * wfH;
+      barY = wfY+28 + (wfH - Math.abs(step.value)/wfMax*wfH);
+      color = 'rgba(208,223,0,0.6)';
+    } else if (step.type === 'total') {
+      barH = Math.abs(step.value)/wfMax * wfH;
+      barY = wfY+28 + (wfH-barH);
+      color = step.value >= 0 ? POS : NEG;
+    } else {
+      barH = Math.abs(step.value)/wfMax * wfH;
+      barY = wfY+28;
+      color = NEG;
+    }
+
+    ctx.fillStyle = color;
+    roundRect(ctx, x+8, barY, wfBarW, barH, 4);
+    ctx.fill();
+
+    // Value label
+    ctx.fillStyle = WHITE;
+    ctx.font = 'bold 11px "Barlow Condensed", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(fmt(step.value), x+8+wfBarW/2, barY > wfY+40 ? barY-6 : barY+barH+14);
+
+    // % label for non-base
+    if (step.type !== 'base') {
+      ctx.fillStyle = 'rgba(255,255,255,0.5)';
+      ctx.font = '10px "Barlow", sans-serif';
+      ctx.fillText(pct(Math.abs(step.value), ing), x+8+wfBarW/2, step.type === 'total' ? barY+barH+26 : barY+barH+14);
+    }
+
+    // X label
+    ctx.fillStyle = 'rgba(255,255,255,0.55)';
+    ctx.font = 'bold 9px "Barlow Condensed", sans-serif';
+    ctx.fillText(step.label.toUpperCase(), x+8+wfBarW/2, wfY+28+wfH+20);
+    ctx.textAlign = 'left';
+  });
+
+  // ── SECTION 3: TOP 5 POR INGRESO ──
+  const t5Y = wfY + wfH + 60;
+  drawSectionTitle(ctx, 'TOP 5 CLIENTES · INGRESO & MÁRGENES', 40, t5Y, LIME);
+
+  const colW = (W-80)/5;
+  top5.forEach((cl, i) => {
+    const d = cdata[cl];
+    const x = 40 + i*colW + 4;
+    const cw = colW - 8;
+    const cy = t5Y + 18;
+    const ch = 155;
+
+    // Card bg
+    ctx.fillStyle = CARD;
+    roundRect(ctx, x, cy, cw, ch, 8);
+    ctx.fill();
+
+    // EBITDA color accent top
+    const ebColor = (d.ebitda||0) >= 0 ? POS : NEG;
+    ctx.fillStyle = ebColor;
+    roundRect(ctx, x, cy, cw, 4, 4);
+    ctx.fill();
+
+    // Rank badge
+    ctx.fillStyle = LIME;
+    ctx.font = 'bold 10px "Barlow Condensed", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('#' + (i+1), x+cw/2, cy+18);
+
+    // Client name
+    ctx.fillStyle = WHITE;
+    ctx.font = 'bold 13px "Barlow Condensed", sans-serif';
+    const shortName = cl.length > 12 ? cl.slice(0,11)+'…' : cl;
+    ctx.fillText(shortName, x+cw/2, cy+34);
+    ctx.textAlign = 'left';
+
+    // Ingreso
+    ctx.fillStyle = 'rgba(255,255,255,0.4)';
+    ctx.font = '9px "Barlow Condensed", sans-serif';
+    ctx.fillText('INGRESO', x+8, cy+52);
+    ctx.fillStyle = WHITE;
+    ctx.font = 'bold 14px "Barlow Condensed", sans-serif';
+    ctx.fillText(fmt(d.ing||0), x+8, cy+66);
+
+    // Mini bars: CV, CF, GG
+    const metrics = [
+      { label:'CV', val: d.cv||0, color:'rgba(208,223,0,0.7)' },
+      { label:'CF', val: d.costos_fijos||0, color:BLUE },
+      { label:'GG', val: d.gtos_grales||0, color:'rgba(151,153,155,0.7)' },
+    ];
+    metrics.forEach((m, mi) => {
+      const barY2 = cy + 78 + mi*20;
+      const barMax = cw - 50;
+      const barFill = Math.min(1, (d.ing > 0 ? m.val/d.ing : 0)) * barMax;
+      ctx.fillStyle = 'rgba(255,255,255,0.06)';
+      roundRect(ctx, x+8, barY2, barMax, 10, 3);
+      ctx.fill();
+      ctx.fillStyle = m.color;
+      roundRect(ctx, x+8, barY2, Math.max(2, barFill), 10, 3);
+      ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,0.45)';
+      ctx.font = '9px "Barlow Condensed", sans-serif';
+      ctx.fillText(m.label, x+8+barMax+4, barY2+9);
+      ctx.fillStyle = 'rgba(255,255,255,0.6)';
+      ctx.font = 'bold 9px "Barlow Condensed", sans-serif';
+      ctx.textAlign = 'right';
+      ctx.fillText(pct(m.val, d.ing), x+8+barMax, barY2-2);
+      ctx.textAlign = 'left';
+    });
+
+    // EBITDA
+    ctx.fillStyle = 'rgba(255,255,255,0.35)';
+    ctx.font = '9px "Barlow Condensed", sans-serif';
+    ctx.fillText('EBITDA', x+8, cy+142);
+    ctx.fillStyle = ebColor;
+    ctx.font = 'bold 13px "Barlow Condensed", sans-serif';
+    ctx.fillText(pct(d.ebitda||0, d.ing), x+8+36, cy+142);
+    ctx.font = '10px "Barlow Condensed", sans-serif';
+    ctx.fillStyle = 'rgba(255,255,255,0.45)';
+    ctx.fillText(fmt(d.ebitda||0), x+8, cy+155);
+  });
+
+  // ── SECTION 4: CF & GG WEIGHT (side by side) ──
+  const cfggY = t5Y + 18 + 155 + 48;
+  const halfW = (W-88)/2;
+
+  // CF
+  drawSectionTitle(ctx, 'TOP 5 · PESO CF SOBRE VENTAS', 40, cfggY, BLUE);
+  top5cf.forEach((cl, i) => {
+    const d = cdata[cl];
+    const barY2 = cfggY + 22 + i*28;
+    const barMax = halfW - 120;
+    const cfPct = d.ing > 0 ? d.costos_fijos/d.ing : 0;
+    const barFill = Math.min(1, cfPct) * barMax;
+
+    ctx.fillStyle = 'rgba(24,90,130,0.15)';
+    roundRect(ctx, 40+120, barY2-2, barMax, 20, 4);
+    ctx.fill();
+    ctx.fillStyle = BLUE;
+    roundRect(ctx, 40+120, barY2-2, Math.max(4, barFill), 20, 4);
+    ctx.fill();
+
+    ctx.fillStyle = WHITE;
+    ctx.font = 'bold 11px "Barlow Condensed", sans-serif';
+    const nm = cl.length > 13 ? cl.slice(0,12)+'…' : cl;
+    ctx.fillText(nm, 40, barY2+13);
+    ctx.fillStyle = BLUE;
+    ctx.font = 'bold 11px "Barlow Condensed", sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText(pct(d.costos_fijos||0, d.ing), 40+120+barFill+36, barY2+13);
+    ctx.textAlign = 'left';
+    ctx.fillStyle = 'rgba(255,255,255,0.3)';
+    ctx.font = '10px "Barlow", sans-serif';
+    ctx.fillText(fmt(d.costos_fijos||0), 40+120+barFill+38, barY2+13);
+  });
+
+  // GG
+  const ggX = 40 + halfW + 8;
+  drawSectionTitle(ctx, 'TOP 5 · PESO GG SOBRE VENTAS', ggX, cfggY, '#9A1A5A');
+  top5gg.forEach((cl, i) => {
+    const d = cdata[cl];
+    const barY2 = cfggY + 22 + i*28;
+    const barMax = halfW - 120;
+    const ggPct = d.ing > 0 ? d.gtos_grales/d.ing : 0;
+    const barFill = Math.min(1, ggPct) * barMax;
+
+    ctx.fillStyle = 'rgba(154,26,90,0.15)';
+    roundRect(ctx, ggX+120, barY2-2, barMax, 20, 4);
+    ctx.fill();
+    ctx.fillStyle = '#C44080';
+    roundRect(ctx, ggX+120, barY2-2, Math.max(4, barFill), 20, 4);
+    ctx.fill();
+
+    ctx.fillStyle = WHITE;
+    ctx.font = 'bold 11px "Barlow Condensed", sans-serif';
+    const nm = cl.length > 13 ? cl.slice(0,12)+'…' : cl;
+    ctx.fillText(nm, ggX, barY2+13);
+    ctx.fillStyle = '#C44080';
+    ctx.font = 'bold 11px "Barlow Condensed", sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText(pct(d.gtos_grales||0, d.ing), ggX+120+barFill+36, barY2+13);
+    ctx.textAlign = 'left';
+    ctx.fillStyle = 'rgba(255,255,255,0.3)';
+    ctx.font = '10px "Barlow", sans-serif';
+    ctx.fillText(fmt(d.gtos_grales||0), ggX+120+barFill+38, barY2+13);
+  });
+
+  // ── FOOTER ──
+  const footY = H - 36;
+  ctx.fillStyle = 'rgba(255,255,255,0.06)';
+  ctx.fillRect(0, footY-8, W, 1);
+  ctx.fillStyle = 'rgba(255,255,255,0.2)';
+  ctx.font = '10px "Barlow", sans-serif';
+  ctx.fillText('Medistik · Traxion Logística y Tecnología · Excluye operación Moderna · Generado ' + new Date().toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'}), 40, footY+6);
+  ctx.fillStyle = LIME;
+  ctx.font = 'bold 10px "Barlow Condensed", sans-serif';
+  ctx.textAlign = 'right';
+  ctx.fillText('CONFIDENCIAL', W-40, footY+6);
+  ctx.textAlign = 'left';
+}
+
+function drawSectionTitle(ctx, text, x, y, color) {
+  ctx.fillStyle = color;
+  ctx.fillRect(x, y+2, 3, 14);
+  ctx.fillStyle = 'rgba(255,255,255,0.85)';
+  ctx.font = 'bold 11px "Barlow Condensed", sans-serif';
+  ctx.letterSpacing = '0.08em';
+  ctx.fillText(text, x+10, y+14);
+  ctx.letterSpacing = '0';
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x+r, y);
+  ctx.lineTo(x+w-r, y);
+  ctx.quadraticCurveTo(x+w, y, x+w, y+r);
+  ctx.lineTo(x+w, y+h-r);
+  ctx.quadraticCurveTo(x+w, y+h, x+w-r, y+h);
+  ctx.lineTo(x+r, y+h);
+  ctx.quadraticCurveTo(x, y+h, x, y+h-r);
+  ctx.lineTo(x, y+r);
+  ctx.quadraticCurveTo(x, y, x+r, y);
+  ctx.closePath();
+}
+
+function downloadInfografia() {
+  const canvas = document.getElementById('infog-canvas');
+  const mk = document.getElementById('mx-mes-sel')?.value || getMesKey();
+  const MN = {1:'Enero',2:'Feb',3:'Mar',4:'Abr',5:'May',6:'Jun',7:'Jul',8:'Ago',9:'Sep',10:'Oct',11:'Nov',12:'Dic'};
+  const label = mxVista === 'acum' ? 'Acumulado' : (MN[parseInt(mk.split('_')[0])]||mk);
+  const filename = 'Medistik_Infografia_' + label + '_' + (mk.split('_')[1]||'2026') + '.png';
+  const a = document.createElement('a');
+  a.download = filename;
+  a.href = canvas.toDataURL('image/png');
+  a.click();
+  toast('✓ Infografía descargada: ' + filename, 'ok');
 }
 
 </script>
