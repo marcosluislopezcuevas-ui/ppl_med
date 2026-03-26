@@ -4125,28 +4125,30 @@ function applyOverrides(dist, tbData, mk) {
 
 // ── MODAL ──
 function openOvModal() {
-  try {
-    const mk = ovMesKey();
-    const MES_NAMES = {1:'Enero',2:'Febrero',3:'Marzo',4:'Abril',5:'Mayo',6:'Junio',
-      7:'Julio',8:'Agosto',9:'Septiembre',10:'Octubre',11:'Noviembre',12:'Diciembre'};
-    const mesNum = parseInt(mk.split('_')[0]);
-    const anio   = mk.split('_')[1] || '2026';
+  // Step 1: open backdrop immediately — no conditions
+  const backdrop = document.getElementById('ov-backdrop');
+  if (!backdrop) { alert('ov-backdrop not found'); return; }
+  backdrop.classList.add('open');
 
-    const mesLbl = document.getElementById('ov-mes-label');
-    if (mesLbl) mesLbl.textContent = (MES_NAMES[mesNum] || mk) + ' ' + anio;
+  // Step 2: populate month label
+  const mk = ovMesKey() || getMesKey();
+  const MES_NAMES = {1:'Enero',2:'Febrero',3:'Marzo',4:'Abril',5:'Mayo',6:'Junio',
+    7:'Julio',8:'Agosto',9:'Septiembre',10:'Octubre',11:'Noviembre',12:'Diciembre'};
+  const mesNum = parseInt((mk||'').split('_')[0]);
+  const anio = (mk||'').split('_')[1] || '2026';
+  const mesLbl = document.getElementById('ov-mes-label');
+  if (mesLbl) mesLbl.textContent = (MES_NAMES[mesNum] || mk) + ' ' + anio;
+  const subLbl = document.getElementById('ov-modal-sub');
+  if (subLbl) subLbl.textContent = 'Override de distribución · ' + (MES_NAMES[mesNum]||mk) + ' ' + anio;
 
-    // Build client list from ING_SP + LLAVES_DATA
-    const clSel = document.getElementById('ov-new-cl');
+  // Step 3: populate client dropdown
+  const clSel = document.getElementById('ov-new-cl');
+  if (clSel) {
     const clientSet = new Set();
-    // From ING_SP
     Object.keys(window.ING_SP?.[mk] || {}).forEach(c => clientSet.add(c));
-    // From LLAVES_DATA
     Object.values(LLAVES_DATA || {}).forEach(mesData => {
-      Object.values(mesData[mk] || {}).forEach((v, i) => {});
-      const mkData = mesData[mk] || {};
-      Object.keys(mkData).forEach(c => clientSet.add(c));
+      Object.keys((mesData[mk]) || {}).forEach(c => clientSet.add(c));
     });
-    // From dist if available
     try {
       const tb = window.TB_SP?.[mk] || window._tbData || {};
       if (Object.keys(tb).length) {
@@ -4154,27 +4156,14 @@ function openOvModal() {
         Object.keys(dist).forEach(c => clientSet.add(c));
       }
     } catch(e) {}
-
-    const clients = [...clientSet].filter(c => c).sort();
-    if (clSel) {
-      clSel.innerHTML = '<option value="">— Cliente —</option>' +
-        clients.map(c => '<option value="' + c + '">' + c + '</option>').join('');
-    }
-
-    // Open modal immediately
-    const backdrop = document.getElementById('ov-backdrop');
-    if (backdrop) backdrop.classList.add('open');
-
-    // Load overrides from SP in background
-    renderOvEntries(mk);
-    ovLoadFromSP(mk).then(() => renderOvEntries(mk)).catch(() => {});
-
-  } catch(e) {
-    console.error('openOvModal error:', e);
-    // Force open even on error
-    const backdrop = document.getElementById('ov-backdrop');
-    if (backdrop) backdrop.classList.add('open');
+    const clients = [...clientSet].filter(Boolean).sort();
+    clSel.innerHTML = '<option value="">— Cliente —</option>' +
+      clients.map(c => '<option value="' + c + '">' + c + '</option>').join('');
   }
+
+  // Step 4: render entries and load from SP
+  renderOvEntries(mk);
+  ovLoadFromSP(mk).then(() => renderOvEntries(mk)).catch(e => console.warn('ovLoad error:', e));
 }
 
 function closeOvModal() {
