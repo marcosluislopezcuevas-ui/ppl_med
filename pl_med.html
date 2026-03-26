@@ -3875,6 +3875,12 @@ function renderTop15() {
     });
   });
 }
+const OV_RUBRO_LABELS = {
+  salarios:'Salarios y Prest.', fletes:'Fletes', mat_empaque:'Mat. Empaque',
+  cargo_farma:'Cargo Farma', costo_insumos:'Costo Insumos', otros_cv:'Otros CV',
+  costos_fijos:'Costos Fijos', gtos_grales:'Gastos Generales'
+};
+
 function ovMesKey() {
   // Use same mesKey as current matrix view
   if (mxVista === 'acum') {
@@ -3967,34 +3973,56 @@ function applyOverrides(dist, tbData, mk) {
 
 // ── MODAL ──
 function openOvModal() {
-  const mk = ovMesKey();
-  const MES_NAMES = {1:'Enero',2:'Febrero',3:'Marzo',4:'Abril',5:'Mayo',6:'Junio',
-    7:'Julio',8:'Agosto',9:'Septiembre',10:'Octubre',11:'Noviembre',12:'Diciembre'};
-  const mesNum = parseInt(mk.split('_')[0]);
-  const anio   = mk.split('_')[1] || '2026';
-  document.getElementById('ov-mes-label').textContent =
-    (MES_NAMES[mesNum] || mk) + ' ' + anio;
-
-  // Populate client dropdown from ING_SP + dist (fallback to ING_SP only if no dist)
-  const clSel = document.getElementById('ov-new-cl');
-  let distClients = [];
   try {
-    const dist = calcDistribucionFromTB(
-      window.TB_SP?.[mk] || window._tbData || {}, mk
-    ) || {};
-    distClients = Object.keys(dist);
-  } catch(e) {}
-  const clients = [...new Set([
-    ...distClients,
-    ...Object.keys(window.ING_SP?.[mk] || {}),
-  ])].filter(c => c).sort();
-  clSel.innerHTML = '<option value="">— Cliente —</option>' +
-    clients.map(c => `<option value="${c}">${c}</option>`).join('');
+    const mk = ovMesKey();
+    const MES_NAMES = {1:'Enero',2:'Febrero',3:'Marzo',4:'Abril',5:'Mayo',6:'Junio',
+      7:'Julio',8:'Agosto',9:'Septiembre',10:'Octubre',11:'Noviembre',12:'Diciembre'};
+    const mesNum = parseInt(mk.split('_')[0]);
+    const anio   = mk.split('_')[1] || '2026';
 
-  // Load from SP
-  ovLoadFromSP(mk).then(() => renderOvEntries(mk));
-  renderOvEntries(mk);
-  document.getElementById('ov-backdrop').classList.add('open');
+    const mesLbl = document.getElementById('ov-mes-label');
+    if (mesLbl) mesLbl.textContent = (MES_NAMES[mesNum] || mk) + ' ' + anio;
+
+    // Build client list from ING_SP + LLAVES_DATA
+    const clSel = document.getElementById('ov-new-cl');
+    const clientSet = new Set();
+    // From ING_SP
+    Object.keys(window.ING_SP?.[mk] || {}).forEach(c => clientSet.add(c));
+    // From LLAVES_DATA
+    Object.values(LLAVES_DATA || {}).forEach(mesData => {
+      Object.values(mesData[mk] || {}).forEach((v, i) => {});
+      const mkData = mesData[mk] || {};
+      Object.keys(mkData).forEach(c => clientSet.add(c));
+    });
+    // From dist if available
+    try {
+      const tb = window.TB_SP?.[mk] || window._tbData || {};
+      if (Object.keys(tb).length) {
+        const dist = calcDistribucionFromTB(tb, mk) || {};
+        Object.keys(dist).forEach(c => clientSet.add(c));
+      }
+    } catch(e) {}
+
+    const clients = [...clientSet].filter(c => c).sort();
+    if (clSel) {
+      clSel.innerHTML = '<option value="">— Cliente —</option>' +
+        clients.map(c => '<option value="' + c + '">' + c + '</option>').join('');
+    }
+
+    // Open modal immediately
+    const backdrop = document.getElementById('ov-backdrop');
+    if (backdrop) backdrop.classList.add('open');
+
+    // Load overrides from SP in background
+    renderOvEntries(mk);
+    ovLoadFromSP(mk).then(() => renderOvEntries(mk)).catch(() => {});
+
+  } catch(e) {
+    console.error('openOvModal error:', e);
+    // Force open even on error
+    const backdrop = document.getElementById('ov-backdrop');
+    if (backdrop) backdrop.classList.add('open');
+  }
 }
 
 function closeOvModal() {
