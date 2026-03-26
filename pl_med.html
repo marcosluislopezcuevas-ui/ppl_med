@@ -3975,13 +3975,19 @@ function openOvModal() {
   document.getElementById('ov-mes-label').textContent =
     (MES_NAMES[mesNum] || mk) + ' ' + anio;
 
-  // Populate client dropdown
+  // Populate client dropdown from ING_SP + dist (fallback to ING_SP only if no dist)
   const clSel = document.getElementById('ov-new-cl');
-  const dist = calcDistribucion() || {};
+  let distClients = [];
+  try {
+    const dist = calcDistribucionFromTB(
+      window.TB_SP?.[mk] || window._tbData || {}, mk
+    ) || {};
+    distClients = Object.keys(dist);
+  } catch(e) {}
   const clients = [...new Set([
-    ...Object.keys(dist),
+    ...distClients,
     ...Object.keys(window.ING_SP?.[mk] || {}),
-  ])].sort();
+  ])].filter(c => c).sort();
   clSel.innerHTML = '<option value="">— Cliente —</option>' +
     clients.map(c => `<option value="${c}">${c}</option>`).join('');
 
